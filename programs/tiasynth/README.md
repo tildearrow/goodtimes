@@ -10,7 +10,7 @@ names are from synthcart.
 after program 16, the list loops.
 
 Number | General MIDI name     | Result
------------------------------------------
+-------|-----------------------|---------
 1      | Acoustic Grand Piano  | No Output
 2      | Bright Acoustic Piano | Saw?
 3      | Electric Grand Piano  | Saw
