@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8)
+project(goodtimes)
+if(APPLE)
+  include_directories(/usr/local/include/)
+  link_directories(/usr/local/lib/)
+endif(APPLE)
+add_executable(4channelbypass programs/4channelbypass/b.c)
+target_link_libraries(4channelbypass jack)
