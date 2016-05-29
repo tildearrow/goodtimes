@@ -21,3 +21,5 @@ target_link_libraries(tiasynth allegro allegro_font allegro_ttf allegro_primitiv
 target_compile_features(tiasynth PRIVATE cxx_range_for)
 add_executable(vicsynth programs/vicsynth/main.cpp)
 target_link_libraries(vicsynth allegro allegro_font allegro_ttf allegro_primitives jack)
+add_executable(pads programs/pads/main.cpp)
+target_link_libraries(pads allegro allegro_font allegro_ttf allegro_primitives allegro_audio allegro_acodec allegro_dialog allegro_image jack)
