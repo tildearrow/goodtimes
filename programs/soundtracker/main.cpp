@@ -67,7 +67,7 @@
 //  - i'd honestly suggest you to use  //
 //    mingw                            //
 //  - but you can use MSVC anyways     //
-//  - sorry...                         //
+//  - ->[sorry...]<-                   //
 //  - if you are using linux or mac    //
 //    give mingw a try                 //
 //  - if you are using windows i can't //
@@ -102,7 +102,7 @@ double time2=0;
 //#define AUDIO_DUMPING // define to dump audio output to audiodump.raw (wait it doesn't work for now for some reason, gonna fix that)
 //#define NTSC // define for NTSC mode
 //#define FILM // define for film mode (NTSC should be defined first)
-#define SMOOTH_SCROLL
+//#define SMOOTH_SCROLL
 #define SOUNDS
 #define ACCURACY // for accurate chip emulation
 #define JACK
@@ -2605,24 +2605,10 @@ void drawpatterns(bool force) {
 	UPDATEPATTERNS=true;
 	printf("will draw! %d\n",framecounter);
 	al_destroy_bitmap(patternbitmap);
-	patternbitmap=al_create_bitmap(scrW,patlength[curpat]*12);
+	patternbitmap=al_create_bitmap(scrW,patlength[patid[curpat]]*12+8);
 	al_set_target_bitmap(patternbitmap);
 	al_clear_to_color(al_map_rgb(0,0,0));
 	al_draw_filled_rectangle(0,60,scrW,scrH,al_map_rgb(0,0,0));
-	switch(curedmode){
-	case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	}
-	switch(curselmode){
-	case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-	}
 	for (int i=0;i<getpatlen(patid[curpat]);i++){
 	//if(i>curpatrow+15+((scrH-450)/12)){continue;}
 	//if(i<curpatrow-16){continue;}
@@ -5233,9 +5219,23 @@ void drawdisp() {
 	  #endif
 	  al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_SRC_COLOR);
 	  for (int j=0;j<8;j++){
-	al_draw_filled_rectangle(24+(j*96),255,112+(j*96),266,mapHSV(((float)cduty[j+(curedpage*8)]/128)*360,(cshape[j+(curedpage*8)]==4)?(0):(1),(float)cvol[j+(curedpage*8)]/128));
+	//al_draw_filled_rectangle(24+(j*96),255,112+(j*96),266,mapHSV(((float)cduty[j+(curedpage*8)]/128)*360,(cshape[j+(curedpage*8)]==4)?(0):(1),(float)cvol[j+(curedpage*8)]/128));
 	}
 	al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
+	switch(curedmode){
+	case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	}
+	switch(curselmode){
+	case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+	}
 	//al_draw_filled_rectangle(0,255,scrW+1,266,al_map_rgba(64,64,64,128));
 	}
 	// grid markers
