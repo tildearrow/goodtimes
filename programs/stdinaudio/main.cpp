@@ -2,7 +2,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
 #include <queue>
-#include <jack/jack.h>
+//#include <jack/jack.h>
 #define PERIODS 1024
 
 ALLEGRO_AUDIO_STREAM* as;

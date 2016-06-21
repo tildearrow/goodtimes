@@ -9,6 +9,9 @@
 #include <allegro5/allegro_primitives.h>
 #include <math.h>
 #include <string.h>
+#ifdef _WIN32
+#error "sorry, peakmeter is not available for Windows."
+#endif
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <vector>

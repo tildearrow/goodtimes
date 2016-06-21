@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#error "sorry, 4channelbypass is not available for Windows."
+#endif
 #include <jack/jack.h>
 
 jack_port_t *input_port[4];

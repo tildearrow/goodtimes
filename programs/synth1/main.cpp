@@ -8,6 +8,9 @@
 #include <allegro5/allegro_primitives.h>
 #include <math.h>
 #include <string.h>
+#ifdef _WIN32
+#error "sorry, synth1 is not available for Windows."
+#endif
 #include <jack/jack.h>
 #include <jack/midiport.h>
 

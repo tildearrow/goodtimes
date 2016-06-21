@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#ifdef _WIN32
+#error "sorry, lightshow is not available for Windows."
+#endif
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <unistd.h>
