@@ -25,7 +25,7 @@ bool boxcollisioncheck(float x1, float y1, float x2, float y2, float w1, float h
 }
 
 bool radiuscollisioncheck(float x1, float y1, float x2, float y2, float r1, float r2) {
-
+  return false; // anti-error C<insertnumberhere>: will NOT return a value!
 }
 
 void entity::calculateevents(void) {
