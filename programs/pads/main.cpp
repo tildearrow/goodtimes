@@ -10,7 +10,11 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_native_dialog.h>
+#ifdef _WIN32
+#include <SDL2/SDL.h>
+#else
 #include <jack/jack.h>
+#endif
 //#include <mpg123.h>
 #include <vector>
 int dw,dh;
@@ -31,9 +35,15 @@ ALLEGRO_AUDIO_STREAM* stream;
 ALLEGRO_EVENT_QUEUE* aeq;
 ALLEGRO_SAMPLE* testdummy;
 ALLEGRO_THREAD* athread;
+#if _WIN32
+SDL_AudioDeviceID audioID;
+SDL_AudioSpec* out;
+SDL_AudioSpec* outRes;
+#else
 jack_port_t* outL;
 jack_port_t* outR;
 jack_client_t *client;
+#endif
 bool leftclick;
 bool leftclick1;
 int rcrc;
@@ -79,7 +89,11 @@ unsigned char* mp3buf1;
 #define strOffX "pos. X"
 #define strOffY "pos. Y"
 #define strUsing "usando %s, %d búferes %d samples %dHz"
+#ifdef _WIN32
+#define strbackend "SDL" // for now
+#else
 #define strbackend "jack" // for now
+#endif
 #define strLatency "latencia estimada de %fms"
 
 #define strMenuLoad "cargar"
@@ -147,12 +161,25 @@ pad pads[padcount];
   al_register_event_source(aeq,al_get_audio_stream_event_source(stream));
 }*/
 
-int efficientaudioroutine(jack_nframes_t totalsamples, void* arguments){
+#ifdef _WIN32
+static void efficientaudioroutine(void*  userdata,
+  Uint8* stream,
+  int    len)
+#else
+int efficientaudioroutine(jack_nframes_t totalsamples, void* arguments)
+#endif
+{
    // ALLEGRO_EVENT aev;
    // al_wait_for_event(aeq,&aev);
    // if (aev.type==ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT){
+#ifdef _WIN32
+  float* sbufL=(float*)stream;
+  float* sbufR= (float*)stream;
+int totalsamples=len/4;
+#else
       float* sbufL=(float*)jack_port_get_buffer (outL, totalsamples);
       float* sbufR=(float*)jack_port_get_buffer (outR, totalsamples);
+#endif
       //if (!sbuf) {return 1;}
       memset(sbufL,0,totalsamples*4);
       memset(sbufR,0,totalsamples*4);
@@ -189,7 +216,9 @@ int efficientaudioroutine(jack_nframes_t totalsamples, void* arguments){
       //al_set_audio_stream_gain(stream,1);
       //al_set_audio_stream_playing(stream,true);
    // }
+#ifndef _WIN32
 return 0;
+#endif
 }
 void writebank(){
     ALLEGRO_FILECHOOSER* filechooser;
@@ -414,7 +443,21 @@ void KeyboardEvents(){
 
 int main(int argc, char **argv) {
     al_init();
-    
+#ifdef _WIN32
+    SDL_Init(SDL_INIT_AUDIO);
+    out=new SDL_AudioSpec;
+outRes=new SDL_AudioSpec;
+    out->freq=44100;
+    out->format=AUDIO_F32;
+    out->channels=2;
+    out->samples=2048;
+    out->callback=efficientaudioroutine;
+    out->userdata=NULL;
+    audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,out,outRes, SDL_AUDIO_ALLOW_ANY_CHANGE);
+    if (outRes->format != out->format) { // we let this one thing change.
+      printf("We didn't get Float32 audio format. crap.\n");
+    }
+#else
     const char **ports;
     const char *client_name = "pads";
 	const char *server_name = NULL;
@@ -437,6 +480,7 @@ int main(int argc, char **argv) {
 		client_name = jack_get_client_name(client);
 		fprintf (stderr, "unique name `%s' assigned\n", client_name);
 	}
+#endif
     
     al_install_keyboard();
     al_install_mouse();
@@ -498,6 +542,7 @@ int main(int argc, char **argv) {
     al_register_event_source(eq,al_get_timer_event_source(frame));
     al_register_event_source(eq,al_get_keyboard_event_source());
 
+#ifndef _WIN32
     jack_set_process_callback (client, efficientaudioroutine, NULL);
 outL = jack_port_register (client, "outL",
 					 JACK_DEFAULT_AUDIO_TYPE,
@@ -509,6 +554,7 @@ outL = jack_port_register (client, "outL",
 		fprintf(stderr, "no more JACK ports available\n");
 		return 1;
 	}
+#endif
     // clear the display
     al_set_target_backbuffer(display);
     al_clear_to_color(al_map_rgb(0,0,0));
@@ -521,6 +567,9 @@ outL = jack_port_register (client, "outL",
     // begin the game
     al_start_timer(frame);
     //al_start_thread(athread);
+#ifdef _WIN32
+    SDL_PauseAudioDevice(audioID,0);
+#else
     if (jack_activate (client)) {
 		fprintf (stderr, "cannot activate client");
 		return 1;
@@ -550,7 +599,7 @@ outL = jack_port_register (client, "outL",
 	}
 
 	free (ports);
-	
+	#endif
     doredraw=true;
     while(1){
       // get next event
@@ -651,7 +700,7 @@ outL = jack_port_register (client, "outL",
 	       int tempsr=al_get_sample_frequency(tempsample);
 	       pads[padmenuid].samplerate=tempsr;
 	       free((float*)pads[padmenuid].sample);
-	       #ifdef __MINGW32__
+	       #if defined(__MINGW32__) || defined(_WIN32)
 	       strcpy(pads[padmenuid].name,strrchr(rfn,'\\')+1);
 	       #else
 	       strcpy(pads[padmenuid].name,strrchr(rfn,'/')+1);
@@ -863,6 +912,10 @@ outL = jack_port_register (client, "outL",
     
     // end the game
     al_stop_timer(frame);
+#ifdef _WIN32
+    SDL_CloseAudioDevice(audioID);
+#else
     jack_client_close (client);
+#endif
     return 0;
 }
