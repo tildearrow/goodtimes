@@ -454,9 +454,6 @@ outRes=new SDL_AudioSpec;
     out->callback=efficientaudioroutine;
     out->userdata=NULL;
     audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,out,outRes, SDL_AUDIO_ALLOW_ANY_CHANGE);
-    if (outRes->format != out->format) { // we let this one thing change.
-      printf("We didn't get Float32 audio format. crap.\n");
-    }
 #else
     const char **ports;
     const char *client_name = "pads";
