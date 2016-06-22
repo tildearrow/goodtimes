@@ -47,7 +47,7 @@ make
 wget http://unifoundry.com/pub/unifont-8.0.01/font-builds/unifont-8.0.01.ttf
 mv unifont-8.0.01.ttf unifont.ttf
 cp unifont.ttf text.ttf
-cp ../programs/thegame/alexlogo.png .
+cp ../programs/thegame/alexlogo.png ..
 ```
 
 ### OS X
@@ -116,7 +116,7 @@ Install-Package Allegro
 
 23. go to repo dir.
 
-24. copy `programs\thegame\alexlogo.png` to `build\Debug\`.
+24. copy `programs\thegame\alexlogo.png` to `build\`.
 
 25. copy all dll files from `winlib\x86\` to `build\Debug\`.
 
