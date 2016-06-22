@@ -5176,7 +5176,7 @@ void KeyboardEvents(){
 		#endif
 	};drawpatterns(true);drawmixerlayer();}
 	if (kbpressed[ALLEGRO_KEY_TAB]) {MuteAllChannels();}
-	if(kbpressed[ALLEGRO_KEY_MENU]){ntsc=!ntsc; if (ntsc) {
+	if(kbpressed[ALLEGRO_KEY_MENU] || kbpressed[ALLEGRO_KEY_BACKQUOTE]){ntsc=!ntsc; if (ntsc) {
 	  if (tempo==125) {
 	    tempo=150;
 	    FPS=60;
