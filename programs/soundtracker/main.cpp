@@ -2813,7 +2813,7 @@ void EditSkip(){
 }
 void ParentDir(char *thedir){
 	// set thedir to parent directory
-	#ifdef __unix__ // slashes
+	#if defined(__unix__) || defined(__APPLE__) // slashes
 	if (strrchr(thedir,'/')!=NULL){
 		memset(strrchr(thedir,'/'),0,1);
 		if (strchr(thedir,'/')==NULL){int littlestr=strlen(thedir);memset(thedir+littlestr,'/',1);memset(thedir+littlestr+1,0,1);}}
@@ -5572,7 +5572,8 @@ DETUNE_FACTOR_GLOBAL=1;
    patlength=new unsigned char[256];
    //wavememory=new char[131072];
    // fill wavememory for test purposes
-   texthand=al_fopen("help.txt","rb");
+   //texthand=al_fopen("help.txt","rb");
+  texthand=NULL;
 	if (texthand!=NULL){ // read the file
 	printf("loading helpfile, ");
     helpfilesize=al_fsize(texthand);
