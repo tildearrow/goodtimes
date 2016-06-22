@@ -3059,7 +3059,7 @@ void drawconfig(){
 void drawabout(){
 	// draws about screen
 	al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,"soundtracker");
-	al_draw_textf(text,getconfigcol(colSEL1),scrW/2,72,ALLEGRO_ALIGN_CENTER,"dev%d",ver);
+	al_draw_textf(text,getconfigcol(colSEL1),scrW/2,72,ALLEGRO_ALIGN_CENTER,/*"dev%d"*/"git",ver);
 	al_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*ALLEGRO_PI)/8)*(playmode!=0),0);
 }
 void drawpiano(){
@@ -5246,7 +5246,7 @@ void drawdisp() {
 	
 	// header
 	al_draw_text(text,getconfigcol(colSEL1),0,0,ALLEGRO_ALIGN_LEFT,"soundtracker");
-	al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,"dev%d",ver);
+	al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,/*"dev%d"*/"git",ver);
 	// properties - buttons
 	//al_draw_text(text,getconfigcol(colSEL1),0,12,ALLEGRO_ALIGN_LEFT,"|");
 	al_draw_text(text,getucol(15),0,12,ALLEGRO_ALIGN_LEFT,"pat|ins|sfx|speed   v^|  |patID   v^|");
