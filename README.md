@@ -9,11 +9,11 @@ also, most of these programs won't simply compile on windows for now, but a fix 
 
 varies on program.
 
-- 4channelbypass, peakmeter, tiasynth, vicsynth, lightshow, synth1 and soundtracker: jack
+- 4channelbypass, peakmeter, tiasynth, vicsynth, lightshow and synth1: jack
 
 - counter, videotests, peakmeter, metronome, stdinaudio, tiasynth, vicsynth, pads, credits, synth1, thegame, timertest and soundtracker: everything allegro
 
-- pads: SDL2 and/or jack
+- pads and soundtracker: SDL2 and/or jack
 
 ## Operating system support
 
@@ -33,7 +33,7 @@ varies on program.
  synth1         |  yes  | yes  |   no
  thegame        |  yes  | yes  |   no?
  timertest      |  yes  | yes  |   yes
- soundtracker   |  yes  | yes  |   no
+ soundtracker   |  yes  | yes  |   ???
 
 ## Compiling
 

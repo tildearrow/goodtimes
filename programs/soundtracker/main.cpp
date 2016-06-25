@@ -31,11 +31,12 @@
 // 2) no sound                         //
 //  + have you enabled sounds?         //
 //  + maybe you didn't start JACK or   //
-//    connect soundtracker to system.  //
+//    connect soundtracker to system   //
+//     (Linux and OS X with JACK).     //
 //  + if you don't have JACK get it    //
 //    please                           //
-//  + (unless you use an older version //
-//     without JACK support)           //
+//  + (unless you use Windows or don't //
+//     want real time audio)           //
 //  3) can't click on window           //
 //  + twm is known to have some bugs   //
 //  + so avoid using it if you have it //
@@ -105,7 +106,7 @@ double time2=0;
 //#define SMOOTH_SCROLL
 #define SOUNDS
 #define ACCURACY // for accurate chip emulation
-#define JACK
+//#define JACK
 //#define NEWCODE
 
 bool ntsc=false;
@@ -133,6 +134,12 @@ jack_port_t *midi;
 jack_client_t *jclient;
 jack_status_t jstatus;
 jack_nframes_t jacksr;
+#else
+#include <SDL2/SDL.h>
+SDL_AudioDeviceID audioID;
+SDL_AudioSpec* sout;
+SDL_AudioSpec* spout;
+uint32_t jacksr;
 #endif
 #include "soundchip.h"
 soundchip chip;
@@ -437,6 +444,15 @@ int sfxsfreq=0;
 
 bool sfxplaying=false;
 
+namespace ASC {
+	int interval=119000;
+	int currentclock=0;
+}
+namespace fakeASC {
+	int interval=119000;
+	int currentclock=0;
+}
+
 ALLEGRO_MIXER *sound0=NULL;
 ALLEGRO_FONT *text=NULL;
 ALLEGRO_AUDIO_STREAM *chan[33]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
@@ -518,8 +534,8 @@ bool firstframe=true;
 struct BufferArray {
 	float* contents;
 } abuf[33]; // abuf[32] is the master buffer
-float oscbuf[128]={}; // safe oscilloscope buffer
-float oscbuf2[128]={}; // safe oscilloscope buffer
+float oscbuf[65536]={}; // safe oscilloscope buffer
+float oscbuf2[65536]={}; // safe oscilloscope buffer
 // only way for 7 channels glitch-free - 7 event queues
 ALLEGRO_EVENT_QUEUE *aqueue[33];
 // settings
@@ -540,15 +556,6 @@ namespace settings {
 	// filter settings
 	bool nofilters=false;
 	bool muffle=false;
-}
-// "advanced speed controller" implementation
-namespace ASC {
-	int interval=119000;
-	int currentclock=0;
-}
-namespace fakeASC {
-	int interval=119000;
-	int currentclock=0;
 }
 
 enum colorindexes {
@@ -834,14 +841,27 @@ bool midion[32]={0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,
 			 0,0,0,0,0,0,0,0,
 			 0,0,0,0,0,0,0,0};
+			 #ifdef JACK
 int nothing (jack_nframes_t nframes, void *arg){
+#else
+  static void nothing(void*  userdata,
+  Uint8* stream,
+  int    len){
+#endif
 	rt1=al_get_time();
+#ifdef JACK
 	jack_default_audio_sample_t *outl, *outr;
 	outl = (float*)jack_port_get_buffer (joutl, nframes);
 	outr = (float*)jack_port_get_buffer (joutr, nframes);
 	void* port_buf = jack_port_get_buffer(midi, nframes);
 	unsigned char* midibuffer;
 	jack_midi_clear_buffer(port_buf);
+#else
+	float *outl, *outr;
+	outl=(float*)stream;
+	outr=(float*)stream;
+	int nframes=len/8;
+#endif
 	or90or80=!or90or80;
 			if (ntsc) {
 		  ASC::interval=(int)(6180000/FPS);
@@ -874,6 +894,7 @@ int nothing (jack_nframes_t nframes, void *arg){
 					  }
 					  if(playmode>0){
 						  Playback();
+#ifdef JACK
 						  for (int iiiii=0;iiiii<32;iiiii++){
 						  if (reservedevent[iiiii] && midion[iiiii]) {
 						    reservedevent[iiiii]=0;
@@ -888,6 +909,7 @@ int nothing (jack_nframes_t nframes, void *arg){
 							midibuffer[0] = 0x90+(iiiii%16);	// note on or off
 							} else {offinstead[iiiii]=false;}
 						  }}
+#endif
 					  }
 					  else {
 						  MuteAllChannels();
@@ -946,25 +968,52 @@ int nothing (jack_nframes_t nframes, void *arg){
 		  }
 		  audioframecounter++;
 		  for(int ii=0;ii<nframes;ii++){
-		  oscbuf[ii]=abuf[32].contents[ii*2];
-		  oscbuf2[ii]=abuf[32].contents[(ii*2)+1];
+		  oscbuf[ii*128/nframes]=abuf[32].contents[ii*2];
+		  oscbuf2[ii*128/nframes]=abuf[32].contents[(ii*2)+1];
 		  }
 #define dointerpolate
 	for (int iii=0; iii<nframes; iii++){
 #ifdef dointerpolate
-	outl[iii]=interpolatee(abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/6;
-	outr[iii]=interpolatee(abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/6;
+	outl[
+#ifdef JACK
+	iii
 #else
-	outl[iii]=abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2]/6;
-	outr[iii]=abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2]/6;
+	iii*2
+#endif
+	]=interpolatee(abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/6;
+	outr[
+#ifdef JACK
+	iii
+#else
+	(iii*2)+1
+#endif 
+	]=interpolatee(abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/6;
+#else
+	outl[
+#ifdef JACK
+	iii
+#else
+	iii*2
+#endif  
+	]=abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2]/6;
+	outr[
+#ifdef JACK
+	iii
+#else
+	(iii*2)+1
+#endif   
+	]=abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2]/6;
 #endif
 	}
 	rt2=al_get_time();
+#ifdef JACK
 	return 0;      
+#endif
 }
 void initaudio() {
 	//cout << "\npreparing audio system... ";
 	printf("ok\n");
+#ifdef JACK
 	const char** jports;
 	printf("%d %d\n",joutl,joutr);
 	jclient=jack_client_open("soundtracker",JackNullOption,&jstatus,NULL);
@@ -1005,11 +1054,25 @@ void initaudio() {
 	if ((midi == NULL)) {
 		fprintf(stderr, "no more JACK ports available\n");
 	}
+#else
+      //////////////// SDL CODE HERE ////////////////
+      SDL_Init(SDL_INIT_AUDIO);
+      sout=new SDL_AudioSpec;
+      spout=new SDL_AudioSpec;
+      sout->freq=44100;
+      sout->format=AUDIO_F32;
+      sout->channels=2;
+      sout->samples=2048;
+      sout->callback=nothing;
+      sout->userdata=NULL;
+      audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,sout,spout, SDL_AUDIO_ALLOW_ANY_CHANGE);
+      jacksr=44100;
+#endif
 	for (int bbb=0;bbb<32;bbb++) {
 	RecreateNoiseBuffer(bbb);
     }
 	for (int initindex=0;initindex<33;initindex++) {
-		abuf[initindex].contents=new float[bufsize*2];
+		abuf[initindex].contents=new float[65536];
 		//printf("%d ",initindex);
 		if (initindex==32) {
 		if (ntsc) {
@@ -1023,6 +1086,7 @@ void initaudio() {
 		}
 		low[initindex]=0; high[initindex]=0; band[initindex]=0;
 	}
+#ifdef JACK
 			if (jack_activate (jclient)) {
 		fprintf (stderr, "cannot activate client");
 		//exit (1);
@@ -1048,6 +1112,9 @@ printf("%d %d\n",joutl,joutr);
 	free (jports);
 	
 	printf("%d %d\n",joutl,joutr);
+#else
+	//////////////// SDL CODE HERE ////////////////
+#endif
 	printf("done\n");
 }
 
@@ -4218,6 +4285,7 @@ void LoadInstrument(){
 	} else {fprintf(stderr,"error: couldn't open file for reading!\n");}
 }
 void LoadSample(const char* filename,int position){
+  printf("what the?\n");
 	short* thepointer;
 	int samplelength=0;
 	ALLEGRO_SAMPLE *tempsample=al_load_sample(filename);
@@ -5825,6 +5893,9 @@ DETUNE_FACTOR_GLOBAL=1;
    printf("run\n");
    // run timer
    al_start_timer(timer);
+#ifndef JACK
+   SDL_PauseAudioDevice(audioID,0);
+#endif
    printf("done\n");
    // audio dumping
    #ifdef AUDIO_DUMPING
