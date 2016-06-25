@@ -9,11 +9,11 @@ also, most of these programs won't simply compile on windows for now, but a fix 
 
 varies on program.
 
-- 4channelbypass, peakmeter, tiasynth, vicsynth, pads (Linux and OS X), lightshow, synth1 and soundtracker: jack
+- 4channelbypass, peakmeter, tiasynth, vicsynth, lightshow, synth1 and soundtracker: jack
 
 - counter, videotests, peakmeter, metronome, stdinaudio, tiasynth, vicsynth, pads, credits, synth1, thegame, timertest and soundtracker: everything allegro
 
-- pads (Windows): SDL2
+- pads: SDL2 and/or jack
 
 ## Operating system support
 
