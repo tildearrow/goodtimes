@@ -33,7 +33,7 @@ varies on program.
  synth1         |  yes  | yes  |   no
  thegame        |  yes  | yes  |   no?
  timertest      |  yes  | yes  |   yes
- soundtracker   |  yes  | yes  |   ???
+ soundtracker   |  yes  | yes  |   yes!
 
 ## Compiling
 
