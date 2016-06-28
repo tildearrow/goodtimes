@@ -1,4 +1,9 @@
 # soundtracker
+
+![like, argh.](ohplease.png)
+
+> sorry. yet another heap corruption bug. <
+
 this is my first program (excluding the tutorials).
 
 note: after you compile this program, put unifont.ttf (you can find it by searching "GNU Unifont") and logo.ttf in the build directory.
