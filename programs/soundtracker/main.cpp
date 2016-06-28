@@ -669,7 +669,7 @@ inline void NextSampleAccuracy(int channumb){
 			 case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
 			 case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
 			 case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-			 case 3: crseek[channumb]=(int)(((abs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
+			 case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
 			 case 4: if(crstep[channumb]%(crmfreq[channumb]/2)==0) { rngpgv[channumb]=(((rand()%2)*2)-1)*127; }; crseek[channumb]=rngpgv[channumb]; break;
 			 case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
 			 case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
@@ -788,7 +788,7 @@ inline void NextSampleAccuracy_old(int channumb){
 			 case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
 			 case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
 			 case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-			 case 3: crseek[channumb]=(int)(((abs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
+			 case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
 			 case 4: if(crstep[channumb]%(crmfreq[channumb]/2)==0) { rngpgv[channumb]=(((rand()%2)*2)-1)*127; }; crseek[channumb]=rngpgv[channumb]; break;
 			 case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
 			 case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
@@ -1205,7 +1205,7 @@ inline void NextSample(int channumb){
 			 case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
 			 case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
 			 case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-			 case 3: crseek[channumb]=(int)(((abs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
+			 case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
 			 case 4: if(crstep[channumb]%(crmfreq[channumb]/2)==0) { rngpgv[channumb]=(((rand()%2)*2)-1)*127; }; crseek[channumb]=rngpgv[channumb]; break;
 			 case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
 			 case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
@@ -1307,7 +1307,7 @@ int updateaudio_old(int channumb) {
 			 case 0: crseek[channumb]=((crstep[channumb])>(((cduty[channumb]+1)*cfreq[channumb])/128))?(cvol[channumb]):(-cvol[channumb]); break;
 			 case 1: crseek[channumb]=(int)(((((float)crstep[channumb])/(float)cfreq[channumb])-0.5)*cvol[channumb]*4); break;
 			 case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI))*cvol[channumb])); break;
-			 case 3: crseek[channumb]=(int)(((abs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
+			 case 3: crseek[channumb]=(int)(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
 			 case 4: if (cstep[channumb]%(cfreq[channumb]/2)==0) {rngpgv=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv; break;
 			 case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]*cduty[channumb]/cfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
 			 case 6: if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}
@@ -1331,7 +1331,7 @@ int updateaudio_old(int channumb) {
 			 case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
 			 case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
 			 case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-			 case 3: crseek[channumb]=(int)(((abs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
+			 case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
 			 case 4: if (cstep[channumb]%(crmfreq[channumb]/2)==0) {rngpgv=(((rand()%2)*2)-1)*127;}; crseek[channumb]=rngpgv; break;
 			 case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
 			 case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
@@ -2651,7 +2651,7 @@ void CleanupPatterns(){
 }
 ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
 	float c=value*saturation;
-	float x=c*(1-abs(fmod(hue/60,2)-1));
+	float x=c*(1-fabs(fmod(hue/60,2)-1));
 	float m=value-c;
 	float r,g,b;
 	if (hue<60) {r=c;g=x;b=0;}
@@ -5571,6 +5571,8 @@ static void *thread_audio(ALLEGRO_THREAD *thread, void *arg){
 		 al_destroy_audio_stream(chan[32]);break;jack_client_close (jclient);}
 	}
 	return 0;*/
+  // OH PLEASE I DON'T WANT TO RETURN A VALUE!
+  return 0;
 }
 
 int main(int argc, char **argv){
