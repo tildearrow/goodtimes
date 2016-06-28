@@ -1062,7 +1062,7 @@ void initaudio() {
       sout->freq=44100;
       sout->format=AUDIO_F32;
       sout->channels=2;
-      sout->samples=2048;
+      sout->samples=1024;
       sout->callback=nothing;
       sout->userdata=NULL;
       audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,sout,spout, SDL_AUDIO_ALLOW_ANY_CHANGE);
