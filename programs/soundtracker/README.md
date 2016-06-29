@@ -6,7 +6,7 @@
 
 this is my first program (excluding the tutorials).
 
-note: after you compile this program, put unifont.ttf (you can find it by searching "GNU Unifont") and logo.ttf in the build directory.
+note: after you compile this program, put unifont.ttf (you can find it by searching "GNU Unifont") and logo.png in the build directory.
 
 text below is from a info.txt file i had.
 
