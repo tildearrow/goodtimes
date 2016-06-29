@@ -31,7 +31,7 @@ varies on program.
  credits        |  yes  | yes  |   yes
  lightshow      |  yes  | yes  |   no
  synth1         |  yes  | yes  |   no
- thegame        |  yes  | yes  |   no?
+ thegame        |  yes  | yes  |   yes
  timertest      |  yes  | yes  |   yes
  soundtracker   |  yes  | yes  |   yes!
 
