@@ -125,6 +125,8 @@ float DETUNE_FACTOR_GLOBAL;
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_native_dialog.h>
 #include <stdint.h>
+#include <string>
+#include <vector>
 #ifdef JACK
 #include <jack/jack.h>
 #include <jack/midiport.h>
@@ -520,9 +522,11 @@ float muffleb1[2]={0,0};
 int filecount=0;
 int selectedfileindex=-1;
 struct FileInList {
-	char* name;
+	string name;
 	bool isdir;
-} filenames[1024], filessorted[1024];
+};
+vector<FileInList> filenames;
+vector<FileInList> filessorted;
 int scrW,scrH;
 ALLEGRO_BITMAP *patternbitmap = NULL;
 ALLEGRO_BITMAP *pianoroll=NULL;
@@ -2990,11 +2994,17 @@ void drawdiskop(){
 	al_draw_text(text,getconfigcol(colDEFA),0,108,ALLEGRO_ALIGN_LEFT,"<..>                                                                                               ^");
 	al_draw_text(text,getconfigcol(colDEFA),0,432,ALLEGRO_ALIGN_LEFT,"                                                                                                   v");
 	al_draw_text(text,al_map_rgb(255,255,255),72,84,ALLEGRO_ALIGN_LEFT,curdir);
-	if (selectedfileindex>(diskopscrollpos-1)){
+	if (selectedfileindex>(diskopscrollpos)){
 	al_draw_filled_rectangle(0,111+((selectedfileindex-diskopscrollpos)*12),scrW,123+((selectedfileindex-diskopscrollpos)*12),getconfigcol(colSELE));
 	}
 	for (int ii=diskopscrollpos; ii<minval(diskopscrollpos+27,filecount); ii++) {
-		al_draw_text(text,filenames[ii].isdir?(al_map_rgb(0,255,255)):(al_map_rgb(255,255,255)),0,120+(ii*12)-(diskopscrollpos*12),ALLEGRO_ALIGN_LEFT,filenames[ii].name);
+		al_draw_text(text,filenames[ii].isdir?(al_map_rgb(0,255,255)):(al_map_rgb(255,255,255)),0,120+(ii*12)-(diskopscrollpos*12),ALLEGRO_ALIGN_LEFT,strrchr(filenames[ii].name.c_str(),
+#ifdef _WIN32
+	'\\'
+#else
+	'/'
+#endif
+		)+1);
 	}
 }
 
@@ -4315,21 +4325,23 @@ void LoadRawSample(const char* filename,int position){
 }
 static void print_entry(const char* filepath){
 	ALLEGRO_FS_ENTRY *flist=al_create_fs_entry(filepath);
+	printf("listing dir...\n");
 	int increment=0;
       ALLEGRO_FS_ENTRY *next;
+      FileInList neext;
+      neext.name="";
+      neext.isdir=false;
       // clean file list
-      for (int ii=0; ii<1024; ii++){
-	filenames[ii].name[0]=0;
-	filenames[ii].isdir=false;
-      }
+      filenames.resize(0);
       al_open_directory(flist);
       while (1) {
          next=al_read_directory(flist);
          if (!next) break;
 		 const char *name = al_get_fs_entry_name(next);
 		 //printf("%-36s\n",name);
-		 strcpy(filenames[increment].name,name);
-		 filenames[increment].isdir=al_get_fs_entry_mode(next)&ALLEGRO_FILEMODE_ISDIR;
+		 neext.name=name;
+		 neext.isdir=al_get_fs_entry_mode(next)&ALLEGRO_FILEMODE_ISDIR;
+		 filenames.push_back(neext);
          al_destroy_fs_entry(next);
 		 increment++;
       }
@@ -4337,23 +4349,22 @@ static void print_entry(const char* filepath){
       al_close_directory(flist);
 	  al_destroy_fs_entry(flist);
       // sort the files
-      char* tempname;
+      string tempname;
       bool tempisdir=false;
-      tempname=new char[257];
-      tempname[0]=0;
+      tempname="";
       for (int ii=0; ii<filecount; ii++) { // oooooohhhhhh ok it was the "i"
       for (int j=0; j<filecount-1; j++) {
-         if (strcmp(filenames[j].name, filenames[j+1].name) > 0) {
-            strcpy(tempname,filenames[j].name);
+         if (strcmp(filenames[j].name.c_str(), filenames[j+1].name.c_str()) > 0) {
+	    tempname=filenames[j].name;
 	    tempisdir=filenames[j].isdir;
-            strcpy(filenames[j].name, filenames[j+1].name);
+	    filenames[j].name=filenames[j+1].name;
 	    filenames[j].isdir=filenames[j+1].isdir;
-            strcpy(filenames[j+1].name, tempname);
+	    filenames[j+1].name=tempname;
 	    filenames[j+1].isdir=tempisdir;
          }
       }
       }
-      delete[] tempname;
+      printf("finish.\n");
 }
 
 
@@ -4653,8 +4664,8 @@ void ClickEvents() {
 			for (int ii=diskopscrollpos; ii<minval(diskopscrollpos+27,filecount); ii++) {
 				if (PIR(0,120+(ii*12)-(diskopscrollpos*12),790,131+(ii*12)-(diskopscrollpos*12),mstate.x,mstate.y)) {
 					if (selectedfileindex==ii+1){
-					if(filenames[ii].isdir) {strcpy(curdir,filenames[ii].name);print_entry(curdir);diskopscrollpos=0;selectedfileindex=-1;}
-					else {int success=LoadFile(filenames[ii].name);}} else {
+					if(filenames[ii].isdir) {strcpy(curdir,filenames[ii].name.c_str());print_entry(curdir);diskopscrollpos=0;selectedfileindex=-1;}
+					else {int success=LoadFile(filenames[ii].name.c_str());}} else {
 						selectedfileindex=ii+1;}
 				}
 			}
@@ -5629,6 +5640,8 @@ DETUNE_FACTOR_GLOBAL=1;
    ALLEGRO_BITMAP *bouncer = NULL;
    ALLEGRO_FILE *texthand;
    ALLEGRO_THREAD *audiothread = NULL;
+   filessorted.resize(1024);
+   filenames.resize(1024);
    //int success=0;
    float bouncer_x = SCREEN_W / 2.0 - BOUNCER_SIZE / 2.0;
    float bouncer_y = SCREEN_H / 2.0 - BOUNCER_SIZE / 2.0;
@@ -6096,7 +6109,7 @@ DETUNE_FACTOR_GLOBAL=1;
    al_destroy_thread(audiothread);
    #endif
    // this is unsafer but it prevents crashes under release
-   return 0;
+   //return 0;
    #ifdef AUDIO_DUMPING
    al_fclose(audiodump);
    printf("audio dump saved to audiodump.raw\n");
