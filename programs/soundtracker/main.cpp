@@ -5315,7 +5315,7 @@ void drawdisp() {
 	case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
 	case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
 	}
-	//al_draw_filled_rectangle(0,255,scrW+1,266,al_map_rgba(64,64,64,128));
+	al_draw_filled_rectangle(0,255,scrW+1,266,al_map_rgba(64,64,64,128));
 	}
 	// grid markers
 	#ifdef MOUSE_GRID
