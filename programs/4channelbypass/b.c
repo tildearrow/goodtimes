@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <errno.h>
-/*#include <unistd.h>*/
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -149,7 +149,7 @@ main (int argc, char *argv[])
 
 	/* keep running until stopped by the user */
 
-	/*sleep (-1);*/
+	sleep (-1);
 
 	/* this is never reached but if the program
 	   had some other way to exit besides being killed,
