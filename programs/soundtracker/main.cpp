@@ -1372,7 +1372,7 @@ int updateaudio_old(int channumb) {
 }
 ALLEGRO_COLOR getucol(unsigned char thecol){
 	if (thecol<16) {
-		if (thecol=8) {return (al_map_rgb(128,128,128));} else {
+		if (thecol==8) {return (al_map_rgb(128,128,128));} else {
 			if (thecol<8) {al_map_rgb((thecol&1)*192,((thecol&2)>>1)*192,((thecol&3)>>2)*192);}
 			else {al_map_rgb((thecol&1)*256,((thecol&2)>>1)*256,((thecol&3)>>2)*256);}
 		}} else {
@@ -5328,13 +5328,14 @@ void drawdisp() {
 	al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,/*"dev%d"*/"git",ver);
 	// properties - buttons
 	//al_draw_text(text,getconfigcol(colSEL1),0,12,ALLEGRO_ALIGN_LEFT,"|");
-	al_draw_text(text,getucol(15),0,12,ALLEGRO_ALIGN_LEFT,"pat|ins|sfx|speed   v^|  |patID   v^|");
-	al_draw_text(text,getucol(15),0,24,ALLEGRO_ALIGN_LEFT,"sng|dsk|sed|tempo   v^|  |octave  v^|");
-	al_draw_text(text,getucol(15),0,36,ALLEGRO_ALIGN_LEFT,"lvl|cfg|vis|order   v^|  |length  v^|");
-	al_draw_text(text,(speedlock)?(al_map_rgb(0,255,255)):(getucol(15)),96,12,ALLEGRO_ALIGN_LEFT,"speed");
-	al_draw_text(text,(tempolock)?(al_map_rgb(0,255,255)):(getucol(15)),96,24,ALLEGRO_ALIGN_LEFT,"tempo");
+	al_draw_text(text,getucol(8),0,12,ALLEGRO_ALIGN_LEFT,"pat|ins|sfx|speed   v^|  |patID   v^|");
+	al_draw_text(text,getucol(8),0,24,ALLEGRO_ALIGN_LEFT,"sng|dsk|sed|tempo   v^|  |octave  v^|");
+	al_draw_text(text,getucol(8),0,36,ALLEGRO_ALIGN_LEFT,"lvl|cfg|vis|order   v^|  |length  v^|");
+	al_draw_text(text,(speedlock)?(al_map_rgb(0,255,255)):(getucol(8)),96,12,ALLEGRO_ALIGN_LEFT,"speed");
+	al_draw_text(text,(tempolock)?(al_map_rgb(0,255,255)):(getucol(8)),96,24,ALLEGRO_ALIGN_LEFT,"tempo");
 	//al_draw_text(text,getucol(15),8,12,ALLEGRO_ALIGN_LEFT,"speed   v^|fx|fxed|pos   v^|patID   v^|diskop|PATTERN|INSTR|SONG|LEVELS|config|help|ED|f|   |  |   ");
 	al_draw_text(text,(follow)?(al_map_rgb(0,255,255)):(getucol(15)),704,12,ALLEGRO_ALIGN_LEFT,"f");
+
 	al_draw_text(text,(leftclick && PIR(32,12,56,24,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[1]*10),128+(hover[1]*10),128-(hover[1]*5)),32,12,ALLEGRO_ALIGN_LEFT,"ins");
 	al_draw_text(text,(leftclick && PIR(0,12,24,24,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[0]*10),128+(hover[0]*10),128-(hover[0]*5)),0,12,ALLEGRO_ALIGN_LEFT,"pat");
 	al_draw_text(text,(leftclick && PIR(32,24,56,36,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[2]*10),128+(hover[2]*10),128-(hover[2]*5)),32,24,ALLEGRO_ALIGN_LEFT,"dsk");
