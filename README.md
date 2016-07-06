@@ -17,23 +17,23 @@ varies on program.
 
 ## Operating system support
 
- Program        | Linux | OS X | Windows
-----------------|-------|------|---------
- 4channelbypass |  yes  | yes  |   no
- counter        |  yes  | yes  |   yes
- videotests     |  yes  | yes  |   yes
- peakmeter      |  yes  | yes  |   no
- metronome      |  yes  | yes  |   yes
- stdinaudio     |  yes  | yes  |   yes
- tiasynth       |  yes  | yes  |   no
- vicsynth       |  yes  | yes  |   no
- pads           |  yes  | yes  |   yes
- credits        |  yes  | yes  |   yes
- lightshow      |  yes  | yes  |   no
- synth1         |  yes  | yes  |   no
- thegame        |  yes  | yes  |   yes
- timertest      |  yes  | yes  |   yes
- soundtracker   |  yes  | yes  |   yes!
+ Program        | Linux | macOS | Windows
+----------------|-------|-------|---------
+ 4channelbypass |  yes  |  yes  |   no
+ counter        |  yes  |  yes  |   yes
+ videotests     |  yes  |  yes  |   yes
+ peakmeter      |  yes  |  yes  |   no
+ metronome      |  yes  |  yes  |   yes
+ stdinaudio     |  yes  |  yes  |   yes
+ tiasynth       |  yes  |  yes  |   no
+ vicsynth       |  yes  |  yes  |   no
+ pads           |  yes  |  yes  |   yes
+ credits        |  yes  |  yes  |   yes
+ lightshow      |  yes  |  yes  |   no
+ synth1         |  yes  |  yes  |   no
+ thegame        |  yes  |  yes  |   yes
+ timertest      |  yes  |  yes  |   yes
+ soundtracker   |  yes  |  yes  |   yes!
 
 ## Compiling
 
@@ -50,7 +50,7 @@ cp unifont.ttf text.ttf
 cp ../programs/thegame/alexlogo.png ..
 ```
 
-### OS X
+### macOS
 
 probably same as Linux.
 
