@@ -5697,6 +5697,7 @@ DETUNE_FACTOR_GLOBAL=1;
    if (!playermode) {
    printf("creating display\n");
    al_set_new_display_flags(ALLEGRO_WINDOWED|ALLEGRO_RESIZABLE);
+   al_set_new_window_title("soundtracker");
    display = al_create_display(SCREEN_W, SCREEN_H);
    if(!display) {
       fprintf(stderr, "failed to create display!\n");
