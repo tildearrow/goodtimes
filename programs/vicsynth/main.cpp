@@ -502,7 +502,7 @@ if (jack_connect (client, jack_port_name (output_port), ports[1])) {
 	for (int ii=0;ii<6;ii++){
 	  al_draw_ellipse(48+(ii*32*12),dh-32,10,10,al_map_rgb(255,255,255),2);
 	}*/
-	al_draw_textf(font,al_map_rgb(255,255,255),0,120,0,"timings: %f",time1-time2);
+	//al_draw_textf(font,al_map_rgb(255,255,255),0,120,0,"timings: %f",time1-time2);
 	al_flip_display();
 	time2=time1;
 	time1=al_get_time();
