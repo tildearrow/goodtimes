@@ -137,6 +137,7 @@ jack_client_t *jclient;
 jack_status_t jstatus;
 jack_nframes_t jacksr;
 #else
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 SDL_AudioDeviceID audioID;
 SDL_AudioSpec* sout;
@@ -5699,7 +5700,9 @@ DETUNE_FACTOR_GLOBAL=1;
    printf("creating display\n");
    al_set_new_display_flags(ALLEGRO_WINDOWED|ALLEGRO_RESIZABLE);
 #ifndef __APPLE__
-   al_set_new_window_title("soundtracker");
+#ifndef __MINGW32__
+al_set_new_window_title("soundtracker");
+#endif
 #endif
    display = al_create_display(SCREEN_W, SCREEN_H);
    if(!display) {

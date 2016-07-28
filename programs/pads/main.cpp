@@ -14,6 +14,7 @@
 #define SDL_INSTEAD
 #endif
 #ifdef SDL_INSTEAD
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #else
 #include <jack/jack.h>
