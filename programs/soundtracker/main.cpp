@@ -114,7 +114,7 @@ double time2=0;
 #define SOUNDS
 #define ACCURACY // for accurate chip emulation
 //#define JACK
-//#define NEWCODE
+#define NEWCODE
 
 bool ntsc=false;
 
@@ -151,8 +151,11 @@ SDL_AudioSpec* sout;
 SDL_AudioSpec* spout;
 uint32_t jacksr;
 #endif
+
+#ifdef NEWCODE
 #include "soundchip.h"
 soundchip chip;
+#endif
 
 using namespace std;
    ALLEGRO_TIMER *timer = NULL;
@@ -959,14 +962,21 @@ int nothing (jack_nframes_t nframes, void *arg){
 					  }
 				  }
 			  }
-			  //float hey;
-			  //hey=chip.NextSample();
+				  #ifdef NEWCODE
+				  float hey;
+				  chip.NextSample(&abuf[32].contents[((cycle%bufsize)*2)],&abuf[32].contents[((cycle%bufsize)*2)+1]);
+
+#else
 			  for(int updateindex=0;updateindex<LastUsedChannelMax;updateindex++) {
 				  cstep[updateindex]=cycle;
+
 				  NextSampleAccuracy(updateindex);
+
 				  abuf[32].contents[((cycle%bufsize)*2)]+=nsL[updateindex];
 				  abuf[32].contents[((cycle%bufsize)*2)+1]+=nsR[updateindex];
 			  }  
+#endif
+			  
 			  #define fff 0.33631372025095791864295318996109
 			 if (settings::muffle) {
 			  muffleb0[0]=muffleb0[0]+fff*(abuf[32].contents[((cycle%bufsize)*2)]-muffleb0[0]);
