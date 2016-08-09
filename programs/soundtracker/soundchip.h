@@ -9,8 +9,8 @@ class soundchip {
   unsigned int lfsr;
   char ns[8];
   float fns[8];
-  char nsL[8];
-  char nsR[8];
+  float nsL[8];
+  float nsR[8];
   float nslow[8];
   float nshigh[8];
   float nsband[8];

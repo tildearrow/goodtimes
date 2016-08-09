@@ -51,9 +51,11 @@ void soundchip::NextSample(float* l, float* r) {
       fns[i]=(((flags[i]>>5)?(nslow[i]):(0))+((flags[i]>>6)?(nshigh[i]):(0))+((flags[i]>>7)?(nsband[i]):(0)));
     }
     fns[i]*=(float)vol[i]/256;
+    nsL[i]=fns[i]*((127-(fmax(0,(float)pan[i])))/127);
+    nsR[i]=fns[i]*((128+(fmin(0,(float)pan[i])))/128);
   }
-  *l=((fns[0]+fns[1]+fns[2]+fns[3]+fns[4]+fns[5]+fns[6]+fns[7]));///256;
-  *r=((fns[0]+fns[1]+fns[2]+fns[3]+fns[4]+fns[5]+fns[6]+fns[7]));///256;
+  *l=((nsL[0]+nsL[1]+nsL[2]+nsL[3]+nsL[4]+nsL[5]+nsL[6]+nsL[7]));///256;
+  *r=((nsR[0]+nsR[1]+nsR[2]+nsR[3]+nsR[4]+nsR[5]+nsR[6]+nsR[7]));///256;
 }
 
 void soundchip::Init() {

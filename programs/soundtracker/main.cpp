@@ -114,7 +114,7 @@ double time2=0;
 #define SOUNDS
 #define ACCURACY // for accurate chip emulation
 //#define JACK
-#define NEWCODE
+//#define NEWCODE
 
 bool ntsc=false;
 
@@ -2618,14 +2618,17 @@ void NextTick(){
 }
 void Playback(){
 	NextTick();
+#ifdef NEWCODE
 	for (int iiii=0; iiii<8; iiii++) {
 	  chip.vol[iiii]=cvol[iiii];
+	  chip.pan[iiii]=cpan[iiii];
 	  chip.freq[iiii]=cfreq[iiii];
 	  chip.flags[iiii]=(cfmode[iiii]<<5)+cshape[iiii];
 	  chip.duty[iiii]=cduty[iiii];
 	  chip.cut[iiii]=coff[iiii];
 	  chip.res[iiii]=creso[iiii];
 	}
+#endif
 }
 void JustSkip(){
 	// skipping
@@ -5607,7 +5610,9 @@ static void *thread_audio(ALLEGRO_THREAD *thread, void *arg){
 
 int main(int argc, char **argv){
   detunefactor=1;
+  #ifdef NEWCODE
   chip.Init();
+#endif
 	printf("soundtracker (dev%d)\n",ver);
 	framecounter=0;
 	playermode=false;
