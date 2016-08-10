@@ -2697,7 +2697,7 @@ void drawpatterns(bool force) {
 	UPDATEPATTERNS=true;
 	printf("will draw! %d\n",framecounter);
 	al_destroy_bitmap(patternbitmap);
-	patternbitmap=al_create_bitmap(scrW,(((patlength[curpat]==0)?(256):(patlength[curpat]))*12)+8);
+	patternbitmap=al_create_bitmap(scrW,(((patlength[curpat]==0)?(256):(patlength[patid[curpat]]))*12)+8);
 	al_set_target_bitmap(patternbitmap);
 	al_clear_to_color(al_map_rgb(0,0,0));
 	al_draw_filled_rectangle(0,60,scrW,scrH,al_map_rgb(0,0,0));
