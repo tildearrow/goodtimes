@@ -2689,8 +2689,8 @@ ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
 }
 void drawpatterns(bool force) {
 	if (playermode) {return;}
-	//if (follow) {curpatrow=curstep;}
-	curpatrow=0;
+	if (follow) {curpatrow=curstep;}
+	//curpatrow=0;
 	// will be replaced
 	if ((!UPDATEPATTERNS || playmode==0 || playmode==1) && !force && oldpat==curpat) {oldpat=curpat;return;}
 	oldpat=curpat;
@@ -5313,9 +5313,9 @@ void drawdisp() {
 	// -(int)((((float)speed-(float)curtick)/(float)speed)*12.0f)
 	if (screen==0) {
 #ifdef SMOOTH_SCROLL
-	  al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curstep*12)+(int)(((float)curtick/(float)speed)*12.0)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curstep*12)+(int)(((float)curtick/(float)speed)*12.0)),0);
+	  al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curpatrow*12)+(int)(((float)curtick/(float)speed)*12.0)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curpatrow*12)+(int)(((float)curtick/(float)speed)*12.0)),0);
 #else
-	  al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curstep*12)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curstep*12)),0);
+	  al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curpatrow*12)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curpatrow*12)),0);
 	  #endif
 	  al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_SRC_COLOR);
 	  for (int j=0;j<8;j++){
@@ -5336,7 +5336,7 @@ void drawdisp() {
 	case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
 	case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
 	}
-	al_draw_filled_rectangle(0,255,scrW+1,266,al_map_rgba(64,64,64,128));
+	al_draw_filled_rectangle(0,(follow)?(255):(fmax(60,255+(curstep-curpatrow)*12)),scrW+1,((follow)?(266):(fmax(60,(255+(curstep-curpatrow)*12)+11))),al_map_rgba(64,64,64,128));
 	}
 	// grid markers
 	#ifdef MOUSE_GRID
