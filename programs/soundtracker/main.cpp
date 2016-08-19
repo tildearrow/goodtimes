@@ -3387,10 +3387,8 @@ int ImportIT(){
 	int LastVol[32];
 	int LastFX[32];
 	int LastFXVal[32];
-	// temporary, gonna get replaced by a better thing soon
-	// just for the sake of linux
 	ALLEGRO_FILECHOOSER* filechooser;
-	filechooser=al_create_native_file_dialog(".","this thing's gonna get replaced soon",NULL,0);
+	filechooser=al_create_native_file_dialog(".","load IT module",NULL,0);
 	al_show_native_file_dialog(display,filechooser);
 	char rfn[256];
 	if (al_get_native_file_dialog_path(filechooser,0)!=NULL){
