@@ -4509,10 +4509,10 @@ void ClickEvents() {
 			drawpatterns(true);
 		}
 		if ((mstate.z-prevZ)<0) {
-			curpatrow-=(mstate.z-prevZ);drawpatterns(true);
+			curpatrow-=(mstate.z-prevZ);curpatrow=fmin(curpatrow,(unsigned char)(patlength[patid[curpat]]-1));drawpatterns(true);
 		}
 		if ((mstate.z-prevZ)>0) {
-			curpatrow-=(mstate.z-prevZ);drawpatterns(true);
+			curpatrow-=(mstate.z-prevZ);curpatrow=fmax(curpatrow,0);drawpatterns(true);
 		}
 	}
 	// events only in instrument view
