@@ -660,7 +660,7 @@ inline void NextSampleAccuracy(int channumb){
 					 else {crseek[channumb]=pow((float)((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI)))),(float)(cduty[channumb]*2)-127)*cvol[channumb];}; break;
 			 case 3: crseek[channumb]=(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
 			 case 4: if (crstep[channumb]%maxval(1,cfreq[channumb]>>1)==0) {rngpgv[channumb]=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv[channumb]; break;
-			 case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]/maxval(cfreq[channumb],1))%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
+			 case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]*cduty[channumb]/maxval(cfreq[channumb],1))%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
 			 case 6: if (cfreq[channumb]&2) {crseek[channumb]=((2*(a800_2[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];} else
 					 if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}
 					 else {crseek[channumb]=((2*(a800_1[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}; break;
