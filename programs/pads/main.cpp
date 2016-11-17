@@ -70,6 +70,7 @@ int padmenux=0;
 int padmenuy=0;
 int padmenuid=0;
 int wheelrel=0;
+bool mbusy, abusy;
 // mp3 stuff
 /*
 mpg123_handle* mp3h;
@@ -173,6 +174,7 @@ static void efficientaudioroutine(void*  userdata,
 int efficientaudioroutine(jack_nframes_t totalsamples, void* arguments)
 #endif
 {
+  
    // ALLEGRO_EVENT aev;
    // al_wait_for_event(aeq,&aev);
    // if (aev.type==ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT){
@@ -192,6 +194,18 @@ int totalsamples=len/8;
       memset(sbufR,0,totalsamples*4);
       #endif
       // audio routine
+      if (mbusy) {
+        for (int i=0; i<padcount; i++) {
+          pads[i].playing=false;
+          pads[i].position=0;
+        }
+        #ifndef SDL_INSTEAD
+return 0;
+#else
+return;
+#endif
+      }
+      abusy=true;
       for (int ii=0;ii<totalsamples;ii++){
 	for (int j=0;j<padcount;j++){
 	  if (pads[j].playing){
@@ -234,9 +248,11 @@ int totalsamples=len/8;
       //al_set_audio_stream_gain(stream,1);
       //al_set_audio_stream_playing(stream,true);
    // }
+   abusy=false;
 #ifndef SDL_INSTEAD
 return 0;
 #endif
+
 }
 void writebank(){
     ALLEGRO_FILECHOOSER* filechooser;
@@ -468,8 +484,8 @@ void KeyboardEvents(){
 	// main code here
 	if (kbpressed[ALLEGRO_KEY_F1]) {hdp=!hdp;}
 	if (!drawtextinput) {
-	if (kbpressed[ALLEGRO_KEY_L]) {loadbank();printf("out of loadbank\n");}
-	if (kbpressed[ALLEGRO_KEY_S]) {writebank();}
+	if (kbpressed[ALLEGRO_KEY_L]) {mbusy=true; loadbank(); mbusy=false; printf("out of loadbank\n");}
+	if (kbpressed[ALLEGRO_KEY_S]) {mbusy=true; writebank(); mbusy=false;}
 	}
 }
 
@@ -482,6 +498,7 @@ void KeyboardEvents(){
 }*/
 
 int main(int argc, char **argv) {
+  mbusy=false;
     al_init();
 #ifdef SDL_INSTEAD
     SDL_Init(SDL_INIT_AUDIO);
@@ -732,6 +749,11 @@ outL = jack_port_register (client, "outL",
 	     printf("padid=%d\n",padmenuid);
 	     if (tempsample!=NULL){
 	       printf("ts not null\n");
+               while (abusy) {
+                 printf("audio is busy. waiting.\n");
+                 al_rest(0.001);
+               }
+               mbusy=true;
 	       ALLEGRO_AUDIO_DEPTH thedepth=al_get_sample_depth(tempsample);
 	       ALLEGRO_CHANNEL_CONF chanconf=al_get_sample_channels(tempsample);
 	       int tempsr=al_get_sample_frequency(tempsample);
@@ -868,6 +890,7 @@ outL = jack_port_register (client, "outL",
 	      }else {printf("sample does not exist or can't be loaded\n");}}
 	     else {printf("sample does not exist or can't be loaded\n");}
 		 } ////////
+		 mbusy=false;
 		 break;
 		    case 1: textinputid=padmenuid; textinputpos=(pads[textinputid].name[0]!=0)?(strlen(pads[textinputid].name)):(0); drawtextinput=true; break;
 		 case 2: delete[] pads[padmenuid].sample; pads[padmenuid].sample=(float*)calloc(6,sizeof(float));
