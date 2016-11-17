@@ -275,6 +275,7 @@ void writebank(){
       fseek(savefile,padcount*4,SEEK_CUR);
       unsigned long int padpointer[256];
       for (int _pad=0;_pad<padcount;_pad++){
+        unsigned char* vsai;
 	padpointer[_pad]=ftell(savefile);
 	// keycode
 	fputc(pads[_pad].keycode,savefile);
@@ -283,25 +284,29 @@ void writebank(){
 	fputc(pads[_pad].g,savefile);
 	fputc(pads[_pad].b,savefile);
 	// panning
-	fputc(*((unsigned int*)&(pads[_pad].panning))&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].panning))>>8)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].panning))>>16)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].panning))>>24)&255,savefile);
+        vsai=(unsigned char*)&pads[_pad].panning;
+	fputc(vsai[0],savefile);
+	fputc(vsai[1],savefile);
+	fputc(vsai[2],savefile);
+	fputc(vsai[3],savefile);
 	// volume
-	fputc(*((unsigned int*)&(pads[_pad].volume))&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].volume))>>8)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].volume))>>16)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].volume))>>24)&255,savefile);
+	vsai=(unsigned char*)&pads[_pad].volume;
+	fputc(vsai[0],savefile);
+	fputc(vsai[1],savefile);
+	fputc(vsai[2],savefile);
+	fputc(vsai[3],savefile);
 	// samplerate
-	fputc(*((unsigned int*)&(pads[_pad].samplerate))&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].samplerate))>>8)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].samplerate))>>16)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].samplerate))>>24)&255,savefile);
+	vsai=(unsigned char*)&pads[_pad].samplerate;
+	fputc(vsai[0],savefile);
+	fputc(vsai[1],savefile);
+	fputc(vsai[2],savefile);
+	fputc(vsai[3],savefile);
 	// pitch
-	fputc(*((unsigned int*)&(pads[_pad].pitch))&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].pitch))>>8)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].pitch))>>16)&255,savefile);
-	fputc((*((unsigned int*)&(pads[_pad].pitch))>>24)&255,savefile);
+	vsai=(unsigned char*)&pads[_pad].pitch;
+	fputc(vsai[0],savefile);
+	fputc(vsai[1],savefile);
+	fputc(vsai[2],savefile);
+	fputc(vsai[3],savefile);
 	// length
 	fputc(pads[_pad].samplesize&255,savefile);
 	fputc((pads[_pad].samplesize>>8)&255,savefile);
@@ -314,11 +319,14 @@ void writebank(){
 	// end of pad header
 	fputc(0,savefile);
 	// sample data
+        unsigned char* sai;
+          sai=(unsigned char*)pads[_pad].sample;
 	for (int spos=0;spos<pads[_pad].samplesize*2;spos++){
-	  fputc(*((unsigned int*)&(pads[_pad].sample[spos]))&255,savefile);
-	  fputc((*((unsigned int*)&(pads[_pad].sample[spos]))>>8)&255,savefile);
-	  fputc((*((unsigned int*)&(pads[_pad].sample[spos]))>>16)&255,savefile);
-	  fputc((*((unsigned int*)&(pads[_pad].sample[spos]))>>24)&255,savefile);
+	  fputc(sai[(spos*4)],savefile);
+	  fputc(sai[(spos*4)+1],savefile);
+	  fputc(sai[(spos*4)+2],savefile);
+	  fputc(sai[(spos*4)+3],savefile);
+          //printf("sai %.2x%.2x%.2x%.2x\n",sai[(spos*4)],sai[(spos*4)+1],sai[(spos*4)+2],sai[(spos*4)+3]);
 	}
       }
       // pointers to samples
@@ -362,6 +370,7 @@ void loadbank(){
       }
       printf("shall load pad\n");
       for (int _pad=0;_pad<padcount;_pad++){
+        unsigned char* vlaf;
 	printf("shall seek\n");
 	fseek(savefile,padpointer[_pad],0);
 	// keycode
@@ -372,30 +381,37 @@ void loadbank(){
 	pads[_pad].r=fgetc(savefile);
 	pads[_pad].g=fgetc(savefile);
 	pads[_pad].b=fgetc(savefile);
+        printf("%.2x %.2x %.2x %.2x\n",pads[_pad].keycode,pads[_pad].r,pads[_pad].g,pads[_pad].b);
 	// panning
 	printf("shall read panning!!!\n");
-	memset(&pads[_pad].panning,fgetc(savefile),1);
-	memset(&pads[_pad].panning+1,fgetc(savefile),1);
-	memset(&pads[_pad].panning+2,fgetc(savefile),1);
-	memset(&pads[_pad].panning+3,fgetc(savefile),1);
+        vlaf=(unsigned char*)&pads[_pad].panning;
+        vlaf[0]=fgetc(savefile);
+        vlaf[1]=fgetc(savefile);
+        vlaf[2]=fgetc(savefile);
+        vlaf[3]=fgetc(savefile);
 	// volume
 	printf("shall read volume!!!\n");
-	memset(&pads[_pad].volume,fgetc(savefile),1);
-	memset(&pads[_pad].volume+1,fgetc(savefile),1);
-	memset(&pads[_pad].volume+2,fgetc(savefile),1);
-	memset(&pads[_pad].volume+3,fgetc(savefile),1);
+        vlaf=(unsigned char*)&pads[_pad].volume;
+        vlaf[0]=fgetc(savefile);
+        vlaf[1]=fgetc(savefile);
+        vlaf[2]=fgetc(savefile);
+        vlaf[3]=fgetc(savefile);
 	// samplerate
 	printf("shall read sr!!!\n");
-	memset(&pads[_pad].samplerate,fgetc(savefile),1);
-	memset(&pads[_pad].samplerate+1,fgetc(savefile),1);
-	memset(&pads[_pad].samplerate+2,fgetc(savefile),1);
-	memset(&pads[_pad].samplerate+3,fgetc(savefile),1);
+        vlaf=(unsigned char*)&pads[_pad].samplerate;
+        vlaf[0]=fgetc(savefile);
+        vlaf[1]=fgetc(savefile);
+        vlaf[2]=fgetc(savefile);
+        vlaf[3]=fgetc(savefile);
+        //pads[_pad].samplerate=44100;
+        printf("%f\n",pads[_pad].samplerate);
 	// pitch
 	printf("shall read pitch!!!\n");
-	memset(&pads[_pad].pitch,fgetc(savefile),1);
-	memset(&pads[_pad].pitch+1,fgetc(savefile),1);
-	memset(&pads[_pad].pitch+2,fgetc(savefile),1);
-	memset(&pads[_pad].pitch+3,fgetc(savefile),1);
+        vlaf=(unsigned char*)&pads[_pad].pitch;
+        vlaf[0]=fgetc(savefile);
+        vlaf[1]=fgetc(savefile);
+        vlaf[2]=fgetc(savefile);
+        vlaf[3]=fgetc(savefile);
 	// length
 	printf("shall read lengthhhhhhh!!!\n");
 	pads[_pad].samplesize=(fgetc(savefile))+(fgetc(savefile)<<8)+(fgetc(savefile)<<16)+(fgetc(savefile)<<24);
@@ -410,14 +426,20 @@ void loadbank(){
 	printf("shall delete block!!!\n");
 	printf("pointer: %d\n",pads[_pad].sample);
 	free((float*)pads[_pad].sample);
+        pads[_pad].sample=0;
+        fseek(savefile,1,SEEK_CUR);
 	if (pads[_pad].samplesize!=0) {
 	  printf("shall create block with size %lu!!!\n",pads[_pad].samplesize*2);
-	  pads[_pad].sample=(float*)calloc(pads[_pad].samplesize*2,sizeof(float));
+	  pads[_pad].sample=new float[pads[_pad].samplesize*2];
+          
+          unsigned char* laf;
+          laf=(unsigned char*)pads[_pad].sample;
 	for (int spos=0;spos<pads[_pad].samplesize*2;spos++){
-	  memset(&pads[_pad].sample[spos],fgetc(savefile),1);
-	  memset(&pads[_pad].sample[spos]+1,fgetc(savefile),1);
-	  memset(&pads[_pad].sample[spos]+2,fgetc(savefile),1);
-	  memset(&pads[_pad].sample[spos]+3,fgetc(savefile),1);
+          laf[(spos*4)]=fgetc(savefile);
+          laf[(spos*4)+1]=fgetc(savefile);
+          laf[(spos*4)+2]=fgetc(savefile);
+          laf[(spos*4)+3]=fgetc(savefile);
+          //printf("laf %f %.2x%.2x%.2x%.2x\n",pads[_pad].sample[spos],laf[(spos*4)],laf[(spos*4)+1],laf[(spos*4)+2],laf[(spos*4)+3]);
 	}
 	} else {printf("shall create block with size 6!!!\n"); pads[_pad].sample=new float[6];}
       }
@@ -526,7 +548,7 @@ outRes=new SDL_AudioSpec;
       pads[i].r=255;
       pads[i].g=255;
       pads[i].b=255;
-      pads[i].sample=(float*)calloc(6,sizeof(float));
+      pads[i].sample=new float[6];
       printf("pointer: %d\n",pads[i].sample);
       pads[i].keycode=0;
       for (int iii=0;iii<65;iii++){
@@ -730,7 +752,7 @@ outL = jack_port_register (client, "outL",
 		      unsigned long int slength=al_get_sample_length(tempsample);
 		      pads[padmenuid].samplesize=slength;
 		      samplepointer=(float*)al_get_sample_data(tempsample);
-		      pads[padmenuid].sample=(float*)calloc((slength*2)+2,sizeof(float));
+		      pads[padmenuid].sample=new float[(slength*2)+2];
 		      for (int j=0;j<slength;j++){
 			pads[padmenuid].sample[j*2]=samplepointer[j];
 			pads[padmenuid].sample[(j*2)+1]=samplepointer[j];
@@ -743,7 +765,7 @@ outL = jack_port_register (client, "outL",
 		      unsigned long int slength=al_get_sample_length(tempsample);
 		      pads[padmenuid].samplesize=slength;
 		      samplepointer=(short*)al_get_sample_data(tempsample);
-		      pads[padmenuid].sample=(float*)calloc((slength*2)+2,sizeof(float));
+		      pads[padmenuid].sample=new float[(slength*2)+2];
 		      for (int j=0;j<slength;j++){
 			pads[padmenuid].sample[j*2]=(float)samplepointer[j]/32768.0f;
 			pads[padmenuid].sample[(j*2)+1]=(float)samplepointer[j]/32768.0f;
@@ -756,7 +778,7 @@ outL = jack_port_register (client, "outL",
 		      unsigned long int slength=al_get_sample_length(tempsample);
 		      pads[padmenuid].samplesize=slength;
 		      samplepointer=(unsigned short*)al_get_sample_data(tempsample);
-		      pads[padmenuid].sample=(float*)calloc((slength*2)+2,sizeof(float));
+		      pads[padmenuid].sample=new float[(slength*2)+2];
 		      for (int j=0;j<slength;j++){
 			pads[padmenuid].sample[j*2]=((float)samplepointer[j]/32768.0f)-1.0f;
 			pads[padmenuid].sample[(j*2)+1]=((float)samplepointer[j]/32768.0f)-1.0f;
@@ -773,7 +795,7 @@ outL = jack_port_register (client, "outL",
 		      unsigned long int slength=al_get_sample_length(tempsample);
 		      pads[padmenuid].samplesize=slength;
 		      samplepointer=(float*)al_get_sample_data(tempsample);
-		      pads[padmenuid].sample=(float*)calloc((slength*2)+2,sizeof(float));
+		      pads[padmenuid].sample=new float[(slength*2)+2];
 		      for (int j=0;j<(slength*2)+2;j++){
 			pads[padmenuid].sample[j]=samplepointer[j];
 		      }
@@ -785,7 +807,7 @@ outL = jack_port_register (client, "outL",
 		      unsigned long int slength=al_get_sample_length(tempsample);
 		      pads[padmenuid].samplesize=slength;
 		      samplepointer=(short*)al_get_sample_data(tempsample);
-		      pads[padmenuid].sample=(float*)calloc((slength*2)+2,sizeof(float));
+		      pads[padmenuid].sample=new float[(slength*2)+2];
 		      for (int j=0;j<(slength*2)+2;j++){
 			pads[padmenuid].sample[j]=(float)samplepointer[j]/32768.0f;
 		      }
@@ -797,7 +819,7 @@ outL = jack_port_register (client, "outL",
 		      unsigned long int slength=al_get_sample_length(tempsample);
 		      pads[padmenuid].samplesize=slength;
 		      samplepointer=(unsigned short*)al_get_sample_data(tempsample);
-		      pads[padmenuid].sample=(float*)calloc((slength*2)+2,sizeof(float));
+		      pads[padmenuid].sample=new float[(slength*2)+2];
 		      for (int j=0;j<(slength*2)+2;j++){
 			pads[padmenuid].sample[j]=((float)samplepointer[j]/32768.0f)-1.0f;
 		      }
