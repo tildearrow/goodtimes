@@ -870,7 +870,9 @@ outL = jack_port_register (client, "outL",
 		 } ////////
 		 break;
 		    case 1: textinputid=padmenuid; textinputpos=(pads[textinputid].name[0]!=0)?(strlen(pads[textinputid].name)):(0); drawtextinput=true; break;
-		 case 2: free((float*)pads[padmenuid].sample); pads[padmenuid].sample=(float*)calloc(6,sizeof(float)); pads[padmenuid].name[0]=0; break;
+		 case 2: free((float*)pads[padmenuid].sample); pads[padmenuid].sample=(float*)calloc(6,sizeof(float));
+                 pads[padmenuid].samplesize=0;
+                 pads[padmenuid].name[0]=0; break;
 		 default: printf("ok this should not happen!\n"); abort(); break;
 	       }
 	       }
