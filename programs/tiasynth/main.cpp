@@ -77,8 +77,8 @@ unsigned char freq[16]={0,0,0,0};
 unsigned char vol;
 unsigned char cvol[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned char shape[16]={0,0,0,0};
-//int dividers[16]={1,2050,140,1100,31000,31000,1010,1010,1010,1010,1010,1,30000/3,30000/3,340,340};
-int dividers[16]={1,5200,280,2200,62000,62000,2020,2020,2020,2020,2020,1,60000/3,60000/3,680,680};
+int dividers[16]={1,2050,140,1100,31000,31000,1010,1010,1010,1010,1010,1,30000/3,30000/3,340,340};
+//int dividers[16]={1,5200,280,2200,62000,62000,2020,2020,2020,2020,2020,1,60000/3,60000/3,680,680};
 unsigned char count[16]={0,0,0,0};
 unsigned char shift[16]={0,0,0,0};
 int nppos=0;
@@ -333,14 +333,14 @@ printf("registering ports\n");
 	/* Tell the JACK server that we are ready to roll.  Our
 	 * process() callback will start running now. */
 	printf("initing sound\n");
-chip[0]=new TIASound(22050);
-chip[1]=new TIASound(22050);
-chip[2]=new TIASound(22050);
-chip[3]=new TIASound(22050);
-chip[4]=new TIASound(22050);
-chip[5]=new TIASound(22050);
-chip[6]=new TIASound(22050);
-chip[7]=new TIASound(22050);
+chip[0]=new TIASound(44100);
+chip[1]=new TIASound(44100);
+chip[2]=new TIASound(44100);
+chip[3]=new TIASound(44100);
+chip[4]=new TIASound(44100);
+chip[5]=new TIASound(44100);
+chip[6]=new TIASound(44100);
+chip[7]=new TIASound(44100);
 for (int i=0; i<8; i++) {
 chip[i]->reset();
 chip[i]->channels(1,1);

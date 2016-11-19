@@ -71,8 +71,8 @@ int ver=1;
 // sound variables
 #define bufsize 1024
 #define buffers 2
-//#define cpuclock 1108404
-#define cpuclock 1022727
+#define cpuclock 1108404
+//#define cpuclock 1022727
 #define muffleconstant 0.1
 float muffles1, muffles2;
 unsigned char freq[4]={0,0,0,0};

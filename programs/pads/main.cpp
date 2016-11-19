@@ -497,6 +497,45 @@ void KeyboardEvents(){
   }
 }*/
 
+static void* mousethread(ALLEGRO_THREAD *thread, void *arg) {
+  ALLEGRO_EVENT_QUEUE* eee;
+  eee=al_create_event_queue();
+      al_register_event_source(eee,al_get_mouse_event_source());
+    while (1) {
+      ALLEGRO_EVENT event;
+      al_wait_for_event(eee,&event);
+    if (event.type==ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
+        if (event.mouse.button==1) {
+        for (int ii=0;ii<padcount;ii++){
+        if (PointInRect(pads[ii].x,pads[ii].y,pads[ii].x+64,pads[ii].y+64,event.mouse.x,event.mouse.y)) {
+        printf("cliiiiiiick\n");
+	     if (!drawpadmenu && !drawtextinput){
+             if (!kb[ALLEGRO_KEY_LCTRL]) {
+	     printf("checking for length in %d: %lu\n",ii,pads[ii].samplesize);
+	     if (pads[ii].samplesize>0){
+	     pads[ii].position=0;
+	     pads[ii].playing=true;
+	     if (kb[ALLEGRO_KEY_LSHIFT] || kb[ALLEGRO_KEY_RSHIFT]) {
+	       pads[ii].loop=true;
+	     } else {
+	       pads[ii].loop=false;
+	     }
+	     doredraw=true;
+	     // floating-point hack
+	     /*FILE* no=fopen("thing","wb");
+	     fputc(*((unsigned int*)&(pads[0].volume))&255,no);
+	     fputc((*((unsigned int*)&(pads[0].volume))>>8)&255,no);
+	     fputc((*((unsigned int*)&(pads[0].volume))>>16)&255,no);
+	     fputc((*((unsigned int*)&(pads[0].volume))>>24)&255,no);
+	     fclose(no);*/
+	     printf("playing pad %d\n",ii);
+	     }} else {pads[ii].newpitch=1;}}}
+        }
+        }
+      }
+    }
+}
+
 int main(int argc, char **argv) {
   mbusy=false;
     al_init();
@@ -595,7 +634,6 @@ outRes=new SDL_AudioSpec;
     al_register_event_source(eq,al_get_display_event_source(display));
     al_register_event_source(eq,al_get_timer_event_source(frame));
     al_register_event_source(eq,al_get_keyboard_event_source());
-    al_register_event_source(eq,al_get_mouse_event_source());
 
 #ifndef SDL_INSTEAD
     jack_set_process_callback (client, efficientaudioroutine, NULL);
@@ -618,10 +656,10 @@ outL = jack_port_register (client, "outL",
     
     // wait a second
     //al_rest(1);
-    //athread=al_create_thread(audiothread,NULL);
+    athread=al_create_thread(mousethread,NULL);
     // begin the game
     al_start_timer(frame);
-    //al_start_thread(athread);
+    al_start_thread(athread);
 #ifdef SDL_INSTEAD
     SDL_PauseAudioDevice(audioID,0);
 #else
@@ -886,34 +924,6 @@ outL = jack_port_register (client, "outL",
 	wheelrel=ms.z;
       } else if (event.type==ALLEGRO_EVENT_DISPLAY_CLOSE){
 	break;
-      } else if (event.type==ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
-        if (event.mouse.button==1) {
-        for (int ii=0;ii<padcount;ii++){
-        if (PointInRect(pads[ii].x,pads[ii].y,pads[ii].x+64,pads[ii].y+64,event.mouse.x,event.mouse.y)) {
-        printf("cliiiiiiick\n");
-	     if (!drawpadmenu && !drawtextinput){
-             if (!kb[ALLEGRO_KEY_LCTRL]) {
-	     printf("checking for length in %d: %lu\n",ii,pads[ii].samplesize);
-	     if (pads[ii].samplesize>0){
-	     pads[ii].position=0;
-	     pads[ii].playing=true;
-	     if (kb[ALLEGRO_KEY_LSHIFT] || kb[ALLEGRO_KEY_RSHIFT]) {
-	       pads[ii].loop=true;
-	     } else {
-	       pads[ii].loop=false;
-	     }
-	     doredraw=true;
-	     // floating-point hack
-	     /*FILE* no=fopen("thing","wb");
-	     fputc(*((unsigned int*)&(pads[0].volume))&255,no);
-	     fputc((*((unsigned int*)&(pads[0].volume))>>8)&255,no);
-	     fputc((*((unsigned int*)&(pads[0].volume))>>16)&255,no);
-	     fputc((*((unsigned int*)&(pads[0].volume))>>24)&255,no);
-	     fclose(no);*/
-	     printf("playing pad %d\n",ii);
-	     }} else {pads[ii].newpitch=1;}}}
-        }
-        }
       } else if (event.type==45 || event.type==46) {
         doredraw=true;
       }  else if(event.type == ALLEGRO_EVENT_KEY_CHAR){
