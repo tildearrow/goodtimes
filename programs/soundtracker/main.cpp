@@ -412,9 +412,9 @@ unsigned char sfxdata[32][1024]={
 								{5,6,64,127,31,0,1,6,64,112,1,6,0,96,1,5,192,80,1,5,128,64,1,5,64,48,
 								1,5,0,32,1,4,192,16,1,4,128,8,0}}; // sound effect data
 int cursfx=0; // current effect
-const bool a800[5]={true,false,true,true,false};
-const bool a800_1[5]={false,false,true,true,false};
-const bool a800_2[5]={true,false,false,false,false};
+const float a800[8]={1,0,1,1,0,0,0,0};
+const float a800_1[8]={0,0,1,1,0,0,0,0};
+const float a800_2[8]={1,0,0,0,0,0,0,0};
 
 const int sine[256]={
 				0,  2,  3,  5,  6,  8,  9, 11, 12, 14, 16, 17, 19, 20, 22, 23,
@@ -661,9 +661,9 @@ inline void NextSampleAccuracy(int channumb){
 			 case 3: crseek[channumb]=(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
 			 case 4: if (crstep[channumb]%maxval(1,cfreq[channumb]>>1)==0) {rngpgv[channumb]=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv[channumb]; break;
 			 case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]*cduty[channumb]/maxval(cfreq[channumb],1))%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
-			 case 6: if (cfreq[channumb]&2) {crseek[channumb]=((2*(a800_2[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];} else
-					 if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}
-					 else {crseek[channumb]=((2*(a800_1[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}; break;
+			 case 6: if (cfreq[channumb]&2) {crseek[channumb]=((2*(a800_2[(crstep[channumb]*5/cfreq[channumb])&7]))-1)*cvol[channumb];} else
+					 if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[(crstep[channumb]*5/cfreq[channumb])&7]))-1)*cvol[channumb];}
+					 else {crseek[channumb]=((2*(a800_1[(crstep[channumb]*5/cfreq[channumb])&7]))-1)*cvol[channumb];}; break;
 			 case 7: crseek[channumb]=((1-(((float)crstep[channumb])/(float)cfreq[channumb]))*cvol[channumb]*2); break;
 			 }
 			 //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
