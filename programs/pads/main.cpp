@@ -531,6 +531,13 @@ static void* mousethread(ALLEGRO_THREAD *thread, void *arg) {
 	     printf("playing pad %d\n",ii);
 	     }} else {pads[ii].newpitch=1;}}}
         }
+        } else if (event.mouse.button==3) {
+          for (int ii=0;ii<padcount;ii++){
+        if (PointInRect(pads[ii].x,pads[ii].y,pads[ii].x+64,pads[ii].y+64,event.mouse.x,event.mouse.y)) {
+          pads[ii].position=0;
+	     pads[ii].playing=false;
+        }
+        }
         }
       }
     }
@@ -732,10 +739,6 @@ outL = jack_port_register (client, "outL",
 	     leftclick=true;
 	     }
 	   } else {leftclick=false;}
-	   if (ms.buttons&4){
-	     pads[ii].position=0;
-	     pads[ii].playing=false;
-	   }
 	  }
 	  if (ms.buttons&1){
 	     if (!leftclick1){
