@@ -5735,6 +5735,7 @@ al_set_new_window_title("soundtracker");
 #endif
 #endif
    display = al_create_display(SCREEN_W, SCREEN_H);
+   al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
    if(!display) {
       fprintf(stderr, "failed to create display!\n");
       al_destroy_timer(timer);
