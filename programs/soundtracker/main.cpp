@@ -114,7 +114,7 @@ double time2=0;
 #define SOUNDS
 #define ACCURACY // for accurate chip emulation
 //#define JACK
-//#define NEWCODE
+#define NEWCODE
 //#define VBLANK
 
 bool ntsc=false;

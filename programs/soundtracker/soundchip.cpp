@@ -24,18 +24,17 @@ void soundchip::NextSample(float* l, float* r) {
   for (int i=0; i<8; i++) {
     if (vol[i]==0) {fns[i]=0; continue;}
     if ((flags[i]&7)==4) {
-      if (cycle[i]==0) {
-      bool feed=((lfsr) ^ (lfsr >> 4) ^ (lfsr >> 7) ^ (lfsr >> 5) ) & 1;
+      if (cycle[i]==0 || cycle[i]==((freq[i]*(duty[i]+1))/128)) {
+      bool feed=((lfsr) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
       ns[i]=(lfsr&1)+127;
       lfsr=(lfsr>>1|feed<<31);
       } else {
-	ns[i]=(lfsr&1)+127;
+        ns[i]=(lfsr&1)+127;
       }
-      
     } else if ((flags[i]&7)==0) {
-      ns[i]=((duty[i]+1)>(int)(((float)(cycle[i])/(float)freq[i])*128))+127;
+      ns[i]=(cycle[i]>((freq[i]*(duty[i]+1))/128))*128;
     } else {
-      ns[i]=(short)ShapeFunctions[(flags[i]&7)][(int)(((float)(cycle[i])/(float)freq[i])*256)];
+      ns[i]=(short)ShapeFunctions[(flags[i]&7)][(cycle[i]*256)/freq[i]];
     }
     
     if (cycle[i]++>freq[i]) {
