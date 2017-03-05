@@ -3129,8 +3129,8 @@ void drawconfig(){
 	al_draw_text(text,al_map_rgb(255,255,255),0,72,ALLEGRO_ALIGN_LEFT, "Color Palette          |Load|Save| Audio Settings");
 	al_draw_text(text,al_map_rgb(255,255,255),0,84,ALLEGRO_ALIGN_LEFT, "                                 |");
 	al_draw_text(text,al_map_rgb(255,255,255),0,96,ALLEGRO_ALIGN_LEFT, "Note              |          C-4 | simulate distortion");
-	al_draw_text(text,al_map_rgb(255,255,255),0,108,ALLEGRO_ALIGN_LEFT,"Instrument        |          01  | audio threading");
-	al_draw_text(text,al_map_rgb(255,255,255),0,120,ALLEGRO_ALIGN_LEFT,"Volume            |          v20 | buffer size");
+	al_draw_text(text,al_map_rgb(255,255,255),0,108,ALLEGRO_ALIGN_LEFT,"Instrument        |          01  | ");
+	al_draw_text(text,al_map_rgb(255,255,255),0,120,ALLEGRO_ALIGN_LEFT,"Volume            |          v20 | ");
 	al_draw_text(text,al_map_rgb(255,255,255),0,132,ALLEGRO_ALIGN_LEFT,"Effect (tempo)    |          A06 | cubic spline PCM");
 	al_draw_text(text,al_map_rgb(255,255,255),0,144,ALLEGRO_ALIGN_LEFT,"Effect (song)     |          B02 |---------------------");
 	al_draw_text(text,al_map_rgb(255,255,255),0,156,ALLEGRO_ALIGN_LEFT,"Effect (volume)   |          D06 | Importer Settings");
