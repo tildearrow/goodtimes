@@ -24,7 +24,7 @@ void soundchip::NextSample(float* l, float* r) {
   for (int i=0; i<8; i++) {
     if (vol[i]==0) {fns[i]=0; continue;}
     if ((flags[i]&7)==4) {
-      if (cycle[i]==0 || cycle[i]==((freq[i]*(duty[i]+1))/128)) {
+      if (cycle[i]==0 || cycle[i]==((freq[i]*(duty[i]+1))>>7)) {
       bool feed=((lfsr) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
       ns[i]=(lfsr&1)+127;
       lfsr=(lfsr>>1|feed<<31);
@@ -32,9 +32,9 @@ void soundchip::NextSample(float* l, float* r) {
         ns[i]=(lfsr&1)+127;
       }
     } else if ((flags[i]&7)==0) {
-      ns[i]=(cycle[i]>((freq[i]*(duty[i]+1))/128))*128;
+      ns[i]=(cycle[i]>((freq[i]*(duty[i]+1))>>7))*128;
     } else {
-      ns[i]=(short)ShapeFunctions[(flags[i]&7)][(cycle[i]*256)/freq[i]];
+      ns[i]=(short)ShapeFunctions[(flags[i]&7)][(cycle[i]<<8)/freq[i]];
     }
     
     if (cycle[i]++>freq[i]) {
@@ -64,8 +64,8 @@ void soundchip::Init() {
   }
   ShapeFunctions[0]=SCsaw;
   ShapeFunctions[1]=SCsaw;
-  ShapeFunctions[2]=SCsaw;
-  ShapeFunctions[3]=SCsaw;
+  ShapeFunctions[2]=SCsine;
+  ShapeFunctions[3]=SCtriangle;
   ShapeFunctions[4]=SCsaw;
   ShapeFunctions[5]=SCsaw;
   ShapeFunctions[6]=SCsaw;
@@ -81,8 +81,8 @@ void soundchip::Init() {
   ShapeFunctions[7]=&Pulse;*/
   for (int i=0; i<256; i++) {
     SCsaw[i]=i;
-    SCsine[i]=i;
-    SCtriangle[i]=i;
+    SCsine[i]=sin((float)i/128*pi)*127;
+    SCtriangle[i]=Triangle(0,(float)i/256)*127;
   }
 }
 
