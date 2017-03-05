@@ -5735,7 +5735,7 @@ al_set_new_window_title("soundtracker");
 #endif
 #endif
    display = al_create_display(SCREEN_W, SCREEN_H);
-   al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
+   //al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
    if(!display) {
       fprintf(stderr, "failed to create display!\n");
       al_destroy_timer(timer);
@@ -6140,6 +6140,7 @@ al_set_new_window_title("soundtracker");
 		 al_draw_textf(text,al_map_rgb(255,0,0),scrW,116,ALLEGRO_ALIGN_RIGHT,"display: %.2fms, %.0f (max) FPS, %3.0f%% load",(rt4-rt3)*1000,(1/FPS)/(rt4-rt3)*FPS,(rt4-rt3)/(1/FPS)*100);
 		 al_draw_textf(text,al_map_rgb(255,0,0),scrW,128,ALLEGRO_ALIGN_RIGHT,"total frame time: %.2fms",(time1-time2)*1000);
 		 }
+		 al_wait_for_vsync();
 		 al_flip_display();
 	   time2=time1;
 	   time1=al_get_time();
