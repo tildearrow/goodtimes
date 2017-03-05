@@ -115,6 +115,7 @@ double time2=0;
 #define ACCURACY // for accurate chip emulation
 //#define JACK
 //#define NEWCODE
+//#define VBLANK
 
 bool ntsc=false;
 
@@ -164,6 +165,7 @@ char songdf=0;
 double FPS=50;
 int tempo;
 
+int doframe;
 const int SCREEN_W=800;
 const int SCREEN_H=450;
 const int BOUNCER_SIZE = 16;
@@ -271,6 +273,7 @@ bool muted[32]={};
 bool leftpress=false;
 bool rightpress=false;
 bool hexmode=false;
+bool quit=false;
 // channel memory stuff
 unsigned char Msmp[32]={};
 int Mvol[32]={};
@@ -891,8 +894,14 @@ int nothing (jack_nframes_t nframes, void *arg){
 		  memset(abuf[32].contents,0,totalrender*8);
 		  for(cycle=0;cycle<(int)totalrender;cycle++){
 			  for(cycle1=0;cycle1<20;cycle1++){
-				  ASC::currentclock--;
-				  if(ASC::currentclock<1) {
+#ifndef VBLANK	  
+                            ASC::currentclock--;
+                            if(ASC::currentclock<1) {
+#else
+                             if(doframe) {
+#endif
+				  
+                                    doframe=0;
 					if (ntsc) {
 					#ifdef FILM
 					  raster1=(((double)cycle*20)+(double)cycle1)/190.4;
@@ -955,10 +964,10 @@ int nothing (jack_nframes_t nframes, void *arg){
 					  #ifdef FILM
 					  raster2=fmod(al_get_time()*50,1)*525;
 					  #else
-					  raster2=((((double)cycle*20)+(double)cycle1)/190.47619047619047619047619047619)+((al_get_time()-partialtime)*525000);
+					  raster2=((((double)cycle*20)+(double)cycle1)/190.47619047619047619047619047619)+((al_get_time()-partialtime)*525);
 					  #endif
 					  } else {
-					  raster2=((((double)cycle*20)+(double)cycle1)/190.4)+((al_get_time()-partialtime)*625000);
+					  raster2=((((double)cycle*20)+(double)cycle1)/190.4)+((al_get_time()-partialtime)*625);
 					  }
 				  }
 			  }
@@ -3542,6 +3551,7 @@ int ImportMOD(){
 	printf("\nplease write filename? ");
 	char rfn[256];
 	//gets(rfn);
+        strcpy(rfn,"/home/user0/Downloads/8088mph_music/test1.mod");
 	mod=al_fopen(rfn,"rb");
 	if (mod!=NULL){ // read the file
 	printf("loading MOD file, ");
@@ -3556,7 +3566,7 @@ int ImportMOD(){
 		patlength[nonsense]=64;
 		//instrument[nonsense][0x2a]=48;
 	}
-	for (int ii=0;ii<31;ii++) {
+	/*for (int ii=0;ii<31;ii++) {
 		for (int jj=0;jj<22;jj++) {
 			instrument[ii+1][jj]=memblock[0x14+(ii*30)+jj];
 		}
@@ -3586,8 +3596,8 @@ int ImportMOD(){
 		if ((((((memblock[0x14+(ii*30)+22]<<8)+memblock[0x14+(ii*30)+23])*2)>>4)%8)>3) {CurrentSampleSeek+=256;}
 		instrument[ii+1][0x33]=(((memblock[0x14+(ii*30)+23]<<8)+memblock[0x14+(ii*30)+22])*2)>>8;
 		instrument[ii+1][0x32]=(((memblock[0x14+(ii*30)+23]<<8)+memblock[0x14+(ii*30)+22])*2)%256;*/
-		}
-	}
+		/*}
+	}*/
 	if((memblock[1080]=='M' && memblock[1081]=='.' && memblock[1082]=='K' && memblock[1083]=='.')||
 	   (memblock[1081]=='C' && memblock[1082]=='H' && memblock[1083]=='N')||
 	   (memblock[1082]=='C' && memblock[1083]=='H')){
@@ -5947,7 +5957,7 @@ al_set_new_window_title("soundtracker");
    while(1)
    {
       ALLEGRO_EVENT ev;
-      al_wait_for_event(event_queue, &ev);
+      while (al_get_next_event(event_queue, &ev)) {
 
       if(ev.type == ALLEGRO_EVENT_TIMER) {
 		 //al_set_timer_speed(timer,1.0/FPS);
@@ -5968,6 +5978,7 @@ al_set_new_window_title("soundtracker");
       else if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
 		 printf("close button pressed\n");
 		 al_stop_timer(timer);
+                 quit=true;
          break;
       } else if(ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
 		  al_acknowledge_resize(display);
@@ -6005,7 +6016,9 @@ al_set_new_window_title("soundtracker");
 			  RunTestNote(ev.keyboard.keycode);
 		  }
 	  }
-      if(redraw && al_is_event_queue_empty(event_queue)) {
+      }
+      if(true/*redraw && al_is_event_queue_empty(event_queue)*/) {
+        doframe=1;
 	rt3=al_get_time();
 		  framecounter++;
 		  #ifndef AUDIO_THREADING
@@ -6128,6 +6141,9 @@ al_set_new_window_title("soundtracker");
 	   time1=al_get_time();
 	}}
 		 
+      }
+      if (quit) {
+        break;
       }
    }
    #ifdef AUDIO_THREADING
