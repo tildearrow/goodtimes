@@ -519,9 +519,9 @@ ALLEGRO_FILE *audiodump;
 #endif
 
 // init filters
-float low[32];
-float high[32];
-float band[32];
+float low[33];
+float high[33];
+float band[33];
 
 float nsL[33];
 float nsR[33];
