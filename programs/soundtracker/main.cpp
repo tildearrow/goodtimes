@@ -1011,14 +1011,14 @@ int nothing (jack_nframes_t nframes, void *arg){
 #else
 	iii*2
 #endif
-	]=interpolatee(abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/6;
+	]=interpolatee(abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/3;
 	outr[
 #ifdef JACK
 	iii
 #else
 	(iii*2)+1
 #endif 
-	]=interpolatee(abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/6;
+	]=interpolatee(abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/3;
 #else
 	outl[
 #ifdef JACK
@@ -1026,14 +1026,14 @@ int nothing (jack_nframes_t nframes, void *arg){
 #else
 	iii*2
 #endif  
-	]=abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2]/6;
+	]=abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2]/3;
 	outr[
 #ifdef JACK
 	iii
 #else
 	(iii*2)+1
 #endif   
-	]=abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2]/6;
+	]=abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2]/3;
 #endif
 	}
 	rt2=al_get_time();
@@ -5954,6 +5954,9 @@ al_set_new_window_title("soundtracker");
    audiodump=al_fopen("audiodump.raw","wb");
    #endif
    // MAIN LOOP
+   if (playermode) {
+     al_rest(3600);
+   } else {
    while(1)
    {
       ALLEGRO_EVENT ev;
@@ -6145,6 +6148,7 @@ al_set_new_window_title("soundtracker");
       if (quit) {
         break;
       }
+   }
    }
    #ifdef AUDIO_THREADING
    al_set_thread_should_stop(audiothread);
