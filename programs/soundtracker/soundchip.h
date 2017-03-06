@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 const float pi=3.1415926535;
 
@@ -8,13 +10,14 @@ class soundchip {
   unsigned short cycle[8];
   unsigned int lfsr;
   char ns[8];
+  bool randmem[8][128];
+  char randpos[8];
   float fns[8];
   float nsL[8];
   float nsR[8];
   float nslow[8];
   float nshigh[8];
   float nsband[8];
-  
   static char Saw(int theduty, float value);
   static char Pulse(int theduty, float value);
   static char Sine(int theduty, float value);
@@ -22,6 +25,8 @@ class soundchip {
   static char Noise(int theduty, float value);
   //char (*ShapeFunctions[8])(int theduty, float value);
   char* ShapeFunctions[8];
+  unsigned short oldfreq[8];
+  unsigned short oldflags[8];
   public:
     unsigned short freq[8];
     unsigned short resetfreq[8];

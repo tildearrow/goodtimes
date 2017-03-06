@@ -23,7 +23,11 @@ char soundchip::Noise(int theduty, float value) {
 void soundchip::NextSample(float* l, float* r) {
   for (int i=0; i<8; i++) {
     if (vol[i]==0) {fns[i]=0; continue;}
-    if ((flags[i]&7)==4) {
+    if ((flags[i]&7)==6) {
+      ns[i]=randmem[i][(cycle[i]*5)/freq[i]]*127;
+    } else if ((flags[i]&7)==5) {
+      ns[i]=randmem[i][(cycle[i]*duty[i])/freq[i]]*127;
+    } else if ((flags[i]&7)==4) {
       if (cycle[i]==0 || cycle[i]==((freq[i]*(duty[i]+1))>>7)) {
       bool feed=((lfsr) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
       ns[i]=(lfsr&1)*127;
@@ -42,16 +46,26 @@ void soundchip::NextSample(float* l, float* r) {
     }
     //ns[i]=(char)((short)ns[i]*(short)vol[i]/256);
     fns[i]=(float)ns[i]/128;
-    if ((flags[i]>>5!=0)) {
+    if ((((flags[i]>>5)&7)!=0)) {
       float f=2*sin(3.141592653589*(((float)cut[i])/10.0)/297500);
       nslow[i]=nslow[i]+(f)*nsband[i];
       nshigh[i]=fns[i]-nslow[i]-(1.0-(float)res[i]/256.0)*nsband[i];
       nsband[i]=(f)*nshigh[i]+nsband[i];
-      fns[i]=(((flags[i]>>5)?(nslow[i]):(0))+((flags[i]>>6)?(nshigh[i]):(0))+((flags[i]>>7)?(nsband[i]):(0)));
+      fns[i]=(((flags[i]&32)?(nslow[i]):(0))+((flags[i]&64)?(nshigh[i]):(0))+((flags[i]&128)?(nsband[i]):(0)));
     }
     fns[i]*=(float)vol[i]/256;
     nsL[i]=fns[i]*((127-(fmax(0,(float)pan[i])))/127);
     nsR[i]=fns[i]*((128+(fmin(0,(float)pan[i])))/128);
+    if ((freq[i]>>8)!=(oldfreq[i]>>8) || oldflags[i]!=flags[i]) {
+      bool feed=((lfsr) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
+      for (int j=0; j<7; j++) {
+        randmem[i][(unsigned char)(randpos[i]++)]=(lfsr&(1<<j));
+        randpos[i]%=duty[i]+1;
+      }
+      lfsr=(lfsr>>1|feed<<31);
+    }
+    oldfreq[i]=freq[i];
+    oldflags[i]=flags[i];
   }
   *l=((nsL[0]+nsL[1]+nsL[2]+nsL[3]+nsL[4]+nsL[5]+nsL[6]+nsL[7]));///256;
   *r=((nsR[0]+nsR[1]+nsR[2]+nsR[3]+nsR[4]+nsR[5]+nsR[6]+nsR[7]));///256;
@@ -70,19 +84,13 @@ void soundchip::Init() {
   ShapeFunctions[5]=SCsaw;
   ShapeFunctions[6]=SCsaw;
   ShapeFunctions[7]=SCsaw;
-  /*
-  ShapeFunctions[0]=&Pulse;
-  ShapeFunctions[1]=&Saw;
-  ShapeFunctions[2]=&Sine;
-  ShapeFunctions[3]=&Triangle;
-  ShapeFunctions[4]=&Noise;
-  ShapeFunctions[5]=&Pulse;
-  ShapeFunctions[6]=&Pulse;
-  ShapeFunctions[7]=&Pulse;*/
   for (int i=0; i<256; i++) {
     SCsaw[i]=i;
     SCsine[i]=sin((float)i/128*pi)*127;
     SCtriangle[i]=Triangle(0,(float)i/256)*127;
+  }
+  for (int i=0; i<1024; i++) {
+    randmem[i>>7][i&127]=rand();
   }
 }
 
