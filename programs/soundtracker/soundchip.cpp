@@ -26,13 +26,13 @@ void soundchip::NextSample(float* l, float* r) {
     if ((flags[i]&7)==4) {
       if (cycle[i]==0 || cycle[i]==((freq[i]*(duty[i]+1))>>7)) {
       bool feed=((lfsr) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
-      ns[i]=(lfsr&1)+127;
+      ns[i]=(lfsr&1)*127;
       lfsr=(lfsr>>1|feed<<31);
       } else {
-        ns[i]=(lfsr&1)+127;
+        ns[i]=(lfsr&1)*127;
       }
     } else if ((flags[i]&7)==0) {
-      ns[i]=(cycle[i]>((freq[i]*(duty[i]+1))>>7))*128;
+      ns[i]=(cycle[i]>((freq[i]*(duty[i]+1))>>7))*127;
     } else {
       ns[i]=(short)ShapeFunctions[(flags[i]&7)][(cycle[i]<<8)/freq[i]];
     }
