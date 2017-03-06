@@ -4,9 +4,9 @@
 const float pi=3.1415926535;
 
 class soundchip {
-  char SCsaw[256];
-  char SCsine[256];
-  char SCtriangle[256];
+  char SCsaw[257];
+  char SCsine[257];
+  char SCtriangle[257];
   unsigned short cycle[8];
   unsigned int lfsr;
   char ns[8];

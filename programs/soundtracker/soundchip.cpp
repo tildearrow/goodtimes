@@ -87,7 +87,7 @@ void soundchip::Init() {
   for (int i=0; i<256; i++) {
     SCsaw[i]=i;
     SCsine[i]=sin((float)i/128*pi)*127;
-    SCtriangle[i]=Triangle(0,(float)i/256)*127;
+    SCtriangle[i]=(i>127)?(255-i):(i);
   }
   for (int i=0; i<1024; i++) {
     randmem[i>>7][i&127]=rand();
