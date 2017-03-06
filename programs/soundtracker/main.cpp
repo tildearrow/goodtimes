@@ -3537,7 +3537,7 @@ int ImportIT(){
 	else {printf("error while importing file! file doesn't exist\n"); return 1;}
 	return 0;
 }
-int ImportMOD(){
+int ImportMOD(const char* rfn){
 	// import MOD file
 	// check out http://www.fileformat.info/format/mod/corion.htm for specs in MOD format
     int64_t size;
@@ -3549,9 +3549,6 @@ int ImportMOD(){
 	int chans;
 	int CurrentSampleSeek=0;
 	printf("\nplease write filename? ");
-	char rfn[256];
-	//gets(rfn);
-        strcpy(rfn,"/home/user0/Downloads/8088mph_music/test1.mod");
 	mod=al_fopen(rfn,"rb");
 	if (mod!=NULL){ // read the file
 	printf("loading MOD file, ");
@@ -4667,7 +4664,7 @@ void ClickEvents() {
 				//gets(rfn);
 				int success=LoadFile(rfn);}
 			if (PIR(208,60,240,72,mstate.x,mstate.y)) {int success=SaveFile();}
-			if (PIR(248,60,320,72,mstate.x,mstate.y)) {int success=ImportMOD();}
+			if (PIR(248,60,320,72,mstate.x,mstate.y)) {int success=ImportMOD(filenames[selectedfileindex-1].name.c_str());}
 			if (PIR(328,60,400,72,mstate.x,mstate.y)) {int success=ImportS3M();}
 			if (PIR(408,60,472,72,mstate.x,mstate.y)) {int success=ImportIT();}
 			if (PIR(552,60,632,72,mstate.x,mstate.y)) {
@@ -4694,7 +4691,13 @@ void ClickEvents() {
 				if (PIR(0,120+(ii*12)-(diskopscrollpos*12),790,131+(ii*12)-(diskopscrollpos*12),mstate.x,mstate.y)) {
 					if (selectedfileindex==ii+1){
 					if(filenames[ii].isdir) {strcpy(curdir,filenames[ii].name.c_str());print_entry(curdir);diskopscrollpos=0;selectedfileindex=-1;}
-					else {int success=LoadFile(filenames[ii].name.c_str());}} else {
+					else {
+                                          int success;
+                                          if (strstr(filenames[ii].name.c_str(),".mod")==NULL) {success=LoadFile(filenames[ii].name.c_str());} else {
+                                            ImportMOD(filenames[ii].name.c_str());
+                                          }
+                                          
+                                        }} else {
 						selectedfileindex=ii+1;}
 				}
 			}
