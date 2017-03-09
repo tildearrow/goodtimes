@@ -3565,7 +3565,7 @@ int ImportMOD(const char* rfn){
 		patlength[nonsense]=64;
 		//instrument[nonsense][0x2a]=48;
 	}
-	/*for (int ii=0;ii<31;ii++) {
+	for (int ii=0;ii<31;ii++) {
 		for (int jj=0;jj<22;jj++) {
 			instrument[ii+1][jj]=memblock[0x14+(ii*30)+jj];
 		}
@@ -3588,15 +3588,16 @@ int ImportMOD(const char* rfn){
 			CurrentSampleSeek+=tempsize;
 			instrument[ii+1][0x2b]=12;
 			instrument[ii+1][0x2e]|=8;
-		/*instrument[ii+1][0x37]=CurrentSampleSeek>>8;
+                        /*
+		instrument[ii+1][0x37]=CurrentSampleSeek>>8;
 		instrument[ii+1][0x38]=CurrentSampleSeek%256;
 		instrument[ii+1][0x2e]|=(CurrentSampleSeek>>16)<<7;
 		CurrentSampleSeek+=(((memblock[0x14+(ii*30)+22]<<8)+memblock[0x14+(ii*30)+23])*2);
 		if ((((((memblock[0x14+(ii*30)+22]<<8)+memblock[0x14+(ii*30)+23])*2)>>4)%8)>3) {CurrentSampleSeek+=256;}
 		instrument[ii+1][0x33]=(((memblock[0x14+(ii*30)+23]<<8)+memblock[0x14+(ii*30)+22])*2)>>8;
 		instrument[ii+1][0x32]=(((memblock[0x14+(ii*30)+23]<<8)+memblock[0x14+(ii*30)+22])*2)%256;*/
-		/*}
-	}*/
+		}
+	}
 	if((memblock[1080]=='M' && memblock[1081]=='.' && memblock[1082]=='K' && memblock[1083]=='.')||
 	   (memblock[1081]=='C' && memblock[1082]=='H' && memblock[1083]=='N')||
 	   (memblock[1082]=='C' && memblock[1083]=='H')){
