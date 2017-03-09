@@ -49,6 +49,11 @@ void soundchip::NextSample(float* l, float* r) {
         pcmdec[i]&=0x7fff;
         if (pcmpos[i]<pcmend[i]) {
           pcmpos[i]++;
+          if (pcmpos[i]==pcmend[i]) {
+            if (pcmmult[i]&128) {
+              pcmpos[i]=pcmreset[i];
+            }
+          }
         } else if (pcmmult[i]&128) {
           pcmpos[i]=pcmreset[i];
         }
