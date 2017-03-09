@@ -59,7 +59,7 @@ void soundchip::NextSample(float* l, float* r) {
         }
       }
     } else {
-      if (cycle[i]++>freq[i]) {
+      if (cycle[i]++>=freq[i]) {
         cycle[i]=0;
       }
     }
