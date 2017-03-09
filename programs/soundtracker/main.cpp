@@ -1951,14 +1951,15 @@ void NextRow(){
 			// is it a pcm instrument? (pcm check)
 			if (instrument[Mins[loop]][0x2e]&8){
 				// set channel mode to PCM
-				cmode[loop]=1;
-				cloop[loop]=instrument[Mins[loop]][0x21]&128;
-				cpcmstart[loop]=(instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9))+(instrument[Mins[loop]][0x3a]+(instrument[Mins[loop]][0x39]<<8));
+				chip.flags[loop]|=8;
+                                printf("it is\n");
+                                chip.pcmmult[loop]=127;
+				chip.pcmmult[loop]|=(instrument[Mins[loop]][0x21]&128);
+				chip.pcmreset[loop]=(instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9))+(instrument[Mins[loop]][0x3a]+(instrument[Mins[loop]][0x39]<<8));
 				// set respective PCM pointers
-				cpcmpos[loop]=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9);
-				cbound[loop]=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9)+(instrument[Mins[loop]][0x33]+(instrument[Mins[loop]][0x32]<<8));
-				cpcmmult[loop]=127;
-			} else {cmode[loop]=0;}
+				chip.pcmpos[loop]=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9);
+				chip.pcmend[loop]=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9)+(instrument[Mins[loop]][0x33]+(instrument[Mins[loop]][0x32]<<8));
+			} else {chip.flags[loop]&=0xf7;}
 			// is ringmod on? (ringmod check)
 			if (instrument[Mins[loop]][0x2e]&16){
 				// set ring modulation to on
@@ -2314,12 +2315,12 @@ void NextTick(){
 			// is it a pcm instrument? (pcm check)
 			if (instrument[Mins[loop2]][0x2e]&8){
 				// set channel mode to PCM
-				cmode[loop2]=1;
+				chip.flags[loop2]|=8;
 				// set respective PCM pointers
-				cpcmpos[loop2]=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9);
-				cbound[loop2]=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9)+(instrument[Mins[loop2]][0x33]+(instrument[Mins[loop2]][0x32]<<8));
-				cpcmmult[loop2]=127;
-			} else {cmode[loop2]=0;}
+				chip.pcmpos[loop2]=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9);
+				chip.pcmend[loop2]=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9)+(instrument[Mins[loop2]][0x33]+(instrument[Mins[loop2]][0x32]<<8));
+				chip.pcmmult[loop2]=127;
+			} else {chip.flags[loop2]&=0xf7;}
 			// is oscreset on? (osc reset check)
 			if (instrument[Mins[loop2]][0x3e]&1) {crstep[loop2]=0;} // osc reset
 			// volume (if turned on and effect isn't S77, or effect is S78)
@@ -2632,7 +2633,8 @@ void Playback(){
 	  chip.vol[iiii]=cvol[iiii];
 	  chip.pan[iiii]=cpan[iiii];
 	  chip.freq[iiii]=cfreq[iiii];
-	  chip.flags[iiii]=(cfmode[iiii]<<5)+cshape[iiii];
+          chip.flags[iiii]&=8;
+	  chip.flags[iiii]|=(cfmode[iiii]<<5)+cshape[iiii];
 	  chip.duty[iiii]=cduty[iiii];
 	  chip.cut[iiii]=coff[iiii];
 	  chip.res[iiii]=creso[iiii];
@@ -3276,7 +3278,7 @@ void drawpcmeditor(){
 	al_draw_line((int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)-128,
 		(int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)+128,getconfigcol(colSEL2),1);
 	for (float ii=0;ii<(scrW*pow(2.0f,-pcmeditscale));ii+=pow(2.0f,-pcmeditscale)){
-		al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+wavememory[(int)ii+pcmeditoffset],(pcmeditenable)?getconfigcol(colSEL2):getconfigcol(colDEFA));
+		al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+chip.pcm[(int)ii+pcmeditoffset],(pcmeditenable)?getconfigcol(colSEL2):getconfigcol(colDEFA));
 	}
 	for (int ii=0;ii<32;ii++){
 		if (cmode[ii]==1 && cvol[ii]>0) {
@@ -3629,7 +3631,7 @@ int ImportMOD(const char* rfn){
 		if (settings::samples) {
 		printf("putting samples to PCM memory if possible\n");
 		printf("%d bytes",size-1084-(patterns*chans*64*4));
-		memcpy(wavememory,memblock+1084+((patterns+1)*chans*64*4),minval(131072,size-1084-((patterns+1)*chans*64*4)));
+		memcpy(chip.pcm,memblock+1084+((patterns+1)*chans*64*4),minval(131072,size-1084-((patterns+1)*chans*64*4)));
 		}
 		printf("---PATTERNS---\n");
 		for (int importid=0;importid<patterns+1;importid++){
@@ -4039,11 +4041,11 @@ int SaveFile(){
 		bool IS_PCM_DATA_BLANK=true;
 		int maxpcmwrite=0;
 		for (int ii=0;ii<131072;ii++){
-			if (wavememory[ii]!=0) {IS_PCM_DATA_BLANK=false; maxpcmwrite=ii;}
+			if (chip.pcm[ii]!=0) {IS_PCM_DATA_BLANK=false; maxpcmwrite=ii;}
 		}
 		if (!IS_PCM_DATA_BLANK){
 			al_fwrite32le(sfile,maxpcmwrite);
-			al_fwrite(sfile,wavememory,maxpcmwrite);
+			al_fwrite(sfile,chip.pcm,maxpcmwrite);
 		} else {pcmpointer=0;}
 		// write pointers
 		printf("writing offsets...\n");
@@ -4147,12 +4149,12 @@ int LoadFile(const char* filename){
 		al_fgets(sfile,comments,65536);
 		}
 		al_fseek(sfile,0x36,ALLEGRO_SEEK_SET); // seek to 0x36
-		memset(wavememory,0,131072); // clean PCM memory
+		memset(chip.pcm,0,131072); // clean PCM memory
 		pcmpointer=al_fread32le(sfile);
 		if (pcmpointer!=0) {
 			al_fseek(sfile,pcmpointer,ALLEGRO_SEEK_SET);
 			maxpcmread=al_fread32le(sfile);
-			al_fread(sfile,wavememory,maxpcmread);
+			al_fread(sfile,chip.pcm,maxpcmread);
 		}
 		al_fseek(sfile,0x180,ALLEGRO_SEEK_SET);
 		for (int ii=0;ii<256;ii++) {
@@ -4329,7 +4331,7 @@ void LoadSample(const char* filename,int position){
 	samplelength=al_get_sample_length(tempsample);
 	printf("%x bytes",samplelength);
 	for (int ii=0;ii<samplelength;ii++){
-		wavememory[minval(ii+position,131071)]=thepointer[ii]>>8;
+		chip.pcm[minval(ii+position,131071)]=thepointer[ii]>>8;
 	}
 	al_destroy_sample(tempsample);
 }
@@ -4342,7 +4344,7 @@ void LoadRawSample(const char* filename,int position){
 	if (samplelength<(131072-position)){
 		//for (int ii=0;ii<samplelength;ii++){
 			al_fseek(sfile,position,ALLEGRO_SEEK_SET);
-			al_fread(sfile,wavememory+position,samplelength);
+			al_fread(sfile,chip.pcm+position,samplelength);
 		//}
 	} else {
 		printf(" don't fit!");
@@ -4827,7 +4829,7 @@ void ClickEvents() {
 	// events only in PCM editor
 	if (screen==11) {
 		if (leftclick) {
-			if (pcmeditenable) wavememory[(int)(((float)mstate.x)*pow(2.0f,-pcmeditscale))+pcmeditoffset]=minval(127,maxval(-127,mstate.y-(scrH/2)));
+			if (pcmeditenable) chip.pcm[(int)(((float)mstate.x)*pow(2.0f,-pcmeditscale))+pcmeditoffset]=minval(127,maxval(-127,mstate.y-(scrH/2)));
 		}
 	}
 	prevX=mstate.x;

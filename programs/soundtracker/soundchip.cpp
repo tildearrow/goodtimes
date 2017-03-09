@@ -23,7 +23,9 @@ char soundchip::Noise(int theduty, float value) {
 void soundchip::NextSample(float* l, float* r) {
   for (int i=0; i<8; i++) {
     if (vol[i]==0) {fns[i]=0; continue;}
-    if ((flags[i]&7)==6) {
+    if (flags[i]&8) {
+      ns[i]=pcm[pcmpos[i]];
+    } else if ((flags[i]&7)==6) {
       ns[i]=randmem[i][(cycle[i]*5)/freq[i]]*127;
     } else if ((flags[i]&7)==5) {
       ns[i]=randmem[i][(cycle[i]*duty[i])/freq[i]]*127;
@@ -41,8 +43,20 @@ void soundchip::NextSample(float* l, float* r) {
       ns[i]=(short)ShapeFunctions[(flags[i]&7)][(cycle[i]<<8)/freq[i]];
     }
     
-    if (cycle[i]++>freq[i]) {
-      cycle[i]=0;
+    if (flags[i]&8) {
+      pcmdec[i]+=(((pcmmult[i]&127)+1)*32768)/freq[i];
+      if (pcmdec[i]<0) {
+        pcmdec[i]&=0x7fff;
+        if (pcmpos[i]<pcmend[i]) {
+          pcmpos[i]++;
+        } else if (pcmmult[i]&128) {
+          pcmpos[i]=pcmreset[i];
+        }
+      }
+    } else {
+      if (cycle[i]++>freq[i]) {
+        cycle[i]=0;
+      }
     }
     //ns[i]=(char)((short)ns[i]*(short)vol[i]/256);
     fns[i]=(float)ns[i]/128;

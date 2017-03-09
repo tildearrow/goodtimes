@@ -41,6 +41,11 @@ class soundchip {
     unsigned short volicycles[8];
     unsigned short fscycles[8];
     unsigned char sweep[8];
+    int pcmpos[8];
+    short pcmdec[8];
+    int pcmend[8];
+    int pcmreset[8];
+    unsigned char pcmmult[8];
     char pcm[131072];
     void NextSample(float* l, float* r);
     void Init();
