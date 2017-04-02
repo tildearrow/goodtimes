@@ -8,6 +8,7 @@ class soundchip {
   char SCsine[257];
   char SCtriangle[257];
   unsigned short cycle[8];
+  unsigned short rcycle[8];
   unsigned int lfsr;
   char ns[8];
   bool randmem[8][128];

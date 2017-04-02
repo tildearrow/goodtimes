@@ -62,6 +62,12 @@ void soundchip::NextSample(float* l, float* r) {
       if (cycle[i]++>=freq[i]) {
         cycle[i]=0;
       }
+      if (flags[i]&16) {
+        if (rcycle[i]++>=resetfreq[i]) {
+          cycle[i]=0;
+          rcycle[i]=0;
+        }
+      }
     }
     //ns[i]=(char)((short)ns[i]*(short)vol[i]/256);
     fns[i]=(float)ns[i]/128;
