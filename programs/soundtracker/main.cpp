@@ -940,7 +940,13 @@ int nothing (jack_nframes_t nframes, void *arg){
 					  }
 					  sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
 					  for(int updateindex1=0;updateindex1<32;updateindex1++) {
-						  if(muted[updateindex1]) { cvol[updateindex1]=0; }
+						  if(muted[updateindex1]) { cvol[updateindex1]=0;
+#ifdef NEWCODE
+                                                    if (updateindex1<8) {
+                                                      chip.vol[updateindex1]=0;
+                                                    }
+#endif
+                                                  }
 					  }
 					  LastUsedChannel[7]=LastUsedChannel[6];
 					  LastUsedChannel[6]=LastUsedChannel[5];
@@ -2633,8 +2639,9 @@ void Playback(){
 	  chip.vol[iiii]=cvol[iiii];
 	  chip.pan[iiii]=cpan[iiii];
 	  chip.freq[iiii]=cfreq[iiii];
+          chip.resetfreq[iiii]=crmfreq[iiii];
           chip.flags[iiii]&=8;
-	  chip.flags[iiii]|=(cfmode[iiii]<<5)+cshape[iiii];
+	  chip.flags[iiii]|=(cfmode[iiii]<<5)+cshape[iiii]+((crm[iiii])?(16):(0));
 	  chip.duty[iiii]=cduty[iiii];
 	  chip.cut[iiii]=coff[iiii];
 	  chip.res[iiii]=creso[iiii];
@@ -3566,6 +3573,7 @@ int ImportMOD(const char* rfn){
 		//instrument[nonsense][0x2a]=48;
 	}
 	for (int ii=0;ii<31;ii++) {
+          
 		for (int jj=0;jj<22;jj++) {
 			instrument[ii+1][jj]=memblock[0x14+(ii*30)+jj];
 		}
@@ -5211,8 +5219,11 @@ void MuteControls(){
 	if(kbpressed[ALLEGRO_KEY_COMMA]) {muted[31]=!muted[31];}
 }
 void MuteAllChannels(){
-	for (int su=0;su<32;su++){
+	for (int su=0;su<8;su++){
 	cvol[su]=0;
+#ifdef NEWCODE
+        chip.vol[su]=0;
+#endif
 	}
 }
 void SFXControls(){
