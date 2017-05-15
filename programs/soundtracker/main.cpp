@@ -155,7 +155,8 @@ uint32_t jacksr;
 
 #ifdef NEWCODE
 #include "soundchip.h"
-soundchip chip;
+soundchip chip[4]; // up to 4 soundchips
+#define soundchips 3
 #endif
 
 using namespace std;
@@ -942,8 +943,8 @@ int nothing (jack_nframes_t nframes, void *arg){
 					  for(int updateindex1=0;updateindex1<32;updateindex1++) {
 						  if(muted[updateindex1]) { cvol[updateindex1]=0;
 #ifdef NEWCODE
-                                                    if (updateindex1<8) {
-                                                      chip.vol[updateindex1]=0;
+                                                    if (updateindex1<(8*soundchips)) {
+                                                      chip[updateindex1>>3].chan[updateindex1&7].vol=0;
                                                     }
 #endif
                                                   }
@@ -978,8 +979,14 @@ int nothing (jack_nframes_t nframes, void *arg){
 				  }
 			  }
 				  #ifdef NEWCODE
-				  float hey;
-				  chip.NextSample(&abuf[32].contents[((cycle%bufsize)*2)],&abuf[32].contents[((cycle%bufsize)*2)+1]);
+				  float heyl, heyr;
+                                  abuf[32].contents[((cycle%bufsize)*2)]=0;
+                                  abuf[32].contents[((cycle%bufsize)*2)+1]=0;
+                                  for (int sci=0; sci<soundchips; sci++) {
+                                    chip[sci].NextSample(&heyl,&heyr);
+                                    abuf[32].contents[((cycle%bufsize)*2)]+=heyl;
+                                    abuf[32].contents[((cycle%bufsize)*2)+1]+=heyr;
+                                  }
 
 #else
 			  for(int updateindex=0;updateindex<LastUsedChannelMax;updateindex++) {
@@ -1957,15 +1964,16 @@ void NextRow(){
 			// is it a pcm instrument? (pcm check)
 			if (instrument[Mins[loop]][0x2e]&8){
 				// set channel mode to PCM
-				chip.flags[loop]|=8;
+				chip[0].chan[loop].flags.pcm=1;
                                 printf("it is\n");
-                                chip.pcmmult[loop]=127;
-				chip.pcmmult[loop]|=(instrument[Mins[loop]][0x21]&128);
-				chip.pcmreset[loop]=(instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9))+(instrument[Mins[loop]][0x3a]+(instrument[Mins[loop]][0x39]<<8));
+                                //chip[0].pcmmult[loop]=127;
+                                chip[0].chan[loop].flags.pcmloop=instrument[Mins[loop]][0x21]>>7;
+				//chip[0].pcmmult[loop]|=(instrument[Mins[loop]][0x21]&128);
+				chip[0].chan[loop].pcmrst=(instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9))+(instrument[Mins[loop]][0x3a]+(instrument[Mins[loop]][0x39]<<8));
 				// set respective PCM pointers
-				chip.pcmpos[loop]=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9);
-				chip.pcmend[loop]=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9)+(instrument[Mins[loop]][0x33]+(instrument[Mins[loop]][0x32]<<8));
-			} else {chip.flags[loop]&=0xf7;}
+				chip[0].chan[loop].pcmpos=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9);
+				chip[0].chan[loop].pcmbnd=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9)+(instrument[Mins[loop]][0x33]+(instrument[Mins[loop]][0x32]<<8));
+			} else {chip[0].chan[loop].flags.pcm=0;}
 			// is ringmod on? (ringmod check)
 			if (instrument[Mins[loop]][0x2e]&16){
 				// set ring modulation to on
@@ -2321,12 +2329,11 @@ void NextTick(){
 			// is it a pcm instrument? (pcm check)
 			if (instrument[Mins[loop2]][0x2e]&8){
 				// set channel mode to PCM
-				chip.flags[loop2]|=8;
+				chip[0].chan[loop2].flags.pcm=1;
 				// set respective PCM pointers
-				chip.pcmpos[loop2]=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9);
-				chip.pcmend[loop2]=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9)+(instrument[Mins[loop2]][0x33]+(instrument[Mins[loop2]][0x32]<<8));
-				chip.pcmmult[loop2]=127;
-			} else {chip.flags[loop2]&=0xf7;}
+				chip[0].chan[loop2].pcmpos=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9);
+				chip[0].chan[loop2].pcmbnd=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9)+(instrument[Mins[loop2]][0x33]+(instrument[Mins[loop2]][0x32]<<8));
+			} else {chip[0].chan[loop2].flags.pcm=0;}
 			// is oscreset on? (osc reset check)
 			if (instrument[Mins[loop2]][0x3e]&1) {crstep[loop2]=0;} // osc reset
 			// volume (if turned on and effect isn't S77, or effect is S78)
@@ -2635,16 +2642,17 @@ void NextTick(){
 void Playback(){
 	NextTick();
 #ifdef NEWCODE
-	for (int iiii=0; iiii<8; iiii++) {
-	  chip.vol[iiii]=cvol[iiii];
-	  chip.pan[iiii]=cpan[iiii];
-	  chip.freq[iiii]=cfreq[iiii];
-          chip.resetfreq[iiii]=crmfreq[iiii];
-          chip.flags[iiii]&=8;
-	  chip.flags[iiii]|=(cfmode[iiii]<<5)+cshape[iiii]+((crm[iiii])?(16):(0));
-	  chip.duty[iiii]=cduty[iiii];
-	  chip.cut[iiii]=coff[iiii];
-	  chip.res[iiii]=creso[iiii];
+	for (int iiii=0; iiii<8*soundchips; iiii++) {
+	  chip[iiii>>3].chan[iiii&7].vol=cvol[iiii];
+	  chip[iiii>>3].chan[iiii&7].pan=cpan[iiii];
+	  chip[iiii>>3].chan[iiii&7].freq=cfreq[iiii];
+          chip[iiii>>3].chan[iiii&7].restimer=crmfreq[iiii];
+	  chip[iiii>>3].chan[iiii&7].flags.fmode=cfmode[iiii];
+          chip[iiii>>3].chan[iiii&7].flags.shape=cshape[iiii];
+          chip[iiii>>3].chan[iiii&7].flags.ring=crm[iiii];
+	  chip[iiii>>3].chan[iiii&7].duty=cduty[iiii];
+	  chip[iiii>>3].chan[iiii&7].cutoff=coff[iiii]/4;
+	  chip[iiii>>3].chan[iiii&7].reson=creso[iiii];
 	}
 #endif
 }
@@ -3050,25 +3058,27 @@ void drawdiskop(){
 void drawmemory(){
   // draws (not real) memory view
   al_draw_text(text,getconfigcol(colDEFA),0,60,ALLEGRO_ALIGN_LEFT,"Memory  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f");
-  al_draw_text(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"001b00");
-  al_draw_text(text,getconfigcol(colDEFA),0,84,ALLEGRO_ALIGN_LEFT,"001b10");
-  al_draw_text(text,getconfigcol(colDEFA),0,96,ALLEGRO_ALIGN_LEFT,"001b20");
-  al_draw_text(text,getconfigcol(colDEFA),0,108,ALLEGRO_ALIGN_LEFT,"001b30");
-  al_draw_text(text,getconfigcol(colDEFA),0,120,ALLEGRO_ALIGN_LEFT,"001b40");
-  al_draw_text(text,getconfigcol(colDEFA),0,132,ALLEGRO_ALIGN_LEFT,"001b50");
-  al_draw_text(text,getconfigcol(colDEFA),0,144,ALLEGRO_ALIGN_LEFT,"001b60");
-  al_draw_text(text,getconfigcol(colDEFA),0,156,ALLEGRO_ALIGN_LEFT,"001b70");
-  al_draw_text(text,getconfigcol(colDEFA),0,168,ALLEGRO_ALIGN_LEFT,"001b80");
-  al_draw_text(text,getconfigcol(colDEFA),0,180,ALLEGRO_ALIGN_LEFT,"001b90");
-  al_draw_text(text,getconfigcol(colDEFA),0,192,ALLEGRO_ALIGN_LEFT,"001ba0");
-  al_draw_text(text,getconfigcol(colDEFA),0,204,ALLEGRO_ALIGN_LEFT,"001bb0");
-  al_draw_text(text,getconfigcol(colDEFA),0,216,ALLEGRO_ALIGN_LEFT,"001bc0");
-  al_draw_text(text,getconfigcol(colDEFA),0,228,ALLEGRO_ALIGN_LEFT,"001bd0");
-  al_draw_text(text,getconfigcol(colDEFA),0,240,ALLEGRO_ALIGN_LEFT,"001be0");
-  al_draw_text(text,getconfigcol(colDEFA),0,252,ALLEGRO_ALIGN_LEFT,"001bf0");
-  for (int umm=0; umm<8; umm++) {
-    al_draw_textf(text,al_map_rgb(0,255,255),64,72+(umm*24),ALLEGRO_ALIGN_LEFT,
-    "%.2x %.2x %.2x %.2x %.2x",(unsigned char)cfreq[umm],cfreq[umm]>>8,cvol[umm],(unsigned char)cpan[umm],cfmode[umm]<<5|(cmode[umm]%2)<<3|cshape[umm]);
+  al_draw_text(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"   $00");
+  al_draw_text(text,getconfigcol(colDEFA),0,84,ALLEGRO_ALIGN_LEFT,"   $10");
+  al_draw_text(text,getconfigcol(colDEFA),0,96,ALLEGRO_ALIGN_LEFT,"   $20");
+  al_draw_text(text,getconfigcol(colDEFA),0,108,ALLEGRO_ALIGN_LEFT,"   $30");
+  al_draw_text(text,getconfigcol(colDEFA),0,120,ALLEGRO_ALIGN_LEFT,"   $40");
+  al_draw_text(text,getconfigcol(colDEFA),0,132,ALLEGRO_ALIGN_LEFT,"   $50");
+  al_draw_text(text,getconfigcol(colDEFA),0,144,ALLEGRO_ALIGN_LEFT,"   $60");
+  al_draw_text(text,getconfigcol(colDEFA),0,156,ALLEGRO_ALIGN_LEFT,"   $70");
+  al_draw_text(text,getconfigcol(colDEFA),0,168,ALLEGRO_ALIGN_LEFT,"   $80");
+  al_draw_text(text,getconfigcol(colDEFA),0,180,ALLEGRO_ALIGN_LEFT,"   $90");
+  al_draw_text(text,getconfigcol(colDEFA),0,192,ALLEGRO_ALIGN_LEFT,"   $a0");
+  al_draw_text(text,getconfigcol(colDEFA),0,204,ALLEGRO_ALIGN_LEFT,"   $b0");
+  al_draw_text(text,getconfigcol(colDEFA),0,216,ALLEGRO_ALIGN_LEFT,"   $c0");
+  al_draw_text(text,getconfigcol(colDEFA),0,228,ALLEGRO_ALIGN_LEFT,"   $d0");
+  al_draw_text(text,getconfigcol(colDEFA),0,240,ALLEGRO_ALIGN_LEFT,"   $e0");
+  al_draw_text(text,getconfigcol(colDEFA),0,252,ALLEGRO_ALIGN_LEFT,"   $f0");
+  for (int umm=0; umm<16; umm++) {
+    for (int cnt=0; cnt<16; cnt++) {
+      al_draw_textf(text,al_map_rgb(0,255,255),64+(cnt*24),72+(umm*12),ALLEGRO_ALIGN_LEFT,
+    "%.2x",((unsigned char*)(chip[curedpage].chan))[cnt+(umm<<4)]);
+    }
   }
 }
 
@@ -3285,7 +3295,7 @@ void drawpcmeditor(){
 	al_draw_line((int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)-128,
 		(int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)+128,getconfigcol(colSEL2),1);
 	for (float ii=0;ii<(scrW*pow(2.0f,-pcmeditscale));ii+=pow(2.0f,-pcmeditscale)){
-		al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+chip.pcm[(int)ii+pcmeditoffset],(pcmeditenable)?getconfigcol(colSEL2):getconfigcol(colDEFA));
+		al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+chip[0].pcm[(int)ii+pcmeditoffset],(pcmeditenable)?getconfigcol(colSEL2):getconfigcol(colDEFA));
 	}
 	for (int ii=0;ii<32;ii++){
 		if (cmode[ii]==1 && cvol[ii]>0) {
@@ -3640,7 +3650,7 @@ int ImportMOD(const char* rfn){
 		if (settings::samples) {
 		printf("putting samples to PCM memory if possible\n");
 		printf("%d bytes",size-1084-(patterns*chans*64*4));
-		memcpy(chip.pcm,memblock+1084+((patterns+1)*chans*64*4),minval(131072,size-1084-((patterns+1)*chans*64*4)));
+		memcpy(chip[0].pcm,memblock+1084+((patterns+1)*chans*64*4),minval(65280,size-1084-((patterns+1)*chans*64*4)));
 		}
 		printf("---PATTERNS---\n");
 		for (int importid=0;importid<patterns+1;importid++){
@@ -4049,12 +4059,12 @@ int SaveFile(){
 		pcmpointer=al_ftell(sfile);
 		bool IS_PCM_DATA_BLANK=true;
 		int maxpcmwrite=0;
-		for (int ii=0;ii<131072;ii++){
-			if (chip.pcm[ii]!=0) {IS_PCM_DATA_BLANK=false; maxpcmwrite=ii;}
+		for (int ii=0;ii<65280;ii++){
+			if (chip[0].pcm[ii]!=0) {IS_PCM_DATA_BLANK=false; maxpcmwrite=ii;}
 		}
 		if (!IS_PCM_DATA_BLANK){
 			al_fwrite32le(sfile,maxpcmwrite);
-			al_fwrite(sfile,chip.pcm,maxpcmwrite);
+			al_fwrite(sfile,chip[0].pcm,maxpcmwrite);
 		} else {pcmpointer=0;}
 		// write pointers
 		printf("writing offsets...\n");
@@ -4158,12 +4168,12 @@ int LoadFile(const char* filename){
 		al_fgets(sfile,comments,65536);
 		}
 		al_fseek(sfile,0x36,ALLEGRO_SEEK_SET); // seek to 0x36
-		memset(chip.pcm,0,131072); // clean PCM memory
+		memset(chip[0].pcm,0,65280); // clean PCM memory
 		pcmpointer=al_fread32le(sfile);
 		if (pcmpointer!=0) {
 			al_fseek(sfile,pcmpointer,ALLEGRO_SEEK_SET);
 			maxpcmread=al_fread32le(sfile);
-			al_fread(sfile,chip.pcm,maxpcmread);
+			al_fread(sfile,chip[0].pcm,maxpcmread);
 		}
 		al_fseek(sfile,0x180,ALLEGRO_SEEK_SET);
 		for (int ii=0;ii<256;ii++) {
@@ -4340,7 +4350,7 @@ void LoadSample(const char* filename,int position){
 	samplelength=al_get_sample_length(tempsample);
 	printf("%x bytes",samplelength);
 	for (int ii=0;ii<samplelength;ii++){
-		chip.pcm[minval(ii+position,131071)]=thepointer[ii]>>8;
+		chip[0].pcm[minval(ii+position,131071)]=thepointer[ii]>>8;
 	}
 	al_destroy_sample(tempsample);
 }
@@ -4350,10 +4360,10 @@ void LoadRawSample(const char* filename,int position){
 	sfile=al_fopen(filename,"rb");
 	samplelength=al_fsize(sfile);
 	printf("%x bytes",samplelength);
-	if (samplelength<(131072-position)){
+	if (samplelength<(65280-position)){
 		//for (int ii=0;ii<samplelength;ii++){
 			al_fseek(sfile,position,ALLEGRO_SEEK_SET);
-			al_fread(sfile,chip.pcm+position,samplelength);
+			al_fread(sfile,chip[0].pcm+position,samplelength);
 		//}
 	} else {
 		printf(" don't fit!");
@@ -4838,7 +4848,7 @@ void ClickEvents() {
 	// events only in PCM editor
 	if (screen==11) {
 		if (leftclick) {
-			if (pcmeditenable) chip.pcm[(int)(((float)mstate.x)*pow(2.0f,-pcmeditscale))+pcmeditoffset]=minval(127,maxval(-127,mstate.y-(scrH/2)));
+			if (pcmeditenable) chip[0].pcm[(int)(((float)mstate.x)*pow(2.0f,-pcmeditscale))+pcmeditoffset]=minval(127,maxval(-127,mstate.y-(scrH/2)));
 		}
 	}
 	prevX=mstate.x;
@@ -5219,10 +5229,10 @@ void MuteControls(){
 	if(kbpressed[ALLEGRO_KEY_COMMA]) {muted[31]=!muted[31];}
 }
 void MuteAllChannels(){
-	for (int su=0;su<8;su++){
+	for (int su=0;su<8*soundchips;su++){
 	cvol[su]=0;
 #ifdef NEWCODE
-        chip.vol[su]=0;
+        chip[su>>3].chan[su&7].vol=0;
 #endif
 	}
 }
@@ -5636,7 +5646,10 @@ static void *thread_audio(ALLEGRO_THREAD *thread, void *arg){
 int main(int argc, char **argv){
   detunefactor=1;
   #ifdef NEWCODE
-  chip.Init();
+  chip[0].Init();
+  chip[1].Init();
+  chip[2].Init();
+  chip[3].Init();
 #endif
 	printf("soundtracker (dev%d)\n",ver);
 	framecounter=0;
@@ -6111,9 +6124,11 @@ al_set_new_window_title("soundtracker");
 			  for(int updateindex=0;updateindex<LastUsedChannelMax;updateindex++) {
 				  cstep[updateindex]=cycle;
 				  float hey;
-				  hey=chip.NextSample();
+                                  for (int sci=0; sci<soundchips; i++) {
+				  hey=chip[sci].NextSample();
 				  abuf[32].contents[((cycle%bufsize)*2)]+=hey;
 				  abuf[32].contents[((cycle%bufsize)*2)+1]+=hey;
+                                  }
 			  }
 		  }
 		  updateaudio(32);
