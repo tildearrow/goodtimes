@@ -29,25 +29,55 @@ class soundchip {
   unsigned short oldfreq[8];
   unsigned short oldflags[8];
   public:
-    unsigned short freq[8];
     unsigned short resetfreq[8];
-    char duty[8];
-    char vol[8];
-    char pan[8];
-    int cut[8];
-    unsigned char res[8];
-    unsigned short flags[8];
-    char postvol[8];
+    //char pan[8];
+    //unsigned char res[8];
+    //char postvol[8];
     unsigned short voldcycles[8];
     unsigned short volicycles[8];
     unsigned short fscycles[8];
     unsigned char sweep[8];
-    int pcmpos[8];
+    //int pcmpos[8];
     short pcmdec[8];
-    int pcmend[8];
-    int pcmreset[8];
-    unsigned char pcmmult[8];
-    char pcm[131072];
+    //int pcmend[8];
+    //int pcmreset[8];
+    //unsigned char pcmmult[8];
+    struct channel {
+      unsigned short freq;
+      char vol;
+      char pan;
+      union {
+        unsigned short flags;
+        struct {
+          unsigned char shape: 3;
+          unsigned char pcm: 1;
+          unsigned char ring: 1;
+          unsigned char fmode: 3;
+          unsigned char resosc: 1;
+          unsigned char resfilt: 1;
+          unsigned char pcmloop: 1;
+          unsigned char restim: 1;
+          unsigned char swfreq: 1;
+          unsigned char swvol: 1;
+          unsigned char swcut: 1;
+          unsigned char padding: 1;
+        };
+      } flags;
+      unsigned short cutoff;
+      unsigned char duty;
+      unsigned char reson;
+      unsigned short pcmpos;
+      unsigned short pcmbnd;
+      unsigned short pcmrst;
+      struct sweep {
+        unsigned short speed;
+        unsigned char amt;
+        unsigned char bound;
+      } swfreq, swvol, swcut;
+      unsigned short wc;
+      unsigned short restimer;
+    } chan[8];
+    char pcm[65280];
     void NextSample(float* l, float* r);
     void Init();
     void Reset();
