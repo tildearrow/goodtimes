@@ -45,11 +45,12 @@ void soundchip::NextSample(float* l, float* r) {
     }
     
     if (chan[i].flags.pcm) {
-      pcmdec[i]+=((128)*32768)/chan[i].freq;
-      if (pcmdec[i]<0) {
-        pcmdec[i]&=0x7fff;
+      pcmdec[i]+=chan[i].freq;
+      if (pcmdec[i]>65535) {
+        pcmdec[i]-=65535;
         if (chan[i].pcmpos<chan[i].pcmbnd) {
           chan[i].pcmpos++;
+          chan[i].wc++;
           if (chan[i].pcmpos==chan[i].pcmbnd) {
             if (chan[i].flags.pcmloop) {
               chan[i].pcmpos=chan[i].pcmrst;
@@ -65,7 +66,7 @@ void soundchip::NextSample(float* l, float* r) {
         chan[i].wc++;
       }
       if (chan[i].flags.restim) {
-        if (rcycle[i]++>=resetfreq[i]) {
+        if (rcycle[i]++>=chan[i].restimer) {
           cycle[i]=0;
           rcycle[i]=0;
         }
@@ -93,6 +94,9 @@ void soundchip::NextSample(float* l, float* r) {
     }
     oldfreq[i]=chan[i].freq;
     oldflags[i]=chan[i].flags.flags;
+    if (chan[i].flags.swvol) {
+      chan[i].vol+=chan[i].swvol.amt;
+    }
   }
   *l=((nsL[0]+nsL[1]+nsL[2]+nsL[3]+nsL[4]+nsL[5]+nsL[6]+nsL[7]));///256;
   *r=((nsR[0]+nsR[1]+nsR[2]+nsR[3]+nsR[4]+nsR[5]+nsR[6]+nsR[7]));///256;

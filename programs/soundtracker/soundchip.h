@@ -38,7 +38,7 @@ class soundchip {
     unsigned short fscycles[8];
     unsigned char sweep[8];
     //int pcmpos[8];
-    short pcmdec[8];
+    int pcmdec[8];
     //int pcmend[8];
     //int pcmreset[8];
     //unsigned char pcmmult[8];
@@ -69,11 +69,23 @@ class soundchip {
       unsigned short pcmpos;
       unsigned short pcmbnd;
       unsigned short pcmrst;
-      struct sweep {
+      struct {
         unsigned short speed;
-        unsigned char amt;
+        char amt;
         unsigned char bound;
-      } swfreq, swvol, swcut;
+      } swfreq;
+      struct {
+        unsigned short speed;
+        char amt: 6;
+        unsigned char loop: 1;
+        unsigned char loopi: 1;
+        unsigned char bound;
+      } swvol;
+      struct {
+        unsigned short speed;
+        char amt;
+        unsigned char bound;
+      } swcut;
       unsigned short wc;
       unsigned short restimer;
     } chan[8];

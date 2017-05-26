@@ -1738,7 +1738,7 @@ int noteperiod(unsigned char note) {
 	return 300000/(440*(pow(2.0f,(float)((hscale(note)-57)/12))));
 	//return 1; // default, if this is returned, then it's a "blank note" or "special note"
 }
-int mnoteperiod(float note) {
+int mnoteperiod(float note, int chan) {
 	/*switch((note-1)%12){
 	case 0: return (18346>>((note-1)/12))*(1/detunefactor); break;
 	case 1: return (17316>>((note-1)/12))*(1/detunefactor); break;
@@ -1753,7 +1753,11 @@ int mnoteperiod(float note) {
 	case 10: return (10297>>((note-1)/12))*(1/detunefactor); break;
 	case 11: return (9719>>((note-1)/12))*(1/detunefactor); break;
 	}*/
-	return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))))/**(1/detunefactor)*/;
+        if (chip[chan>>3].chan[chan&7].flags.pcm) {
+          return (int)(12406.68073949579831932672f*(pow(2.0f,(float)(((float)note-58)/12.0f))));
+        } else {
+	return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))));
+        }
 	//return 1; // default, if this is returned, then it's a "blank note" or "special note"
 }
 void FixCPPMemoryBug(){
@@ -1805,15 +1809,15 @@ int ProcessPitch(int insnumb){
 	// output (pitch logic)
 	if(((instrument[Mins[insnumb]][0x22]&32)>>5)){
 		if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x40) {
-		return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64));
+		return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64),insnumb);
 		} else {
 		if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x80) {
-		return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64));
+		return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64),insnumb);
 		} else {
-		return mnoteperiod(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-128+((float)finepitch[insnumb]/64));
+		return mnoteperiod(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-128+((float)finepitch[insnumb]/64),insnumb);
 		}}
 	}
-	else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64));}
+	else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64),insnumb);}
 }
 void Zxx(unsigned char value){
 	// process Zxx effect
@@ -1979,7 +1983,7 @@ void NextRow(){
 				// set ring modulation to on
 				crm[loop]=1;
 				crmduty[loop]=63;
-				crmfreq[loop]=mnoteperiod(SEMINOTE+((instrument[Mins[loop]][0x2f]<0x40)?(instrument[Mins[loop]][0x2f]):(64-instrument[Mins[loop]][0x2f])));
+				crmfreq[loop]=mnoteperiod(SEMINOTE+((instrument[Mins[loop]][0x2f]<0x40)?(instrument[Mins[loop]][0x2f]):(64-instrument[Mins[loop]][0x2f])),loop);
 				crrmstep[loop]=0;
 				// is sync on?
 				if (instrument[Mins[loop]][0x3e]&32) {crm[loop]=2;}
@@ -2034,12 +2038,12 @@ void NextRow(){
 			if ((instrument[Mins[loop]][0x22]&32)>>5){
 			// output (pitch logic)
 			if (bytable[5][instrument[Mins[loop]][0x28]][0]<0x40) {
-			cfreq[loop]=mnoteperiod(curnote[loop]+(bytable[5][instrument[Mins[loop]][0x28]][0])+(((unsigned char)instrument[Mins[loop]][0x2b])-47));
+			cfreq[loop]=mnoteperiod(curnote[loop]+(bytable[5][instrument[Mins[loop]][0x28]][0])+(((unsigned char)instrument[Mins[loop]][0x2b])-47),loop);
 			} else {
 			if (bytable[5][instrument[Mins[loop]][0x28]][0]<0x80) {
-			cfreq[loop]=mnoteperiod(curnote[loop]-((bytable[5][instrument[Mins[loop]][0x28]][0]-64))+(((unsigned char)instrument[Mins[loop]][0x2b])-47));
+			cfreq[loop]=mnoteperiod(curnote[loop]-((bytable[5][instrument[Mins[loop]][0x28]][0]-64))+(((unsigned char)instrument[Mins[loop]][0x2b])-47),loop);
 			} else {
-			cfreq[loop]=mnoteperiod(bytable[5][instrument[Mins[loop]][0x28]][0]-128);
+			cfreq[loop]=mnoteperiod(bytable[5][instrument[Mins[loop]][0x28]][0]-128,loop);
 			}}
 			EnvelopesRunning[loop][5]=true;}
 			else {EnvelopesRunning[loop][5]=false;}
@@ -2050,7 +2054,7 @@ void NextRow(){
 				// set note frequency if effect isn't Gxx/Lxx/gxx and pitch/finepitch envelopes are disabled
 			if (nfxid[loop]!=7 && nfxid[loop]!=12 && !(nvolu[loop]>192 && nvolu[loop]<203) && !((instrument[Mins[loop]][0x22]&32)>>5) && !((instrument[Mins[loop]][0x22]&64)>>6)) {
 			SEMINOTE=((nnote%16)+((nnote>>4)*12))+(((unsigned char)instrument[Mins[loop]][0x2b])-48);
-			cfreq[loop]=mnoteperiod(SEMINOTE); // sets the frequency to match the current note and applies instrument transposition
+			cfreq[loop]=mnoteperiod(SEMINOTE,loop); // sets the frequency to match the current note and applies instrument transposition
 			oldperiod[loop]=newperiod[loop];
 			newperiod[loop]=cfreq[loop];
 			}
@@ -2129,13 +2133,13 @@ void NextRow(){
 	if (nfxid[looper]==5)
 		{if (nfxvl[looper]>0xef) {curnote[looper]-=((float)(nfxvl[looper]%16)/16);
 			if(!EnvelopesRunning[looper][5]){
-						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						} else {
 						cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						}} else {
 			if (nfxvl[looper]>0xdf) {curnote[looper]-=((float)(nfxvl[looper]%16)/64);
 					if(!EnvelopesRunning[looper][5]){
-						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						} else {
 						cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						}}
@@ -2144,13 +2148,13 @@ void NextRow(){
 	if (nfxid[looper]==6)
 		{if (nfxvl[looper]>0xef) {curnote[looper]+=((float)(nfxvl[looper]%16)/16);
 			if(!EnvelopesRunning[looper][5]){
-						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						} else {
 						cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						}} else {
 			if (nfxvl[looper]>0xdf) {curnote[looper]+=((float)(nfxvl[looper]%16)/64);
 					if(!EnvelopesRunning[looper][5]){
-						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						} else {
 						cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						}}
@@ -2274,15 +2278,15 @@ int ProcessPitch1(int insnumb){
 	// output (pitch logic)
 	if(EnvelopesRunning[insnumb][5]){
 		if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x40) {
-		return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1);
+		return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);
 		} else {
 		if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x80) {
-		return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1);
+		return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);
 		} else {
-		return mnoteperiod(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-128);
+		return mnoteperiod(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-128,insnumb);
 		}}
 	}
-	else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1);}
+	else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);}
 }
 void NextTick(){
 	// process the next tick
@@ -2384,18 +2388,18 @@ void NextTick(){
 			if ((instrument[Mins[loop2]][0x22]&32)>>5){
 			// output (pitch logic)
 			if (bytable[5][instrument[Mins[loop2]][0x28]][0]<0x40) {
-			cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]][0x28]][0])+(((unsigned char)instrument[Mins[loop2]][0x2b])-47));
+			cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]][0x28]][0])+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
 			} else {
 			if (bytable[5][instrument[Mins[loop2]][0x28]][0]<0x80) {
-			cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]][0x28]][0]-64))+(((unsigned char)instrument[Mins[loop2]][0x2b])-47));
+			cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]][0x28]][0]-64))+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
 			} else {
-			cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]][0x28]][0]-128);
+			cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]][0x28]][0]-128,loop2);
 			}}
 			EnvelopesRunning[loop2][5]=true;}
 			else {EnvelopesRunning[loop2][5]=false;}
 			}
 			if (nfxid[loop2]!=7 && nfxid[loop2]!=12 && !(nvolu[loop2]>192 && nvolu[loop2]<203) && !((instrument[Mins[loop2]][0x22]&32)>>5) && !((instrument[Mins[loop2]][0x22]&64)>>6)) {
-			cfreq[loop2]=mnoteperiod(((hscale(curnote[loop2])%16)+((hscale(curnote[loop2])>>4)*12))+(((unsigned char)instrument[Mins[loop2]][0x2b])-48));
+			cfreq[loop2]=mnoteperiod(((hscale(curnote[loop2])%16)+((hscale(curnote[loop2])>>4)*12))+(((unsigned char)instrument[Mins[loop2]][0x2b])-48),loop2);
 			}
 			// only reset envelope positions if effect isn't Gxx/Lxx/gxx
 			if (nfxid[loop2]!=7 && nfxid[loop2]!=12 && !(nvolu[loop2]>192 && nvolu[loop2]<203)) {
@@ -2475,12 +2479,12 @@ void NextTick(){
 			UpdateEnvelope(loop2,5);
 			// output (pitch logic)
 			if (bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]<0x40) {
-			cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]])+(((unsigned char)instrument[Mins[loop2]][0x2b])-47));
+			cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]])+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
 			} else {
 			if (bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]<0x80) {
-			cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]-64))+(((unsigned char)instrument[Mins[loop2]][0x2b])-47));
+			cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]-64))+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
 			} else {
-			cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]-128);
+			cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]-128,loop2);
 			}}
 		}
 		// finepitch
@@ -2519,7 +2523,7 @@ void NextTick(){
 			if (!linearslides) {cfreq[looper]+=nfxvl[looper];}
 			else {curnote[looper]-=((float)nfxvl[looper]/16);
 					if(!EnvelopesRunning[looper][5]){
-						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						} else {
 						cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						}}}}
@@ -2528,9 +2532,9 @@ void NextTick(){
 		{if (nfxvl[looper]<0xe0) {
 			if (!linearslides) {cfreq[looper]-=nfxvl[looper];}
 			else {curnote[looper]+=((float)nfxvl[looper]/16);
-				  cfreq[looper]=mnoteperiod(curnote[looper]+1);
+				  cfreq[looper]=mnoteperiod(curnote[looper]+1,looper);
 					if(!EnvelopesRunning[looper][5]){
-						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+						cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						} else {
 						cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
 						}}}}
@@ -2550,10 +2554,10 @@ void NextTick(){
 			case 202: Mport[looper]=255; break;
 	}}
 		if (!linearslides) {
-		if (cfreq[looper]>mnoteperiod(portastatic[looper])) {
-			cfreq[looper]=maxval(cfreq[looper]-(Mport[looper]*4),mnoteperiod(portastatic[looper]));
-		} else {if (cfreq[looper]<mnoteperiod(portastatic[looper])) {
-			cfreq[looper]=minval(cfreq[looper]+(Mport[looper]*4),mnoteperiod(portastatic[looper]));
+		if (cfreq[looper]>mnoteperiod(portastatic[looper],looper)) {
+			cfreq[looper]=maxval(cfreq[looper]-(Mport[looper]*4),mnoteperiod(portastatic[looper],looper));
+		} else {if (cfreq[looper]<mnoteperiod(portastatic[looper],looper)) {
+			cfreq[looper]=minval(cfreq[looper]+(Mport[looper]*4),mnoteperiod(portastatic[looper],looper));
 		}}
 		} else {
 		if (curnote[looper]>(portastatic[looper])) {
@@ -2588,9 +2592,9 @@ void NextTick(){
 	if (nfxid[looper]==10) {
 		// cycle between the 3 frequencies
 		switch ((speed-curtick)%3) {
-			case 0: cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47); break;
-			case 1: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]/16)+(((unsigned char)instrument[Mins[looper]][0x2b])-47)); break;
-			case 2: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]%16)+(((unsigned char)instrument[Mins[looper]][0x2b])-47)); break;
+			case 0: cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper); break;
+			case 1: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]/16)+(((unsigned char)instrument[Mins[looper]][0x2b])-47),looper); break;
+			case 2: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]%16)+(((unsigned char)instrument[Mins[looper]][0x2b])-47),looper); break;
 		}
 	}
 	// Kxx
@@ -2624,7 +2628,7 @@ void NextTick(){
 		if ((nfxvl[looper]%16)!=0) {curvibdepth[looper]=nfxvl[looper]%16;}
 		if ((nfxvl[looper]/16)!=0) {curvibspeed[looper]=nfxvl[looper]/16;}
 		curvibpos[looper]++;
-		cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/64));
+		cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/64));
 	}
 	// Yxx
 	if (nfxid[looper]==25) {
@@ -2650,6 +2654,7 @@ void Playback(){
 	  chip[iiii>>3].chan[iiii&7].flags.fmode=cfmode[iiii];
           chip[iiii>>3].chan[iiii&7].flags.shape=cshape[iiii];
           chip[iiii>>3].chan[iiii&7].flags.ring=crm[iiii];
+          chip[iiii>>3].chan[iiii&7].flags.restim=(crm[iiii]&2)?(1):(0);
 	  chip[iiii>>3].chan[iiii&7].duty=cduty[iiii];
 	  chip[iiii>>3].chan[iiii&7].cutoff=coff[iiii]/4;
 	  chip[iiii>>3].chan[iiii&7].reson=creso[iiii];
@@ -2704,7 +2709,7 @@ ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
 	float c=value*saturation;
 	float x=c*(1-fabs(fmod(hue/60,2)-1));
 	float m=value-c;
-	float r,g,b;
+	float r=0,g=0,b=0;
 	if (hue<60) {r=c;g=x;b=0;}
 	else if (hue<120) {r=x;g=c;b=0;}
 	else if (hue<180) {r=0;g=c;b=x;}
@@ -4172,7 +4177,7 @@ int LoadFile(const char* filename){
 		pcmpointer=al_fread32le(sfile);
 		if (pcmpointer!=0) {
 			al_fseek(sfile,pcmpointer,ALLEGRO_SEEK_SET);
-			maxpcmread=al_fread32le(sfile);
+			maxpcmread=min(65280,al_fread32le(sfile));
 			al_fread(sfile,chip[0].pcm,maxpcmread);
 		}
 		al_fseek(sfile,0x180,ALLEGRO_SEEK_SET);
@@ -4288,6 +4293,7 @@ int LoadFile(const char* filename){
 		cursfx=1;sfxpos=0;
 		#endif
 		}
+		delete[] checkstr;
 	return 1;
 }
 void SaveInstrument(){
@@ -4696,7 +4702,7 @@ void ClickEvents() {
 				printf("\nwrite position? ");
 				int writeposition=0;
 				//gets(rwpos);
-				writeposition=atoi(rwpos);
+				writeposition=0;//atoi(rwpos);
 				LoadSample(rfn,writeposition);}
 			if (PIR(640,60,744,72,mstate.x,mstate.y)) {
 				printf("\nplease write filename? ");
@@ -4706,7 +4712,7 @@ void ClickEvents() {
 				printf("\nwrite position? ");
 				int writeposition=0;
 				//gets(rwpos);
-				writeposition=atoi(rwpos);
+				writeposition=0;//atoi(rwpos);
 				LoadRawSample(rfn,writeposition);}
 			for (int ii=diskopscrollpos; ii<minval(diskopscrollpos+27,filecount); ii++) {
 				if (PIR(0,120+(ii*12)-(diskopscrollpos*12),790,131+(ii*12)-(diskopscrollpos*12),mstate.x,mstate.y)) {
@@ -5023,7 +5029,7 @@ void InstrumentTest(int testnote,int testchan){
 				// set ring modulation to on
 				crm[testchan]=1;
 				crmduty[testchan]=63;
-				crmfreq[testchan]=mnoteperiod(mscale(testnote)+1+((instrument[Mins[testchan]][0x2f]<0x40)?(instrument[Mins[testchan]][0x2f]):(64-instrument[Mins[testchan]][0x2f])));
+				crmfreq[testchan]=mnoteperiod(mscale(testnote)+1+((instrument[Mins[testchan]][0x2f]<0x40)?(instrument[Mins[testchan]][0x2f]):(64-instrument[Mins[testchan]][0x2f])),testchan);
 				crrmstep[testchan]=0;
 				// is sync on?
 				if (instrument[Mins[testchan]][0x3e]&32) {crm[testchan]=2;}
@@ -5078,12 +5084,12 @@ void InstrumentTest(int testnote,int testchan){
 			if ((instrument[Mins[testchan]][0x22]&32)>>5){
 			// output (pitch logic)
 			if (bytable[5][instrument[Mins[testchan]][0x28]][0]<0x40) {
-			cfreq[testchan]=mnoteperiod(testnote+(bytable[5][instrument[Mins[testchan]][0x28]][0])+(((unsigned char)instrument[Mins[testchan]][0x2b])-47));
+			cfreq[testchan]=mnoteperiod(testnote+(bytable[5][instrument[Mins[testchan]][0x28]][0])+(((unsigned char)instrument[Mins[testchan]][0x2b])-47),testchan);
 			} else {
 			if (bytable[5][instrument[Mins[testchan]][0x28]][0]<0x80) {
-			cfreq[testchan]=mnoteperiod(testnote-((bytable[5][instrument[Mins[testchan]][0x28]][0]-64))+(((unsigned char)instrument[Mins[testchan]][0x2b])-47));
+			cfreq[testchan]=mnoteperiod(testnote-((bytable[5][instrument[Mins[testchan]][0x28]][0]-64))+(((unsigned char)instrument[Mins[testchan]][0x2b])-47),testchan);
 			} else {
-			cfreq[testchan]=mnoteperiod(bytable[5][instrument[Mins[testchan]][0x28]][0]-128);
+			cfreq[testchan]=mnoteperiod(bytable[5][instrument[Mins[testchan]][0x28]][0]-128,testchan);
 			}}
 			EnvelopesRunning[testchan][5]=true;}
 			else {EnvelopesRunning[testchan][5]=false;}
@@ -5110,7 +5116,7 @@ void InstrumentTest(int testnote,int testchan){
 			curvibpos[testchan]=0;
 			// set current note
 			if (!((instrument[Mins[testchan]][0x22]&32)>>5) && !((instrument[Mins[testchan]][0x22]&64)>>6)) {
-			cfreq[testchan]=mnoteperiod(((testnote%16)+((testnote>>4)*12))+(((unsigned char)instrument[Mins[testchan]][0x2b])-48)); // sets the frequency to match the current note and applies instrument transposition
+			cfreq[testchan]=mnoteperiod(((testnote%16)+((testnote>>4)*12))+(((unsigned char)instrument[Mins[testchan]][0x2b])-48),testchan); // sets the frequency to match the current note and applies instrument transposition
 			}
 }
 void ModPlug(){
