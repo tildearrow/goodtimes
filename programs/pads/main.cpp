@@ -501,6 +501,7 @@ static void* mousethread(ALLEGRO_THREAD *thread, void *arg) {
   ALLEGRO_EVENT_QUEUE* eee;
   eee=al_create_event_queue();
       al_register_event_source(eee,al_get_mouse_event_source());
+      al_register_event_source(eee,al_get_display_event_source(display));
     while (1) {
       ALLEGRO_EVENT event;
       al_wait_for_event(eee,&event);
@@ -539,6 +540,9 @@ static void* mousethread(ALLEGRO_THREAD *thread, void *arg) {
         }
         }
         }
+      } else if (event.type==ALLEGRO_EVENT_DISPLAY_CLOSE) {
+        printf("it dies here\n");
+        break;
       }
     }
 }
@@ -926,6 +930,7 @@ outL = jack_port_register (client, "outL",
 	}
 	wheelrel=ms.z;
       } else if (event.type==ALLEGRO_EVENT_DISPLAY_CLOSE){
+        printf("break.\n");
 	break;
       } else if (event.type==45 || event.type==46) {
         doredraw=true;
@@ -991,13 +996,16 @@ outL = jack_port_register (client, "outL",
 	al_flip_display();
       }
     }
-    
+    printf("i broke\n");
     // end the game
     al_stop_timer(frame);
+    al_destroy_display(display);
+    printf("stopped timer\n");
 #ifdef SDL_INSTEAD
     SDL_CloseAudioDevice(audioID);
 #else
-    jack_client_close (client);
+    //jack_client_close (client);
 #endif
+    printf("about to return...\n");
     return 0;
 }
