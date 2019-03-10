@@ -77,8 +77,9 @@ unsigned char freq[16]={0,0,0,0};
 unsigned char vol;
 unsigned char cvol[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned char shape[16]={0,0,0,0};
-int dividers[16]={1,2050,140,1100,31000,31000,1010,1010,1010,1010,1010,1,30000/3,30000/3,340,340};
+//int dividers[16]={1,2050,140,1100,31000,31000,1010,1010,1010,1010,1010,1,30000/3,30000/3,340,340};
 //int dividers[16]={1,5200,280,2200,62000,62000,2020,2020,2020,2020,2020,1,60000/3,60000/3,680,680};
+int dividers[16]={1,2050,140,1100,31000,31000,2020,2020,2020,2020,2020,1,30000/3,30000/3,340,340};
 unsigned char count[16]={0,0,0,0};
 unsigned char shift[16]={0,0,0,0};
 int nppos=0;
@@ -94,6 +95,7 @@ short* buf16;
 //ALLEGRO_AUDIO_STREAM* str;
 unsigned char note[16]={0,0,0,0};
 unsigned char program[16]={0,0,0,0};
+unsigned char gmidi[128];
 
 ALLEGRO_EVENT_QUEUE* strq;
 
@@ -184,7 +186,7 @@ int process (jack_nframes_t nframes, void *arg)
 	  if (((*(in_event.buffer)&0xf0))==0x80) { // note off
 	    note[midimap[((*(in_event.buffer)&15))]]=*(in_event.buffer + 1)+1;
 	    con[midimap[((*(in_event.buffer)&15))]]=false;
-	    freq[midimap[((*(in_event.buffer)&15))]]=noteperiod(((*(in_event.buffer)&15)),note[midimap[((*(in_event.buffer)&15))]]+transpose[midimap[((*(in_event.buffer)&15))]]);
+	    if (freq[midimap[((*(in_event.buffer)&15))]]==(freq[midimap[((*(in_event.buffer)&15))]]=noteperiod(((*(in_event.buffer)&15)),note[midimap[((*(in_event.buffer)&15))]]+transpose[midimap[((*(in_event.buffer)&15))]])))
 	    chip[midimap[((*(in_event.buffer)&15))]/2]->set(0x19+(midimap[((*(in_event.buffer)&15))]%2),0);
 	  }
 	  else if (((*(in_event.buffer)&0xf0))==0x90) { // note on
@@ -199,7 +201,7 @@ int process (jack_nframes_t nframes, void *arg)
 	    //shift[midimap[((*(in_event.buffer)&15))]]=program[midimap[((*(in_event.buffer)&15))]];
 	  }
 	  else if (((*(in_event.buffer)&0xf0))==0xc0) { // program change
-	    program[midimap[((*(in_event.buffer)&15))]]=*(in_event.buffer + 1);
+	    program[midimap[((*(in_event.buffer)&15))]]=gmidi[*(in_event.buffer + 1)];
 	    chip[midimap[((*(in_event.buffer)&15))]/2]->set(0x15+(midimap[((*(in_event.buffer)&15))]%2),program[midimap[((*(in_event.buffer)&15))]]);
 	    //shift[midimap[((*(in_event.buffer)&15))]]=program[midimap[((*(in_event.buffer)&15))]];
 	  }
@@ -233,7 +235,7 @@ int process (jack_nframes_t nframes, void *arg)
 	/*memcpy (out, buf,
 		sizeof (jack_default_audio_sample_t) * nframes);*/
  for (int i=0; i<nframes; i++) {
-   out[i]+=(float)buf16[i]/16384.0;
+   out[i]+=(float)buf16[i]/8192.0;
  }
     }
 	delete[] buf16;
@@ -255,6 +257,25 @@ int main(int argc, char **argv) {
     al_init();
     bufinc=0;
     printf("initing\n");
+    
+    gmidi[0]=4;
+    gmidi[1]=4;
+    gmidi[4]=1;
+    gmidi[24]=1;
+    gmidi[25]=1;
+    gmidi[29]=1;
+    gmidi[27]=13;
+    gmidi[28]=6;
+    gmidi[30]=30;
+    gmidi[32]=6;
+    gmidi[33]=1;
+    gmidi[34]=7;
+    gmidi[35]=1;
+    gmidi[39]=7;
+    gmidi[56]=4;
+    gmidi[57]=6;
+    gmidi[117]=8;
+    gmidi[122]=8;
     
     al_install_keyboard();
     al_install_mouse();

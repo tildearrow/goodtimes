@@ -269,7 +269,7 @@ int transpose[4]={0,12,24,0};
 //int transpose[4]={-27,-15,-9,3};
 
 int noteperiod(float note) {
-	return (int)round(((cpuclock/32))/(440*(pow(2.0f,(float)(((float)note-58)/12))))); //+1000
+	return (int)round(((cpuclock/32))/(430*(pow(2.0f,(float)(((float)note-58)/12))))); //+1000
 }
 
 const int midimap[16]={0,1,2,3,0,1,2,0,0,0,0,0,0,0,0,0};
