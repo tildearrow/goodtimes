@@ -26,7 +26,11 @@ static void *thread_input(ALLEGRO_THREAD *thread, void *arg){
       if (bufqueue.size()<131072) {
       bufqueue.push(getchar());
 }
+if (feof(stdin)) {
+  break;
+}
     }
+    printf("end\n");
 }
 
 char popfront() {
@@ -70,8 +74,8 @@ int main(int argc, char **argv) {
         }
 	for (int i=0;i<PERIODS*2;i++) {
 	  data=0;
-	  data+=(bufqueue.size()>PERIODS*4)?(popfront()):(rand());
-	  data+=((bufqueue.size()>PERIODS*4)?(popfront()):(rand()))<<8;
+	  data+=(bufqueue.size()>PERIODS*4)?(popfront()):(0);
+	  data+=((bufqueue.size()>PERIODS*4)?(popfront()):(0))<<8;
 	  buf[i]=data;
 	}
 	al_set_audio_stream_fragment(as,buf);
