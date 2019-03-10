@@ -60,7 +60,7 @@ int sepy=8;
 int offx=80;
 int offy=32;
 int maxx=12;
-const int ver=5;
+const int ver=6;
 bool hdp=false;
 bool drawpadmenu=false;
 bool drawtextinput=false;
@@ -78,6 +78,16 @@ int mp3error=MPG123_OK;
 std::vector<float> mp3buf;
 unsigned char* mp3buf1;
 */
+
+int midiMap[16][128];
+// MIDI messages to be sent
+// special values outside first byte:
+// 0xfc: on/off status
+// 0xfd: R/4
+// 0xfe: G/4
+// 0xff: B/4
+int lightOnMap[padcount][32];
+int lightOffMap[padcount][32];
 
 #define PointInRect(x1,y1,x2,y2,checkx,checky) ((checkx>x1&&checkx<x2&&checky>y1&&checky<y2)?(1):(0))
 // strings
@@ -105,6 +115,8 @@ unsigned char* mp3buf1;
 #define strMenuRename "renombrar"
 #define strMenuDelete "borrar"
 #define strMenuColor "colorizar"
+#define strMenuMIDIl "MIDI learn"
+#define strMenuMIDIc "MIDI clear"
 
 #define strHelpHeader "Ayuda rápida:"
 #define strHelpLine1 "Clic izquierdo: reproducir botón"
@@ -985,6 +997,9 @@ outL = jack_port_register (client, "outL",
 	  al_draw_text(fText,al_map_rgb(255,255,255),padmenux+4,padmenuy+4,0,strMenuLoad);
 	  al_draw_text(fText,al_map_rgb(255,255,255),padmenux+4,padmenuy+22,0,strMenuRename);
 	  al_draw_text(fText,al_map_rgb(255,255,255),padmenux+4,padmenuy+40,0,strMenuDelete);
+          al_draw_text(fText,al_map_rgb(255,255,255),padmenux+4,padmenuy+58,0,strMenuColor);
+          al_draw_text(fText,al_map_rgb(255,255,255),padmenux+4,padmenuy+76,0,strMenuMIDIl);
+          al_draw_text(fText,al_map_rgb(255,255,255),padmenux+4,padmenuy+94,0,strMenuMIDIc);
 	}
 	if (drawtextinput){
 	  al_draw_filled_rectangle(dw/2-128,dh/2-24,dw/2+128,dh/2+24,al_map_rgb(0,0,0));
