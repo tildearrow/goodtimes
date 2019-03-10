@@ -1,15 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 const float pi=3.1415926535;
 
 class soundchip {
   char SCsaw[257];
   char SCsine[257];
   char SCtriangle[257];
-  unsigned short cycle[8];
-  unsigned short rcycle[8];
-  unsigned int lfsr;
+  unsigned int ocycle[8];
+  unsigned int cycle[8];
+  int rcycle[8];
+  unsigned int lfsr[8];
   char ns[8];
   bool randmem[8][128];
   char randpos[8];
@@ -19,6 +21,7 @@ class soundchip {
   float nslow[8];
   float nshigh[8];
   float nsband[8];
+  float pnsL, pnsR, ppsL, ppsR, tnsL, tnsR;
   static char Saw(int theduty, float value);
   static char Pulse(int theduty, float value);
   static char Sine(int theduty, float value);
@@ -37,6 +40,9 @@ class soundchip {
     unsigned short volicycles[8];
     unsigned short fscycles[8];
     unsigned char sweep[8];
+    unsigned short swvolt[8];
+    unsigned short swfreqt[8];
+    unsigned short swcutt[8];
     //int pcmpos[8];
     int pcmdec[8];
     //int pcmend[8];
@@ -71,19 +77,22 @@ class soundchip {
       unsigned short pcmrst;
       struct {
         unsigned short speed;
-        char amt;
+        unsigned char amt: 7;
+        unsigned char dir: 1;
         unsigned char bound;
       } swfreq;
       struct {
         unsigned short speed;
-        char amt: 6;
+        unsigned char amt: 5;
+        unsigned char dir: 1;
         unsigned char loop: 1;
         unsigned char loopi: 1;
         unsigned char bound;
       } swvol;
       struct {
         unsigned short speed;
-        char amt;
+        unsigned char amt: 7;
+        unsigned char dir: 1;
         unsigned char bound;
       } swcut;
       unsigned short wc;
