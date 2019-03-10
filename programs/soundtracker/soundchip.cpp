@@ -196,21 +196,21 @@ void soundchip::NextSample(float* l, float* r) {
       if (--swcutt[i]<=0) {
         swcutt[i]=chan[i].swcut.speed;
         if (chan[i].swcut.dir) {
-          if (chan[i].cut>(0xffff-chan[i].swcut.amt)) {
-            chan[i].cut=0xffff;
+          if (chan[i].cutoff>(0xffff-chan[i].swcut.amt)) {
+            chan[i].cutoff=0xffff;
           } else {
-            chan[i].cut+=chan[i].swcut.amt;
-            if ((chan[i].cut>>8)>chan[i].swcut.bound) {
-              chan[i].cut=chan[i].swcut.bound<<8;
+            chan[i].cutoff+=chan[i].swcut.amt;
+            if ((chan[i].cutoff>>8)>chan[i].swcut.bound) {
+              chan[i].cutoff=chan[i].swcut.bound<<8;
             }
           }
         } else {
-          if (chan[i].cut<chan[i].swcut.amt) {
-            chan[i].cut=0;
+          if (chan[i].cutoff<chan[i].swcut.amt) {
+            chan[i].cutoff=0;
           } else {
-            chan[i].cut-=chan[i].swcut.amt;
-            if ((chan[i].cut>>8)<chan[i].swcut.bound) {
-              chan[i].cut=chan[i].swcut.bound<<8;
+            chan[i].cutoff-=chan[i].swcut.amt;
+            if ((chan[i].cutoff>>8)<chan[i].swcut.bound) {
+              chan[i].cutoff=chan[i].swcut.bound<<8;
             }
           }
         }

@@ -110,6 +110,20 @@ void runSSOps() {
         sc.chan[curChan].swvol.loopi=!!(temp&0x80);
         sc.chan[curChan].swvol.bound=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
         break;
+      case 'k':
+        sc.chan[curChan].swfreq.speed=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        temp=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swfreq.amt=temp&0x7f;
+        sc.chan[curChan].swfreq.dir=!!(temp&0x80);
+        sc.chan[curChan].swfreq.bound=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        break;
+      case 'l':
+        sc.chan[curChan].swcut.speed=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        temp=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swcut.amt=temp&0x7f;
+        sc.chan[curChan].swcut.dir=!!(temp&0x80);
+        sc.chan[curChan].swcut.bound=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        break;
     }
     if (c=='R') break;
   }
