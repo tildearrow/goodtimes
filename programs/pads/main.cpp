@@ -462,13 +462,15 @@ void loadbank(){
           
           unsigned char* laf;
           laf=(unsigned char*)pads[_pad].sample;
+          fread(laf,4,pads[_pad].samplesize*2,savefile);
+/*
 	for (int spos=0;spos<pads[_pad].samplesize*2;spos++){
           laf[(spos*4)]=fgetc(savefile);
           laf[(spos*4)+1]=fgetc(savefile);
           laf[(spos*4)+2]=fgetc(savefile);
           laf[(spos*4)+3]=fgetc(savefile);
           //printf("laf %f %.2x%.2x%.2x%.2x\n",pads[_pad].sample[spos],laf[(spos*4)],laf[(spos*4)+1],laf[(spos*4)+2],laf[(spos*4)+3]);
-	}
+	}*/
 	} else {printf("shall create block with size 6!!!\n"); pads[_pad].sample=new float[6];}
       }
       printf("donedone\n");
