@@ -7,7 +7,7 @@
     ├───┴───┴───┴───┴───┴───┴───┴───┴───────┴───┴───┴───┴───┴───┴───┤
   10│ song name, 32 chars max, padded with 0x00s                    │
     ├───┬───┬───────┬───┬───┬───────────────┬───────────────┬───┬───┤
-  30│DFM│#CH│ flags │gvl│gpn│  PCM pointer  │Comment pointer│DFA|Len│
+  30│DFM│#CH│ flags │gvl│gpn│  PCM pointer  │Comment pointer│DFA│Len│
     ├───┴───┴───────┴───┴───┴───────────────┴───────────────┴───┴───┤
   40│ default volume per channel, 32 bytes                          │
     ├───────────────────────────────────────────────────────────────┤
@@ -34,15 +34,32 @@ xxxx│ pointers to patterns, 4 bytes per pointer                     │
   F0│                                                   │Len│Lps│Rps│
     └───────────────────────────────────────────────────┴───┴───┴───┘
     
-3. Instruments, Ins*64
+3. Instruments, new format, Ins*64:
+
+---- -0- -1- -2- -3- -4- -5- -6- -7- -8- -9- -A- -B- -C- -D- -E- -F-
+    ┌───────────────────────────────────────────────────────────────┐
+  00│ instrument name, 32 bytes, padded with 0x00s                  │
+    ├───────────────────────────────────────────────────┬───┬───┬───┤
+  20│Ins│PCm│Env│Unu|   FuncSize!   │  Unused!  |Off│FPt│FPR│DFM│LFO│
+    ├───────────────────────────────────────────────────┴───┴───┴───┤
+  30│Vol│Pan│PCMSlen|FilterH|Res|PCMSptr│PCMloop│FTm│Version│flg│RMF│
+    ├───────────────────────────────────────────────────────┴───┴───┤
+  40│ Function data; see ssformat.md for details... FuncSize bytes  │
+    └───────────────────────────────────────────────────────────────┘
+    
+FuncSize is a 32-bit size value.
+
+NOTE: Version must have MSB set. otherwise treated as legacy instrument.
+
+3. Instruments, legacy (pre-git) format, Ins*64
 ---- -0- -1- -2- -3- -4- -5- -6- -7- -8- -9- -A- -B- -C- -D- -E- -F-
     ┌───────────────────────────────────────────────────────────────┐
   00│ instrument name, 32 bytes, padded with 0x00s                  │
     ├───────────────────────────────────────────────────┬───┬───┬───┤
   20│Ins│PCm│Env│vol cut res dty shp pit hpi pan│Off│FPt│FPR│DFM│LFO│
-    └───────────────────────────────────────────────────┴───┴───┴───┘
+    ├───────────────────────────────────────────────────┴───┴───┴───┤
   30│Vol│Pan│PCMSlen|FilterH|Res|PCMSptr│PCMloop│FTm│Version│flg│RMF│
-    └───────────────────────────────────────────────────┴───┴───┴───┘
+    └───────────────────────────────────────────────────────┴───┴───┘
     
 NOTE: Instrument files start with a header which is 8 bytes long and reads "TRACKINS".
       Also, instrument files don't require the envelope IDs as they're saved along with the file.

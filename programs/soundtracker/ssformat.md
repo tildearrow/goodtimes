@@ -30,6 +30,9 @@ the format is very similar to the one used in family BASIC for the play command.
 
 - T: set sync period.
 
+- /: go to line.
+
+
 ## sweep config format
 
 - frequency and filter:
