@@ -208,7 +208,7 @@ void soundchip::NextSample(float* l, float* r) {
           if (chan[i].cutoff<chan[i].swcut.amt) {
             chan[i].cutoff=0;
           } else {
-            chan[i].cutoff-=chan[i].swcut.amt;
+            chan[i].cutoff=((2048-(unsigned int)chan[i].swcut.amt)*(unsigned int)chan[i].cutoff)>>11;
             if ((chan[i].cutoff>>8)<chan[i].swcut.bound) {
               chan[i].cutoff=chan[i].swcut.bound<<8;
             }
