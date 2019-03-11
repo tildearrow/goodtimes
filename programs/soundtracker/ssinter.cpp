@@ -2,6 +2,7 @@
 #include "soundchip.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <jack/jack.h>
 
@@ -23,6 +24,9 @@ int ticks, speed;
 FILE* f;
 int c;
 int curChan;
+int frame;
+
+size_t fsize;
 
 float resa0[2], resa1[2];
 
@@ -65,6 +69,7 @@ int decHex(int ch) {
 void runSSOps() {
   char temp;
   if (feof(f)) {
+    printf("\x1b[9B\n");
     exit(0);
     return;
   }
@@ -72,7 +77,7 @@ void runSSOps() {
     c=fgetc(f);
     switch (c) {
       case '$':
-        curChan=fgetc(f)-'0';
+        curChan=(fgetc(f)-'0')&7;
         break;
       case 'V':
         sc.chan[curChan].vol=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
@@ -96,7 +101,7 @@ void runSSOps() {
         sc.chan[curChan].reson=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
         break;
       case 'M':
-        temp=fgetc(f)-'0';
+        temp=(fgetc(f)-'0')&7;
         sc.chan[curChan].flags.swvol=!!(temp&1);
         sc.chan[curChan].flags.swfreq=!!(temp&2);
         sc.chan[curChan].flags.swcut=!!(temp&4);
@@ -140,12 +145,15 @@ int process(jack_nframes_t nframes, void* arg) {
     ticks-=20; // 20 CPU cycles per sound output cycle
     if (ticks<=0) {
       runSSOps();
-      printf("-----------------------------------\n");
+      printf("ssinter: filename                      % 8ld/%ld  % 8d\n",ftell(f),fsize,frame);
+      printf("\x1b[1;33m----\x1b[32m--\x1b[36m--\x1b[m----\x1b[1;34m----\x1b[31m--\x1b[35m--\x1b[30m------------\x1b[33m--------\x1b[32m--------\x1b[34m--------\x1b[m----\x1b[33m----\x1b[m\n");
       for (int i=0; i<256; i++) {
         printf("%.2x",((unsigned char*)sc.chan)[i]);
         if ((i&31)==31) printf("\n");
       }
+      printf("\x1b[10A");
       ticks+=speed;
+      frame++;
     }
     sc.NextSample(&temp[0],&temp[1]);
     resa0[0]=resa0[0]+resaf*(temp[0]-resa0[0]);
@@ -170,32 +178,41 @@ int process(jack_nframes_t nframes, void* arg) {
 }
 
 int main(int argc, char** argv) {
-  printf("ssinter.\n");
+  int which;
   sc.Init();
   procPos=0;
+  frame=0;
   ticks=0;
   resa0[0]=0; resa0[1]=0;
   resa1[0]=0; resa1[1]=0;
   
   if (argc<2) {
-    printf("provide a file\n");
+    printf("usage: %s [-n] file\n",argv[0]);
     return 1;
   }
+  targetSR=297500; // PAL.
+  speed=119000; // PAL.
+  which=1;
+
+  if (strcmp(argv[1],"-n")==0) {
+    which=2;
+    targetSR=309000; // NTSC.
+    speed=103103; // NTSC. 103000 for no colorburst compensation
+  }
   
-  if ((f=fopen(argv[1],"r"))==NULL) {
+  if ((f=fopen(argv[which],"r"))==NULL) {
     printf("not exist\n");
     return 1;
   }
+
+  fseek(f,0,SEEK_END);
+  fsize=ftell(f);
+  fseek(f,0,SEEK_SET);
   
   ac=jack_client_open("ssinter",JackNullOption,&as);
   if (ac==NULL) return 1;
   
   sr=jack_get_sample_rate(ac);
-  
-  targetSR=297500; // PAL.
-  speed=119000; // PAL.
-  //targetSR=309000; // NTSC.
-  //speed=103103; // NTSC. 103000 for no colorburst compensation
   
   noProc=sr/targetSR;
   
@@ -209,9 +226,10 @@ int main(int argc, char** argv) {
   jack_connect(ac,"ssinter:outL","system:playback_1");
   jack_connect(ac,"ssinter:outR","system:playback_2");
   
-  sc.chan[0].vol=127;
-  sc.chan[0].duty=63;
-  sc.chan[0].freq=4096;
+  for (int i=0; i<8; i++) {
+    sc.chan[i].pan=0;
+    sc.chan[i].duty=0x3f;
+  }
   
   sleep(-1);
   return 0;
