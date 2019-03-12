@@ -44,8 +44,8 @@ mkdir build
 cd build
 cmake ..
 make
-wget http://unifoundry.com/pub/unifont-8.0.01/font-builds/unifont-8.0.01.ttf
-mv unifont-8.0.01.ttf unifont.ttf
+wget http://unifoundry.com/pub/unifont/unifont-12.0.01/font-builds/unifont-12.0.01.ttf
+mv unifont-12.0.01.ttf unifont.ttf
 cp unifont.ttf text.ttf
 cp ../programs/thegame/alexlogo.png ..
 ```
