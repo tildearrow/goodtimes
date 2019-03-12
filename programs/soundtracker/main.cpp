@@ -36,7 +36,7 @@ double time2=0;
 #define ACCURACY // for accurate chip emulation
 //#define JACK
 #define NEWCODE
-#define dpiScale 2
+int dpiScale;
 //#define VBLANK
 //#define PRESERVE_INS
 
@@ -55,6 +55,13 @@ float DETUNE_FACTOR_GLOBAL;
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_native_dialog.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#ifndef __APPLE__
+#include <X11/Xlib.h>
+#endif
+#endif
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -524,6 +531,50 @@ bool PIR(float x1, float y1, float x2, float y2, float checkx, float checky) {
   return false;
 }
 #define interpolatee(aa,bb,cc) (aa+((bb-aa)*cc))
+
+double getScale() {
+  char* env;
+  // try with environment variable
+  env=getenv("TRACKER_SCALE");
+  if (env!=NULL) {
+    return atof(env);
+  }
+#if defined(__linux__)
+  // linux (wayland) code here
+#elif defined(_WIN32)
+  // windows code here
+  HDC disp;
+  int dpi;
+  disp=GetDC(NULL);
+  if (disp==NULL) {
+    return 1;
+  }
+  dpi=GetDeviceCaps(disp,LOGPIXELSX);
+  ReleaseDC(NULL,disp);
+  return (double)dpi/96.0;
+#elif defined(__APPLE__)
+  // macOS code here
+  double dpi;
+  if ((dpi=nsStubDPI())>0) {
+    return dpi;
+  }
+#elif defined(__ANDROID__)
+  // android code here
+#endif
+#if defined(__unix__)
+  // X11
+  Display* disp;
+  int dpi;
+  disp=XOpenDisplay(NULL);
+  if (disp!=NULL) {
+    dpi=(int)(0.5+(25.4*(double)XDisplayWidth(disp,XDefaultScreen(disp))/(double)XDisplayWidthMM(disp,XDefaultScreen(disp))));
+    XCloseDisplay(disp);
+    return (double)dpi/96.0;
+  }
+#endif
+  // assume 1
+  return 1;
+}
 
 inline void NextSampleAccuracy(int channumb){
   // get the next sample for a channel - sets nsL and nsR to respective values
@@ -5746,6 +5797,7 @@ DETUNE_FACTOR_GLOBAL=1;
 al_set_new_window_title("soundtracker");
 #endif
 #endif
+   dpiScale=getScale();
    display = al_create_display(scrW*dpiScale,scrH*dpiScale);
    //al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
    if(!display) {
