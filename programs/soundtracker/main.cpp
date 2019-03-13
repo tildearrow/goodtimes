@@ -6,7 +6,6 @@
 //             2014-2015.              //
 //>++++++++++-+-++-*.*-++-+-++++++++++<//
 
-// everything begins here >> [
 #define PROGRAM_NAME "soundtracker"
 #ifdef _WIN32
 #define PROGRAM_NAME "soundtracker.exe"
@@ -33,7 +32,6 @@ double time2=0;
 //#define FILM // define for film mode (NTSC should be defined first)
 //#define SMOOTH_SCROLL
 #define SOUNDS
-#define ACCURACY // for accurate chip emulation
 //#define JACK
 #define NEWCODE
 int dpiScale;
@@ -99,7 +97,6 @@ int tempo;
 int doframe;
 const int SCREEN_W=800;
 const int SCREEN_H=450;
-const int BOUNCER_SIZE = 16;
 ALLEGRO_BITMAP *bpatterns=NULL;
 unsigned char colorof[6]={0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff};
 unsigned char TheGRed=0;
@@ -430,7 +427,6 @@ int maxinputsize=0;
 int LastUsedChannel[8]={0,0,0,0,0,0,0,0};
 int LastUsedChannelMax;
 char* curdir;
-int noisebuf[32][256];
 char wavememory[131072]; // 128KB
 int pcmeditscale=0;
 int pcmeditseek=0;
@@ -515,11 +511,6 @@ enum colorindexes {
 };
 ALLEGRO_COLOR getconfigcol(int colid){
   return al_map_rgb(settings::colorR[colid],settings::colorG[colid],settings::colorB[colid]);
-}
-void RecreateNoiseBuffer(int channumb){
-  for (int aaa=0;aaa<256;aaa++) {
-  noisebuf[channumb][aaa]=rand()%2;
-    }
 }
 void Playback();
 void MuteAllChannels();
@@ -702,9 +693,6 @@ int nothing (jack_nframes_t nframes, void *arg){
             for(int ii=0;ii<8;ii++) {
               LastUsedChannelMax=(LastUsedChannelMax<LastUsedChannel[ii])?(LastUsedChannel[ii]):(LastUsedChannelMax);
             }
-            for(int ii=0;ii<32;ii++) {
-              if (cshape[ii]==5 && (cshape[ii]!=cshapeprev[ii])) {RecreateNoiseBuffer(ii);}
-            }
             if (ntsc) {
             #ifdef FILM
             raster2=fmod(al_get_time()*50,1)*525;
@@ -842,9 +830,6 @@ void initaudio() {
       audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,sout,spout, SDL_AUDIO_ALLOW_ANY_CHANGE);
       jacksr=44100;
 #endif
-  for (int bbb=0;bbb<32;bbb++) {
-  RecreateNoiseBuffer(bbb);
-    }
   for (int initindex=0;initindex<33;initindex++) {
     abuf[initindex].contents=new float[65536];
     //printf("%d ",initindex);
@@ -2828,9 +2813,6 @@ void Play() {
     if(pat[patid[curpat]][0][ii][3]==20)
     {if (pat[patid[curpat]][0][ii][4]!=0 && !tempolock)
     {tempo=maxval(31,pat[patid[curpat]][0][ii][4]);FPS=(double)tempo/2.5;
-    #ifndef AUDIO_THREADING
-    //detunefactor=DETUNE_FACTOR_GLOBAL*(50/FPS);
-    #endif
     }}
   }
   FPS=tempo/2.5;
@@ -5088,107 +5070,6 @@ int playfx(const unsigned char* fxdata,int fxpos,int achan){
   return fxoffset+fxpos+1;
 }
 
-static void *thread_audio(ALLEGRO_THREAD *thread, void *arg){
-  ALLEGRO_EVENT_QUEUE *audioeq=NULL;
-    ALLEGRO_TIMER *audiotimer=NULL;
-  ALLEGRO_FILE *audiodump=NULL;
-/*  audiodump=al_fopen("AUDIODUMP.raw","wb");
-  audiotimer=al_create_timer(1.0/50.0);
-  audioeq=al_create_event_queue();
-  al_register_event_source(audioeq, al_get_timer_event_source(audiotimer));
-  //al_start_timer(audiotimer);
-  while(1){
-      updateaudio(32);
-    if (ntsc) {
-      ASC::interval=(int)(6180000/FPS);
-      if (tempo==150) {ASC::interval=103103;}
-      #else
-      ASC::interval=(int)(5950000/FPS);
-      }
-      if (kb[ALLEGRO_KEY_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {ASC::interval=16384;}
-      fakeASC::interval=ASC::interval;
-      memset(abuf[32].contents,0,bufsize*8);
-      for(cycle=0;cycle<bufsize;cycle++){
-        for(cycle1=0;cycle1<20;cycle1++){
-          ASC::currentclock--;
-          if(ASC::currentclock<1) {
-          if (ntsc) {
-          #ifdef FILM
-            raster1=(((double)cycle*20)+(double)cycle1)/190.4;
-          #else
-            raster1=(((double)cycle*20)+(double)cycle1)/190.47619047619047619047619047619;
-          #endif
-          } else {
-            raster1=(((double)cycle*20)+(double)cycle1)/190.4;
-          }
-            double partialtime=al_get_time();
-            ASC::currentclock=ASC::interval;
-            for(int ii=0;ii<32;ii++) {
-              cshapeprev[ii]=cshape[ii];
-            }
-            if(playmode>0){
-              Playback();
-            }
-            else {
-              MuteAllChannels();
-            }
-            sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
-            for(int updateindex1=0;updateindex1<32;updateindex1++) {
-              if(muted[updateindex1]) { cvol[updateindex1]=0; }
-            }
-            LastUsedChannel[7]=LastUsedChannel[6];
-            LastUsedChannel[6]=LastUsedChannel[5];
-            LastUsedChannel[5]=LastUsedChannel[4];
-            LastUsedChannel[4]=LastUsedChannel[3];
-            LastUsedChannel[3]=LastUsedChannel[2];
-            LastUsedChannel[2]=LastUsedChannel[1];
-            LastUsedChannel[1]=LastUsedChannel[0];
-            LastUsedChannel[0]=0;
-            for(int updateindex2=32;updateindex2>0;updateindex2--) {
-              if(cvol[updateindex2-1]!=0) { LastUsedChannel[0]=updateindex2; break; }
-            }
-            LastUsedChannelMax=0;
-            for(int ii=0;ii<8;ii++) {
-              LastUsedChannelMax=(LastUsedChannelMax<LastUsedChannel[ii])?(LastUsedChannel[ii]):(LastUsedChannelMax);
-            }
-            for(int ii=0;ii<32;ii++) {
-              if (cshape[ii]==5 && (cshape[ii]!=cshapeprev[ii])) {RecreateNoiseBuffer(ii);}
-            }
-            if (ntsc) {
-            #ifdef FILM
-            raster2=fmod(al_get_time()*50,1)*525;
-            #else
-            raster2=((((double)cycle*20)+(double)cycle1)/190.47619047619047619047619047619)+((al_get_time()-partialtime)*525000);
-            #endif
-            } else {
-            raster2=((((double)cycle*20)+(double)cycle1)/190.4)+((al_get_time()-partialtime)*625000);
-            }
-          }
-        }
-        for(int updateindex=0;updateindex<LastUsedChannelMax;updateindex++) {
-          cstep[updateindex]=cycle;
-          #ifdef ACCURACY
-          NextSampleAccuracy(updateindex);
-          #else
-          NextSample(updateindex);
-          #endif
-          abuf[32].contents[((cycle%bufsize)*2)]+=nsL[updateindex];
-          abuf[32].contents[((cycle%bufsize)*2)+1]+=nsR[updateindex];
-        }  
-      }
-      audioframecounter++;
-      for(int ii=0;ii<(bufsize/50);ii++){
-      oscbuf[ii]=abuf[32].contents[ii*50];
-      }
-      if (al_get_thread_should_stop(thread)) {al_set_audio_stream_playing(chan[32],false); al_set_audio_stream_gain(chan[32],0); // jack
-     al_drain_audio_stream(chan[32]);
-     al_destroy_audio_stream(chan[32]);break;jack_client_close (jclient);}
-  }
-  return 0;*/
-  // OH PLEASE I DON'T WANT TO RETURN A VALUE!
-  return 0;
-}
-
 int main(int argc, char **argv){
   ALLEGRO_TRANSFORM tra;
   detunefactor=1;
@@ -5246,15 +5127,11 @@ tempo=125;
 DETUNE_FACTOR_GLOBAL=1;
   }
    ALLEGRO_EVENT_QUEUE *event_queue = NULL;
-   ALLEGRO_BITMAP *bouncer = NULL;
    ALLEGRO_FILE *texthand;
    ALLEGRO_THREAD *audiothread = NULL;
    filessorted.resize(1024);
    filenames.resize(1024);
    //int success=0;
-   float bouncer_x = SCREEN_W / 2.0 - BOUNCER_SIZE / 2.0;
-   float bouncer_y = SCREEN_H / 2.0 - BOUNCER_SIZE / 2.0;
-   float bouncer_dx = -2.0, bouncer_dy = 2.0;
    bool redraw = true;
    bool is_audio_inited=false;
    int helpfilesize;
@@ -5337,19 +5214,11 @@ al_set_new_window_title("soundtracker");
    if(!iskb){
      fprintf(stderr,"there will be no keyboard! :(");
    }
-   //printf("bouncer... ");
-   bouncer = al_create_bitmap(BOUNCER_SIZE, BOUNCER_SIZE);
    patternbitmap=al_create_bitmap(SCREEN_W,SCREEN_H);
    piano=al_create_bitmap(720,60);
    pianoroll=al_create_bitmap(720,128);
    pianoroll_temp=al_create_bitmap(720,128);
    mixer=al_create_bitmap(800,390);
-   if(!bouncer) {
-      fprintf(stderr, "failed to create bouncer bitmap!\n");
-      al_destroy_display(display);
-      al_destroy_timer(timer);
-      return -1;
-   }
    al_init_image_addon();
    logo=al_load_bitmap("logo.png");
    //logo=al_create_bitmap(360,240);
@@ -5409,17 +5278,12 @@ al_set_new_window_title("soundtracker");
    event_queue = al_create_event_queue();
    if(!event_queue) {
       fprintf(stderr, "failed to create event_queue!\n");
-      al_destroy_bitmap(bouncer);
       al_destroy_display(display);
       al_destroy_timer(timer);
       return -1;
    }
    printf("initializing audio channels\n");
    initaudio();
-   #ifdef AUDIO_THREADING
-   audiothread=al_create_thread(thread_audio,NULL);
-   al_start_thread(audiothread);
-   #endif
    //success=ImportMOD();
   // fixes a c++ memory bug
   for (int nonsense3=0;nonsense3<256;nonsense3++) {
@@ -5547,16 +5411,6 @@ al_set_new_window_title("soundtracker");
 
       if(ev.type == ALLEGRO_EVENT_TIMER) {
      //al_set_timer_speed(timer,1.0/FPS);
-         if(bouncer_x < 0 || bouncer_x > SCREEN_W - BOUNCER_SIZE) {
-            bouncer_dx = -bouncer_dx;
-         }
- 
-         if(bouncer_y < 0 || bouncer_y > SCREEN_H - BOUNCER_SIZE) {
-            bouncer_dy = -bouncer_dy;
-         }
- 
-         bouncer_x += bouncer_dx;
-         bouncer_y += bouncer_dy;
  
          redraw = true;
      skipframe=true;//!skipframe;
@@ -5659,9 +5513,6 @@ al_set_new_window_title("soundtracker");
             for(int ii=0;ii<8;ii++) {
               LastUsedChannelMax=(LastUsedChannelMax<LastUsedChannel[ii])?(LastUsedChannel[ii]):(LastUsedChannelMax);
             }
-            for(int ii=0;ii<32;ii++) {
-              if (cshape[ii]==5 && (cshape[ii]!=cshapeprev[ii])) {RecreateNoiseBuffer(ii);}
-            }
             if (ntsc) {
             #ifdef FILM
             raster2=fmod(al_get_time()*50,1)*525;
@@ -5689,12 +5540,6 @@ al_set_new_window_title("soundtracker");
      scrH=al_get_display_height(display)/dpiScale;
      }
          redraw = false;
-     /*#ifndef AUDIO_THREADING
-     for (int updateindex=0;updateindex<32;updateindex++) {
-     al_set_audio_stream_speed(chan[updateindex],FPS/50);
-         DU[updateindex]=updateaudio(updateindex);
-     }
-     #endif*/
 
      maxrasterdelta=(maxval(0,raster2-raster1)>maxrasterdelta)?(maxval(0,raster2-raster1)):(maxrasterdelta);
      //printf("%f\n",raster2-raster1);
@@ -5752,7 +5597,6 @@ al_set_new_window_title("soundtracker");
 #ifdef JACK
    jack_deactivate(jclient);
 #endif
-   //al_destroy_bitmap(bouncer);
    printf("destroying timer\n");
    al_destroy_timer(timer);
    printf("destroying display\n");
@@ -5770,4 +5614,4 @@ al_set_new_window_title("soundtracker");
    //delete[] wavememory;
    printf("finished\n");
    return 0;
-} // ] ends here
+}
