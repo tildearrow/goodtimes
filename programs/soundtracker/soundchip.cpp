@@ -139,7 +139,6 @@ void soundchip::NextSample(float* l, float* r) {
               if (chan[i].swvol.loopi) {
                 chan[i].swvol.dir=!chan[i].swvol.dir;
                 chan[i].vol=0xff-chan[i].vol;
-                assert(chan[i].vol>=0);
               } else {
                 chan[i].vol&=~0x80;
               }
@@ -154,7 +153,6 @@ void soundchip::NextSample(float* l, float* r) {
               if (chan[i].swvol.loopi) {
                 chan[i].swvol.dir=!chan[i].swvol.dir;
                 chan[i].vol=-chan[i].vol;
-                assert(chan[i].vol>=0);
               } else {
                 chan[i].vol&=~0x80;
               }
