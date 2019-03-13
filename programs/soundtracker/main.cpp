@@ -576,243 +576,6 @@ double getScale() {
   return 1;
 }
 
-inline void NextSampleAccuracy(int channumb){
-  // get the next sample for a channel - sets nsL and nsR to respective values
-        // 0. sweep unit
-  // volume
-  if (cvdir[channumb]) {
-    // down
-    cvperiod[channumb]++;
-    if (cvperiod[channumb]==cvdcycles[channumb]) {
-      cvperiod[channumb]=0;
-      if (cvol[channumb]==0) {
-        if (cvisweep[channumb]) {
-    cvdir[channumb]=!cvdir[channumb];
-        }
-        if (cvdloop[channumb]) {
-    cvol[channumb]=127;
-        }
-      } else {cvol[channumb]--;}
-    }
-  } else {
-    // up
-    cvperiod[channumb]++;
-    if (cvperiod[channumb]==cvdcycles[channumb]) {
-      cvperiod[channumb]=0;
-      if (cvol[channumb]==127) {
-        if (cvdsweep[channumb]) {
-    cvdir[channumb]=!cvdir[channumb];
-        }
-        if (cvdloop[channumb]) {
-    cvol[channumb]=0;
-        }
-      } else {cvol[channumb]++;}
-    }
-  }
-  // 1. wave generator
-  if(cmode[channumb]==1) { // pcm
-    if (cpcmpos[channumb]<cbound[channumb]) {
-         cpcmpos[channumb]+=(1/(double)cfreq[channumb])*((double)cpcmmult[channumb]+1);
-       crseek[channumb]=(float)wavememory[((int)cpcmpos[channumb])%131072];
-      if (settings::cubicspline) {
-       float _xm1 = wavememory[((int)cpcmpos[channumb] - 1)%131072];
-       float _x0  = wavememory[((int)cpcmpos[channumb] + 0)%131072];
-      float _x1  = wavememory[((int)cpcmpos[channumb] + 1)%131072];
-       float _x2  = wavememory[((int)cpcmpos[channumb] + 2)%131072];
-       float _a = (3 * (_x0-_x1) - _xm1 + _x2) / 2;
-       float _b = 2*_x1 + _xm1 - (5*_x0 + _x2) / 2;
-      float _c = (_x1 - _xm1) / 2;
-      float _finpos=fmod(cpcmpos[channumb],1);
-       crseek[channumb] = (((_a * _finpos) + _b) * _finpos + _c) * _finpos + _x0;
-      }
-       ns[channumb]=(float)((crseek[channumb])/128)*2*((float)cvol[channumb]/127);
-       } else {
-         if (cloop[channumb]) {cpcmpos[channumb]-=(int)cpcmpos[channumb];
-                     cpcmpos[channumb]+=cpcmstart[channumb];
-         } else ns[channumb]=0;}
-  } else {
-    if(!(cfreq[channumb]==0 && cvol[channumb]==0)){
-       switch(cshape[channumb]){
-       case 0: crseek[channumb]=((crstep[channumb])>(((cduty[channumb]+1)*cfreq[channumb])>>7))?(cvol[channumb]):(-cvol[channumb]); break;
-       case 1: crseek[channumb]=(((((float)crstep[channumb])/(float)cfreq[channumb])-0.5)*cvol[channumb]*4); break;
-       case 2: if (cduty[channumb]<64) {crseek[channumb]=((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI))*cvol[channumb]));}
-           else {crseek[channumb]=pow((float)((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI)))),(float)(cduty[channumb]*2)-127)*cvol[channumb];}; break;
-       case 3: crseek[channumb]=(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
-       case 4: if (crstep[channumb]%maxval(1,cfreq[channumb]>>1)==0) {rngpgv[channumb]=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv[channumb]; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]*cduty[channumb]/maxval(cfreq[channumb],1))%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
-       case 6: if (cfreq[channumb]&2) {crseek[channumb]=((2*(a800_2[(crstep[channumb]*5/cfreq[channumb])&7]))-1)*cvol[channumb];} else
-           if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[(crstep[channumb]*5/cfreq[channumb])&7]))-1)*cvol[channumb];}
-           else {crseek[channumb]=((2*(a800_1[(crstep[channumb]*5/cfreq[channumb])&7]))-1)*cvol[channumb];}; break;
-       case 7: crseek[channumb]=((1-(((float)crstep[channumb])/(float)cfreq[channumb]))*cvol[channumb]*2); break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       ns[channumb]=(float)((crseek[channumb])/128);
-       ++crstep[channumb];
-       // sync modulator on?
-       if (crm[channumb]==2) {++crrmstep[channumb];
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;crstep[channumb]=0;}}
-       // case 5?
-       if (cshape[channumb]==5) {if (crstep[channumb]>(cfreq[channumb]*cduty[channumb])) {crstep[channumb]=0;}} else {
-       if (crstep[channumb]>cfreq[channumb]) {crstep[channumb]=0;}}
-    }
-  }
-  // 2. ring modulator
-       if(crm[channumb]==1 && crmfreq[channumb]!=0){
-       switch(crmshape[channumb]){
-       case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
-       case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
-       case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-       case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
-       case 4: if(crstep[channumb]%(crmfreq[channumb]/2)==0) { rngpgv[channumb]=(((rand()%2)*2)-1)*127; }; crseek[channumb]=rngpgv[channumb]; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
-       case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       if (crm[channumb]==1) {ns[channumb]=ns[channumb]*(float)((crseek[channumb])/128);} // ring
-       ++crrmstep[channumb];
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;}
-       }
-    // 3. filter processor
-       if (!settings::nofilters) {
-    if (cfmode[channumb] && cvol[channumb]!=0) { // cvol[channumb]!=0 is a trick to prevent a heavy cpu load
-      float f=2*sin(ALLEGRO_PI*(((float)coff[channumb])/10.0)/297500);
-      low[channumb]=low[channumb]+f*band[channumb];
-      high[channumb]=ns[channumb]-low[channumb]-(1.0-(float)creso[channumb]/256.0)*band[channumb];
-      band[channumb]=f*high[channumb]+band[channumb];
-      ns[channumb]=((cfmode[channumb]&1)?low[channumb]:0)+((cfmode[channumb]&2)?high[channumb]:0)+((cfmode[channumb]&4)?band[channumb]:0);
-      }
-       }
-    // 4. stereo splitter
-      nsL[channumb]=ns[channumb]*((127-(maxval(0,(float)cpan[channumb])))/127)*((float)chanvol[channumb]/128);
-      nsR[channumb]=ns[channumb]*((128+(minval(0,(float)cpan[channumb])))/128)*((float)chanvol[channumb]/128);
-       if (settings::distortion) {
-         nsL[channumb]=minval(1,maxval(-1,nsL[channumb]));
-         nsR[channumb]=minval(1,maxval(-1,nsR[channumb]));
-       }
-           
-
-}
-
-inline void NextSampleAccuracy_old(int channumb){
-  // get the next sample for a channel - sets nsL and nsR to respective values
-        // 0. sweep unit
-  // volume
-  if (cvdir[channumb]) {
-    // down
-    cvperiod[channumb]++;
-    if (cvperiod[channumb]==cvdcycles[channumb]) {
-      cvperiod[channumb]=0;
-      if (cvol[channumb]==0) {
-        if (cvisweep[channumb]) {
-    cvdir[channumb]=!cvdir[channumb];
-        }
-        if (cvdloop[channumb]) {
-    cvol[channumb]=127;
-        }
-      } else {cvol[channumb]--;}
-    }
-  } else {
-    // up
-    cvperiod[channumb]++;
-    if (cvperiod[channumb]==cvdcycles[channumb]) {
-      cvperiod[channumb]=0;
-      if (cvol[channumb]==127) {
-        if (cvdsweep[channumb]) {
-    cvdir[channumb]=!cvdir[channumb];
-        }
-        if (cvdloop[channumb]) {
-    cvol[channumb]=0;
-        }
-      } else {cvol[channumb]++;}
-    }
-  }
-  // 1. wave generator
-  if(cmode[channumb]==1) { // pcm
-    if (cpcmpos[channumb]<cbound[channumb]) {
-         cpcmpos[channumb]+=(1/(double)cfreq[channumb])*((double)cpcmmult[channumb]+1);
-       crseek[channumb]=(float)wavememory[((int)cpcmpos[channumb])%131072];
-      if (settings::cubicspline) {
-       float _xm1 = wavememory[((int)cpcmpos[channumb] - 1)%131072];
-       float _x0  = wavememory[((int)cpcmpos[channumb] + 0)%131072];
-      float _x1  = wavememory[((int)cpcmpos[channumb] + 1)%131072];
-       float _x2  = wavememory[((int)cpcmpos[channumb] + 2)%131072];
-       float _a = (3 * (_x0-_x1) - _xm1 + _x2) / 2;
-       float _b = 2*_x1 + _xm1 - (5*_x0 + _x2) / 2;
-      float _c = (_x1 - _xm1) / 2;
-      float _finpos=fmod(cpcmpos[channumb],1);
-       crseek[channumb] = (((_a * _finpos) + _b) * _finpos + _c) * _finpos + _x0;
-      }
-       ns[channumb]=(float)((crseek[channumb])/128)*2*((float)cvol[channumb]/127);
-       } else {
-         if (cloop[channumb]) {cpcmpos[channumb]-=(int)cpcmpos[channumb];
-                     cpcmpos[channumb]+=cpcmstart[channumb];
-         } else ns[channumb]=0;}
-  } else {
-    if(!(cfreq[channumb]==0 && cvol[channumb]==0)){
-       switch(cshape[channumb]){
-       case 0: crseek[channumb]=((crstep[channumb])>(((cduty[channumb]+1)*cfreq[channumb])>>7))?(cvol[channumb]):(-cvol[channumb]); break;
-       case 1: crseek[channumb]=(((((float)crstep[channumb])/(float)cfreq[channumb])-0.5)*cvol[channumb]*4); break;
-       case 2: if (cduty[channumb]<64) {crseek[channumb]=((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI))*cvol[channumb]));}
-           else {crseek[channumb]=pow((float)((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI)))),(float)(cduty[channumb]*2)-127)*cvol[channumb];}; break;
-       case 3: crseek[channumb]=(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
-       case 4: if (crstep[channumb]%maxval(1,cfreq[channumb]>>1)==0) {rngpgv[channumb]=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv[channumb]; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]/maxval(cfreq[channumb],1))%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
-       case 6: if (cfreq[channumb]&2) {crseek[channumb]=((2*(a800_2[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];} else
-           if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}
-           else {crseek[channumb]=((2*(a800_1[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}; break;
-       case 7: crseek[channumb]=((1-(((float)crstep[channumb])/(float)cfreq[channumb]))*cvol[channumb]*2); break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       ns[channumb]=(float)((crseek[channumb])/128);
-       crstep[channumb]++;
-       // sync modulator on?
-       if (crm[channumb]==2) {crrmstep[channumb]++;
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;crstep[channumb]=0;}}
-       // case 5?
-       if (cshape[channumb]==5) {if (crstep[channumb]>(cfreq[channumb]*cduty[channumb])) {crstep[channumb]=0;}} else {
-       if (crstep[channumb]>cfreq[channumb]) {crstep[channumb]=0;}}
-    }
-  }
-  // 2. ring modulator
-       if(crm[channumb]==1 && crmfreq[channumb]!=0){
-       switch(crmshape[channumb]){
-       case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
-       case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
-       case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-       case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
-       case 4: if(crstep[channumb]%(crmfreq[channumb]/2)==0) { rngpgv[channumb]=(((rand()%2)*2)-1)*127; }; crseek[channumb]=rngpgv[channumb]; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
-       case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       if (crm[channumb]==1) {ns[channumb]=ns[channumb]*(float)((crseek[channumb])/128);} // ring
-       crrmstep[channumb]++;
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;}
-       }
-    // 3. filter processor
-       if (!settings::nofilters) {
-    if (cfmode[channumb] && cvol[channumb]!=0) { // cvol[channumb]!=0 is a trick to prevent a heavy cpu load
-      float f=2*sin(ALLEGRO_PI*(((float)coff[channumb])/10.0)/297500);
-      low[channumb]=low[channumb]+f*band[channumb];
-      high[channumb]=ns[channumb]-low[channumb]-(1.0-(float)creso[channumb]/256.0)*band[channumb];
-      band[channumb]=f*high[channumb]+band[channumb];
-      ns[channumb]=((cfmode[channumb]&1)?low[channumb]:0)+((cfmode[channumb]&2)?high[channumb]:0)+((cfmode[channumb]&4)?band[channumb]:0);
-      }
-       }
-    // 4. stereo splitter
-      nsL[channumb]=ns[channumb]*((127-(maxval(0,(float)cpan[channumb])))/127)*((float)chanvol[channumb]/128);
-      nsR[channumb]=ns[channumb]*((128+(minval(0,(float)cpan[channumb])))/128)*((float)chanvol[channumb]/128);
-       if (settings::distortion) {
-         nsL[channumb]=minval(1,maxval(-1,nsL[channumb]));
-         nsR[channumb]=minval(1,maxval(-1,nsR[channumb]));
-       }
-           
-
-}
 
 bool or90or80=false;
 bool reservedevent[32]={0,0,0,0,0,0,0,0,
@@ -964,14 +727,6 @@ int nothing (jack_nframes_t nframes, void *arg){
                                   }
 
 #else
-        for(int updateindex=0;updateindex<LastUsedChannelMax;updateindex++) {
-          cstep[updateindex]=cycle;
-
-          NextSampleAccuracy(updateindex);
-
-          abuf[32].contents[((cycle%bufsize)*2)]+=nsL[updateindex];
-          abuf[32].contents[((cycle%bufsize)*2)+1]+=nsR[updateindex];
-        }  
 #endif
         
         #define fff 0.33631372025095791864295318996109
@@ -1137,254 +892,6 @@ printf("%d %d\n",joutl,joutr);
   printf("done\n");
 }
 
-
-
-inline void NextSample(int channumb){
-  // get the next sample for a channel - sets nsL and nsR to respective values
-        // 0. sweep unit
-  // volume
-  if (cvdir[channumb]) {
-    // down
-    cvperiod[channumb]++;
-    if (cvperiod[channumb]==cvdcycles[channumb]) {
-      cvperiod[channumb]=0;
-      if (cvol[channumb]==0) {
-        if (cvisweep[channumb]) {
-    cvdir[channumb]=!cvdir[channumb];
-        }
-        if (cvdloop[channumb]) {
-    cvol[channumb]=127;
-        }
-      } else {cvol[channumb]--;}
-    }
-  } else {
-    // up
-    cvperiod[channumb]++;
-    if (cvperiod[channumb]==cvdcycles[channumb]) {
-      cvperiod[channumb]=0;
-      if (cvol[channumb]==127) {
-        if (cvdsweep[channumb]) {
-    cvdir[channumb]=!cvdir[channumb];
-        }
-        if (cvdloop[channumb]) {
-    cvol[channumb]=0;
-        }
-      } else {cvol[channumb]++;}
-    }
-  }
-  // 1. wave generator
-  if(cmode[channumb]==1) { // pcm
-    if (cpcmpos[channumb]<cbound[channumb]) {
-         cpcmpos[channumb]+=(1/(double)cfreq[channumb])*((double)cpcmmult[channumb]+1);
-       crseek[channumb]=(float)wavememory[((int)cpcmpos[channumb])%131072];
-      if (settings::cubicspline) {
-       float _xm1 = wavememory[((int)cpcmpos[channumb] - 1)%131072];
-       float _x0  = wavememory[((int)cpcmpos[channumb] + 0)%131072];
-      float _x1  = wavememory[((int)cpcmpos[channumb] + 1)%131072];
-       float _x2  = wavememory[((int)cpcmpos[channumb] + 2)%131072];
-       float _a = (3 * (_x0-_x1) - _xm1 + _x2) / 2;
-       float _b = 2*_x1 + _xm1 - (5*_x0 + _x2) / 2;
-      float _c = (_x1 - _xm1) / 2;
-      float _finpos=fmod(cpcmpos[channumb],1);
-       crseek[channumb] = (((_a * _finpos) + _b) * _finpos + _c) * _finpos + _x0;
-      }
-       ns[channumb]=(float)((crseek[channumb])/128)*2*((float)cvol[channumb]/127);
-       } else {
-         if (cloop[channumb]) {cpcmpos[channumb]-=(int)cpcmpos[channumb];
-                     cpcmpos[channumb]+=cpcmstart[channumb];
-         } else ns[channumb]=0;}
-  } else {
-    if(!(cfreq[channumb]==0 && cvol[channumb]==0)){
-       switch(cshape[channumb]){
-       case 0: crseek[channumb]=((crstep[channumb])>(((cduty[channumb]+1)*cfreq[channumb])>>7))?(cvol[channumb]):(-cvol[channumb]); break;
-       case 1: crseek[channumb]=(((((float)crstep[channumb])/(float)cfreq[channumb])-0.5)*cvol[channumb]*4); break;
-       case 2: if (cduty[channumb]<64) {crseek[channumb]=((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI))*cvol[channumb]));}
-           else {crseek[channumb]=pow((float)((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI)))),(float)(cduty[channumb]*2)-127)*cvol[channumb];}; break;
-       case 3: crseek[channumb]=(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
-       case 4: if (crstep[channumb]%maxval(1,cfreq[channumb]>>1)==0) {rngpgv[channumb]=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv[channumb]; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]*cduty[channumb]/maxval(cfreq[channumb],1))%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
-       case 6: if (cfreq[channumb]&2) {crseek[channumb]=((2*(a800_2[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];} else
-           if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}
-           else {crseek[channumb]=((2*(a800_1[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}; break;
-       case 7: crseek[channumb]=((1-(((float)crstep[channumb])/(float)cfreq[channumb]))*cvol[channumb]*2); break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       ns[channumb]=(float)((crseek[channumb])/128);
-       crstep[channumb]++;
-       // sync modulator on?
-       if (crm[channumb]==2) {crrmstep[channumb]++;
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;crstep[channumb]=0;}}
-       if (crstep[channumb]>cfreq[channumb]) {crstep[channumb]=0;}
-    }
-  }
-  // 2. ring modulator
-       if(crm[channumb]==1 && crmfreq[channumb]!=0){
-       switch(crmshape[channumb]){
-       case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
-       case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
-       case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-       case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
-       case 4: if(crstep[channumb]%(crmfreq[channumb]/2)==0) { rngpgv[channumb]=(((rand()%2)*2)-1)*127; }; crseek[channumb]=rngpgv[channumb]; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
-       case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       if (crm[channumb]==1) {ns[channumb]=ns[channumb]*(float)((crseek[channumb])/128);} // ring
-       crrmstep[channumb]++;
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;}
-       }
-    // 3. filter processor
-       if (!settings::nofilters) {
-    if (cfmode[channumb] && cvol[channumb]!=0) { // cvol[channumb]!=0 is a trick to prevent a heavy cpu load
-      float f=2*sin(ALLEGRO_PI*(((float)coff[channumb])/10.0)/297500);
-      low[channumb]=low[channumb]+f*band[channumb];
-      high[channumb]=ns[channumb]-low[channumb]-(1.0-(float)creso[channumb]/256.0)*band[channumb];
-      band[channumb]=f*high[channumb]+band[channumb];
-      ns[channumb]=((cfmode[channumb]&1)?low[channumb]:0)+((cfmode[channumb]&2)?high[channumb]:0)+((cfmode[channumb]&4)?band[channumb]:0);
-      }
-       }
-    // 4. stereo splitter
-      nsL[channumb]=ns[channumb]*((127-(maxval(0,(float)cpan[channumb])))/127)*((float)chanvol[channumb]/128);
-      nsR[channumb]=ns[channumb]*((128+(minval(0,(float)cpan[channumb])))/128)*((float)chanvol[channumb]/128);
-       if (settings::distortion) {
-         nsL[channumb]=minval(1,maxval(-1,nsL[channumb]));
-         nsR[channumb]=minval(1,maxval(-1,nsR[channumb]));
-       }
-}
-int updateaudio(int channumb) {
-  // all-channel wave gen
-    #ifdef AUDIO_DUMPING
-    for (int ii=0;ii<bufsize*2;ii++) {
-      al_fwrite16le(audiodump,(short)(
-        maxval(minval(32767,((abuf[channumb].contents[ii])+(abuf[channumb].contents[ii+2]))*2560),-32767)
-        ));
-      if ((ii%4)==1) {ii+=2;}
-    }
-    #endif
-    
-      ALLEGRO_EVENT aevnt;
-    okay:
-      al_wait_for_event(aqueue[channumb], &aevnt);
-      if (aevnt.type == ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT) {
-         buf=static_cast<float *>(al_get_audio_stream_fragment(chan[channumb]));
-         if (!buf) {
-            //printf("lost buffer! frame: %d audioframe: %d\n",framecounter,audioframecounter);
-      //delete &aevnt;
-      goto okay;
-         }
-     //buf=abuf[channumb].contents;
-     memcpy(buf,abuf[channumb].contents,bufsize*8);
-     if (cglobvol<128 && cglobvol>-1) {
-       for (int ii=0;ii<(bufsize*2);ii++) {
-         buf[ii]=buf[ii]*((float)cglobvol/128);
-       }
-     }
-
-     /*for (cstep[channumb]=0;cstep[channumb]<bufsize;cstep[channumb]++) {
-     NextSample(channumb);
-     buf[(cstep[channumb]*2)]=nsL[channumb];
-     buf[(cstep[channumb]*2)+1]=nsR[channumb];
-     }*/
-    if (!al_set_audio_stream_fragment(chan[channumb], buf)) {
-            fprintf(stderr,"Error setting stream fragment.\n"); return 1;
-         }
-    al_set_audio_stream_playmode(chan[channumb],ALLEGRO_PLAYMODE_ONCE);
-  al_set_audio_stream_gain(chan[channumb],0);
-  al_set_audio_stream_playing(chan[channumb],true);
-    }
-    return 0;
-}
-int updateaudio_old(int channumb) {
-  // all-channel wave gen
-      ALLEGRO_EVENT aevnt;
-      al_wait_for_event(aqueue[channumb], &aevnt);
-      if (aevnt.type == ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT) {
-         buf=static_cast<float *>(al_get_audio_stream_fragment(chan[channumb]));
-         if (!buf) {
-            return 1;
-         }
-     // 1. wave generator
-     int rngpgv=0;
-     if(cmode[channumb]==1) { // pcm
-    for (cstep[channumb]=0;cstep[channumb]<bufsize;cstep[channumb]++) {
-       if (cpcmpos[channumb]<cbound[channumb]) {
-         cpcmpos[channumb]+=(1/(double)cfreq[channumb])*((double)cpcmmult[channumb]+1);
-       crseek[channumb]=(float)wavememory[((int)cpcmpos[channumb])%131072];
-       buf[cstep[channumb]]=(float)((crseek[channumb])/128)*2*((float)cvol[channumb]/127);
-       } else {
-         if (cloop[channumb]) {cpcmpos[channumb]-=(int)cpcmpos[channumb];
-                     cpcmpos[channumb]+=cpcmstart[channumb];
-         } else buf[cstep[channumb]]=0;}
-    }
-     } else {
-     for (cstep[channumb]=0;cstep[channumb]<bufsize;cstep[channumb]++) {
-       if(cfreq[channumb]==0){break;}
-       if(cvol[channumb]==0){memset(buf,0,bufsize*(sizeof buf));break;}
-       switch(cshape[channumb]){
-       case 0: crseek[channumb]=((crstep[channumb])>(((cduty[channumb]+1)*cfreq[channumb])/128))?(cvol[channumb]):(-cvol[channumb]); break;
-       case 1: crseek[channumb]=(int)(((((float)crstep[channumb])/(float)cfreq[channumb])-0.5)*cvol[channumb]*4); break;
-       case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crstep[channumb])*2/((static_cast<float>(cfreq[channumb]))/ALLEGRO_PI))*cvol[channumb])); break;
-       case 3: crseek[channumb]=(int)(((fabs((((float)crstep[channumb])/(float)cfreq[channumb])-0.5))-0.25)*cvol[channumb]*4); break;
-       case 4: if (cstep[channumb]%(cfreq[channumb]/2)==0) {rngpgv=(((rand()%2)*2)-1)*cvol[channumb];}; crseek[channumb]=rngpgv; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crstep[channumb]*cduty[channumb]/cfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*cvol[channumb]; break;
-       case 6: if (cfreq[channumb]&1) {crseek[channumb]=((2*(a800[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}
-           else {crseek[channumb]=((2*(a800_1[crstep[channumb]*5/cfreq[channumb]]))-1)*cvol[channumb];}; break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       buf[cstep[channumb]]=(float)((crseek[channumb])/128);
-       crstep[channumb]++;
-       // sync modulator on?
-       if (crm[channumb]==2) {crrmstep[channumb]++;
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;crstep[channumb]=0;}}
-       if (crstep[channumb]>cfreq[channumb]) {crstep[channumb]=0;}
-     }
-     }
-    // ring modulator
-    for (cstep[channumb]=0;cstep[channumb]<bufsize;cstep[channumb]++) {
-       if(crm[channumb]!=1){break;}
-       if(crmfreq[channumb]==0){break;}
-       switch(crmshape[channumb]){
-       case 0: crseek[channumb]=((crrmstep[channumb])>(((crmduty[channumb]+1)*crmfreq[channumb])/128))?(127):(-127); break;
-       case 1: crseek[channumb]=(int)(((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5)*127*2); break;
-       case 2: crseek[channumb]=static_cast<int>((sin(static_cast<float>(crrmstep[channumb])*2/((static_cast<float>(crmfreq[channumb]))/ALLEGRO_PI))*127)); break;
-       case 3: crseek[channumb]=(int)(((fabs((((float)crrmstep[channumb])/(float)crmfreq[channumb])-0.5))-0.25)*127*2); break;
-       case 4: if (cstep[channumb]%(crmfreq[channumb]/2)==0) {rngpgv=(((rand()%2)*2)-1)*127;}; crseek[channumb]=rngpgv; break;
-       case 5: crseek[channumb]=((noisebuf[channumb][(crrmstep[channumb]*crmduty[channumb]/crmfreq[channumb])%maxval(cduty[channumb],1)]*2)-1)*127; break;
-       case 6: crseek[channumb]=((2*(a800[crrmstep[channumb]*5/crmfreq[channumb]]))-1)*127; break;
-       }
-       //buf[(cstep[channumb]*2)]=(float)((crseek[channumb])/128)*((127-(maxval(0,(float)cpan[channumb])))/127); // left
-       //buf[(cstep[channumb]*2)+1]=(float)((crseek[channumb])/128)*((128+(minval(0,(float)cpan[channumb])))/128); // right
-       if (crm[channumb]==1) {buf[cstep[channumb]]=buf[cstep[channumb]]*(float)((crseek[channumb])/128);} // ring
-       crrmstep[channumb]++;
-       if (crrmstep[channumb]>crmfreq[channumb]) {crrmstep[channumb]=0;}
-     }
-     // 2. filter processor
-    if (cfmode[channumb] && cvol[channumb]!=0) { // cvol[channumb]!=0 is a trick to prevent a heavy cpu load
-      float f=2*sin(ALLEGRO_PI*(((float)coff[channumb])/10.0)/297500);
-      for (cstep[channumb]=0;cstep[channumb]<bufsize;cstep[channumb]++) {
-      low[channumb]=low[channumb]+f*band[channumb];
-      high[channumb]=buf[cstep[channumb]]-low[channumb]-(1.0-(float)creso[channumb]/256.0)*band[channumb];
-      band[channumb]=f*high[channumb]+band[channumb];
-      buf[cstep[channumb]]=((cfmode[channumb]&1)?low[channumb]:0)+((cfmode[channumb]&2)?high[channumb]:0)+((cfmode[channumb]&4)?band[channumb]:0);
-      }}
-     // 3. stereo splitter
-     for (int splitter=bufsize;splitter>0;splitter--) {
-       buf[(splitter*2)]=buf[splitter]*((127-(maxval(0,(float)cpan[channumb])))/127)*((float)chanvol[channumb]/128); // left
-       buf[(splitter*2)+1]=buf[splitter]*((128+(minval(0,(float)cpan[channumb])))/128)*((float)chanvol[channumb]/128); // right
-     }
-         if (!al_set_audio_stream_fragment(chan[channumb], buf)) {
-            fprintf(stderr,"Error setting stream fragment.\n");
-         }
-    }
-  al_set_audio_stream_playmode(chan[channumb],ALLEGRO_PLAYMODE_LOOP);
-  al_set_audio_stream_gain(chan[channumb],0.5);
-  al_set_audio_stream_playing(chan[channumb],true);
-  ////cout << cfreq[channumb] << " " << cvol[channumb] << " ";
-  return 0;
-}
 ALLEGRO_COLOR getucol(unsigned char thecol){
   if (thecol<16) {
     if (thecol==8) {return (al_map_rgb(128,128,128));} else {
@@ -3170,7 +2677,7 @@ void drawconfig(){
 void drawabout(){
   // draws about screen
   al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,PROGRAM_NAME);
-  al_draw_textf(text,getconfigcol(colSEL1),scrW/2,72,ALLEGRO_ALIGN_CENTER,/*"dev%d"*/"git",ver);
+  al_draw_textf(text,getconfigcol(colSEL1),scrW/2,72,ALLEGRO_ALIGN_CENTER,"r%d",ver);
   al_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*ALLEGRO_PI)/8)*(playmode!=0),0);
 }
 void drawpiano(){
@@ -4124,11 +3631,12 @@ int LoadFile(const char* filename){
     CleanupPatterns();
     //printf("%d ",al_ftell(sfile));
     TVER=al_fread16le(sfile); // version
-    printf("module was created with version dev%d\n",TVER);
+    printf("module version %d\n",TVER);
     if (TVER<60) {printf("-applying filter mode compatibility\n");}
     if (TVER<65) {printf("-applying volume column compatibility\n");}
     if (TVER<106) {printf("-applying loop point fix compatibility\n");}
     if (TVER<143) {printf("-applying old sequence format compatibility\n");}
+    if (TVER<144) {printf("-applying legacy instrument compatibility\n");}
     //printf("%d ",al_ftell(sfile));
     instruments=al_fgetc(sfile); // instruments
     patterns=al_fgetc(sfile); // patterns
@@ -4194,6 +3702,13 @@ int LoadFile(const char* filename){
       // version<60 filter mode fix
       if(TVER<60){
         if (instrument[ii][0x22]&2) {instrument[ii][0x2e]^=1;}
+      }
+      // version<144 force legacy instrument
+      if (TVER<144) {
+        instrument[ii][0x3d]&=~0x80;
+      }
+      if (instrument[ii][0x3d]&0x80) { // new instrument
+        
       }
     }
     //printf("reading sequences...\n");
@@ -5399,7 +4914,7 @@ void drawdisp() {
   
   // header
   al_draw_text(text,getconfigcol(colSEL1),0,0,ALLEGRO_ALIGN_LEFT,PROGRAM_NAME);
-  al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,/*"dev%d"*/"git",ver);
+  al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,"r%d",ver);
   // properties - buttons
   //al_draw_text(text,getconfigcol(colSEL1),0,12,ALLEGRO_ALIGN_LEFT,"|");
   patseek+=(curpat-patseek)/4;
@@ -5683,7 +5198,7 @@ int main(int argc, char **argv){
   chip[2].Init();
   chip[3].Init();
 #endif
-  printf("soundtracker (dev%d)\n",ver);
+  printf("soundtracker (r%d)\n",ver);
   framecounter=0;
   playermode=false;
   comments=new char[65536];
@@ -6168,7 +5683,6 @@ al_set_new_window_title("soundtracker");
                                   }
         }
       }
-      updateaudio(32);
      #endif
      if (!playermode) {
      scrW=al_get_display_width(display)/dpiScale;
