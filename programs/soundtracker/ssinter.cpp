@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <unistd.h>
 #include <jack/jack.h>
 
@@ -22,7 +23,6 @@ double procPos;
 int ticks, speed;
 
 FILE* f;
-int c;
 int curChan;
 int frame;
 
@@ -31,6 +31,8 @@ size_t fsize;
 float resa0[2], resa1[2];
 
 #define resaf 0.33631372025095791864295318996109
+
+std::string str;
 
 int decHex(int ch) {
   switch (ch) {
@@ -66,77 +68,87 @@ int decHex(int ch) {
   return 0;
 }
 
-void runSSOps() {
+int bufchar(const char* buf, size_t tell, size_t bound) {
+  if (tell>=bound) return EOF;
+  return buf[tell];
+}
+
+#define _NEXT_ bufchar(buf,set++,size)
+
+// returns false if end of stream
+bool runSSOps(const char* buf, size_t set, size_t size) {
   char temp;
-  if (feof(f)) {
+  int c;
+  if (set>=size) {
     printf("\x1b[9B\n");
-    exit(0);
-    return;
+    return false;
   }
-  while (!feof(f)) {
-    c=fgetc(f);
+  while (set<size) {
+    c=_NEXT_;
     switch (c) {
       case '$':
-        curChan=(fgetc(f)-'0')&7;
+        curChan=(_NEXT_-'0')&7;
         break;
       case 'V':
-        sc.chan[curChan].vol=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].vol=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'Y':
-        sc.chan[curChan].duty=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].duty=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'f':
-        sc.chan[curChan].freq=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].freq=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'S':
-        sc.chan[curChan].flags.shape=fgetc(f)-'0';
+        sc.chan[curChan].flags.shape=_NEXT_-'0';
         break;
       case 'I':
-        sc.chan[curChan].flags.fmode=fgetc(f)-'0';
+        sc.chan[curChan].flags.fmode=_NEXT_-'0';
         break;
       case 'c':
-        sc.chan[curChan].cutoff=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].cutoff=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'r':
-        sc.chan[curChan].reson=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].reson=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'M':
-        temp=(fgetc(f)-'0')&7;
+        temp=(_NEXT_-'0')&7;
         sc.chan[curChan].flags.swvol=!!(temp&1);
         sc.chan[curChan].flags.swfreq=!!(temp&2);
         sc.chan[curChan].flags.swcut=!!(temp&4);
         break;
       case 'v':
-        sc.chan[curChan].swvol.speed=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
-        temp=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swvol.speed=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        temp=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         sc.chan[curChan].swvol.amt=temp&0x1f;
         sc.chan[curChan].swvol.dir=!!(temp&0x20);
         sc.chan[curChan].swvol.loop=!!(temp&0x40);
         sc.chan[curChan].swvol.loopi=!!(temp&0x80);
-        sc.chan[curChan].swvol.bound=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swvol.bound=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'k':
-        sc.chan[curChan].swfreq.speed=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
-        temp=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swfreq.speed=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        temp=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         sc.chan[curChan].swfreq.amt=temp&0x7f;
         sc.chan[curChan].swfreq.dir=!!(temp&0x80);
-        sc.chan[curChan].swfreq.bound=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swfreq.bound=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
       case 'l':
-        sc.chan[curChan].swcut.speed=(decHex(fgetc(f))<<12)+(decHex(fgetc(f))<<8)+(decHex(fgetc(f))<<4)+decHex(fgetc(f));
-        temp=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swcut.speed=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        temp=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         sc.chan[curChan].swcut.amt=temp&0x7f;
         sc.chan[curChan].swcut.dir=!!(temp&0x80);
-        sc.chan[curChan].swcut.bound=(decHex(fgetc(f))<<4)+decHex(fgetc(f));
+        sc.chan[curChan].swcut.bound=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
         break;
     }
     if (c=='R') break;
   }
+  return true;
 };
 
 int process(jack_nframes_t nframes, void* arg) {
   float* buf[2];
   float temp[2];
+  int wc;
   for (int i=0; i<2; i++) {
     buf[i]=(float*)jack_port_get_buffer(ao[i],nframes);
   }
@@ -144,7 +156,12 @@ int process(jack_nframes_t nframes, void* arg) {
   for (size_t i=0; i<nframes;) {
     ticks-=20; // 20 CPU cycles per sound output cycle
     if (ticks<=0) {
-      runSSOps();
+      str="";
+      while ((wc=fgetc(f))!=EOF) {
+        str+=wc;
+        if (wc=='R') break;
+      }
+      runSSOps(str.c_str(),0,str.size());
       printf("ssinter: filename                      % 8ld/%ld  % 8d\n",ftell(f),fsize,frame);
       printf("\x1b[1;33m----\x1b[32m--\x1b[36m--\x1b[m----\x1b[1;34m----\x1b[31m--\x1b[35m--\x1b[30m------------\x1b[33m--------\x1b[32m--------\x1b[34m--------\x1b[m----\x1b[33m----\x1b[m\n");
       for (int i=0; i<256; i++) {
