@@ -33,13 +33,14 @@ class Graphics {
   Color textCol;
   char putBuf[4096];
   bool inited;
+  ALLEGRO_FONT* allegFont;
   public:
     Point getTPos();
     Point getWSize();
     void tPos(float x, float y);
     void tColor(unsigned char color);
     int printf(const char* format, ...);
-    bool init();
+    bool init(ALLEGRO_FONT* f);
     bool quit();
     Graphics(): inited(false) {}
 };

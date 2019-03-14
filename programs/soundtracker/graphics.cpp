@@ -55,12 +55,14 @@ int Graphics::printf(const char* format, ...) {
   ret=vsnprintf(putBuf,4095,format,va);
   write(1,putBuf,ret);
   textPos.x+=ret;
+  al_draw_text(allegFont,al_map_rgb_f(textCol.r,textCol.g,textCol.b),8*textPos.x,12*textPos.y,ALLEGRO_ALIGN_LEFT,putBuf);
   va_end(va);
   return ret;
 }
 
-bool Graphics::init() {
+bool Graphics::init(ALLEGRO_FONT* f) {
   tPos(0,0);
   tColor(15);
+  allegFont=f;
   return true;
 }

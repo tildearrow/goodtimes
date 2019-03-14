@@ -5113,7 +5113,6 @@ al_set_new_window_title("soundtracker");
 #endif
 #endif
    dpiScale=getScale();
-   g.init();
    display = al_create_display(scrW*dpiScale,scrH*dpiScale);
    //al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
    if(!display) {
@@ -5128,6 +5127,7 @@ al_set_new_window_title("soundtracker");
      fprintf(stderr,"unifont.ttf wasn't found - halting");
      return -1;
    }
+   g.init(text);
    printf("initializing mouse input\n");
    bool ismouse=al_install_mouse();
    if(!ismouse){
