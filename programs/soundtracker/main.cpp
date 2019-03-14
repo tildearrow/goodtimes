@@ -40,26 +40,7 @@ bool ntsc=false;
 float DETUNE_FACTOR_GLOBAL;
 
 //// INCLUDES AND STUFF ////
-#include <stdio.h>
-#include <math.h>
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_image.h>
-#include <allegro5/allegro_ttf.h>
-#include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_native_dialog.h>
-#ifdef _WIN32
-#include <windows.h>
-#else
-#ifndef __APPLE__
-#include <X11/Xlib.h>
-#endif
-#endif
-#include <stdint.h>
-#include <string>
-#include <vector>
+#include "tracker.h"
 #ifdef JACK
 #include <jack/jack.h>
 #include <jack/midiport.h>
@@ -478,6 +459,10 @@ namespace settings {
   bool nofilters=false;
   bool muffle=false;
 }
+
+// NEW VARIABLES BEGIN //
+Graphics g;
+// NEW VARIABLES END //
 
 enum colorindexes {
   colNOTE, colINST, colVOLU, colFXTM, colFXSN, colFXVL, colFXPT, colFXNO, colFXSP, colFXPN, colFXUK, colBROW,
@@ -4833,6 +4818,12 @@ void drawdisp() {
   #endif
   
   // header
+  g.tPos(0,0);
+  g.tColor(14);
+  g.printf(PROGRAM_NAME);
+  g.tPos(14,0);
+  g.printf("r%d\n",ver);
+
   al_draw_text(text,getconfigcol(colSEL1),0,0,ALLEGRO_ALIGN_LEFT,PROGRAM_NAME);
   al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,"r%d",ver);
   // properties - buttons
@@ -5122,6 +5113,7 @@ al_set_new_window_title("soundtracker");
 #endif
 #endif
    dpiScale=getScale();
+   g.init();
    display = al_create_display(scrW*dpiScale,scrH*dpiScale);
    //al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
    if(!display) {

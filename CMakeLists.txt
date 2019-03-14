@@ -26,7 +26,9 @@ add_executable(pads programs/pads/main.cpp)
 add_executable(credits programs/credits/main.cpp)
 add_executable(thegame programs/thegame/engine.cpp programs/thegame/main.cpp)
 add_executable(timertest programs/timertest/main.cpp)
-add_executable(soundtracker programs/soundtracker/soundchip.cpp programs/soundtracker/main.cpp)
+add_executable(soundtracker programs/soundtracker/soundchip.cpp
+                            programs/soundtracker/graphics.cpp
+                            programs/soundtracker/main.cpp)
 if (HAVE_JACK)
 target_link_libraries(4channelbypass jack)
 target_link_libraries(lightshow jack)
