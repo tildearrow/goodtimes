@@ -94,9 +94,6 @@ const int SCREEN_W=800;
 const int SCREEN_H=450;
 ALLEGRO_BITMAP *bpatterns=NULL;
 unsigned char colorof[6]={0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff};
-unsigned char TheGRed=0;
-unsigned char TheGGreen=0;
-unsigned char TheGBlue=0;
 int degrees=0; // global all-purpose sine
 int prevX=0;
 int prevY=0;
@@ -837,10 +834,7 @@ ALLEGRO_COLOR getucol(unsigned char thecol){
     return (al_map_rgb(8+(10*(thecol-232)),8+(10*(thecol-232)),8+(10*(thecol-232))));
   }
   else {
-    TheGRed=colorof[((thecol-16)/36)];
-    TheGGreen=colorof[((thecol-16)/6)%6];
-    TheGBlue=colorof[(thecol-16)%6];
-    return (al_map_rgb(TheGRed,TheGGreen,TheGBlue));
+    return (al_map_rgb(colorof[((thecol-16)/36)],colorof[((thecol-16)/6)%6],colorof[(thecol-16)%6]));
   }}
   return al_map_rgb(255,255,255);
 }
