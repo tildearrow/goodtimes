@@ -31,7 +31,6 @@ double time2=0;
 //#define SMOOTH_SCROLL
 #define SOUNDS
 //#define JACK
-#define NEWCODE
 int dpiScale;
 //#define VBLANK
 //#define PRESERVE_INS
@@ -79,11 +78,9 @@ SDL_AudioSpec* spout;
 uint32_t jacksr;
 #endif
 
-#ifdef NEWCODE
 #include "soundchip.h"
 soundchip chip[4]; // up to 4 soundchips
 #define soundchips 2
-#endif
 
 using namespace std;
    ALLEGRO_TIMER *timer = NULL;
@@ -434,11 +431,6 @@ int pitch = 0x20;
 int val = 0;
 int i;
 
-// init filters
-float low[33];
-float high[33];
-float band[33];
-
 float nsL[33];
 float nsR[33];
 float ns[33];
@@ -465,9 +457,7 @@ ALLEGRO_BITMAP *piano=NULL;
 ALLEGRO_BITMAP *mixer=NULL;
 ALLEGRO_DISPLAY *display=NULL;
 bool firstframe=true;
-struct BufferArray {
-  float* contents;
-} abuf[33]; // abuf[32] is the master buffer
+float* abuf;
 float oscbuf[65536]={}; // safe oscilloscope buffer
 float oscbuf2[65536]={}; // safe oscilloscope buffer
 // only way for 7 channels glitch-free - 7 event queues
@@ -607,7 +597,7 @@ int nothing (jack_nframes_t nframes, void *arg){
       }
       if (kb[ALLEGRO_KEY_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {ASC::interval=16384;}
       fakeASC::interval=ASC::interval;
-      memset(abuf[32].contents,0,totalrender*8);
+      memset(abuf,0,totalrender*2*sizeof(float));
       for(cycle=0;cycle<(int)totalrender;cycle++){
         for(cycle1=0;cycle1<20;cycle1++){
 #ifndef VBLANK    
@@ -657,11 +647,9 @@ int nothing (jack_nframes_t nframes, void *arg){
             sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
             for(int updateindex1=0;updateindex1<32;updateindex1++) {
               if(muted[updateindex1]) { cvol[updateindex1]=0;
-#ifdef NEWCODE
                                                     if (updateindex1<(8*soundchips)) {
                                                       chip[updateindex1>>3].chan[updateindex1&7].vol=0;
                                                     }
-#endif
                                                   }
             }
             LastUsedChannel[7]=LastUsedChannel[6];
@@ -690,34 +678,31 @@ int nothing (jack_nframes_t nframes, void *arg){
             }
           }
         }
-          #ifdef NEWCODE
           float heyl, heyr;
-                                  abuf[32].contents[((cycle%bufsize)*2)]=0;
-                                  abuf[32].contents[((cycle%bufsize)*2)+1]=0;
+                                  abuf[((cycle%bufsize)*2)]=0;
+                                  abuf[((cycle%bufsize)*2)+1]=0;
                                   for (int sci=0; sci<soundchips; sci++) {
                                     chip[sci].NextSample(&heyl,&heyr);
-                                    abuf[32].contents[((cycle%bufsize)*2)]+=heyl;
-                                    abuf[32].contents[((cycle%bufsize)*2)+1]+=heyr;
+                                    abuf[((cycle%bufsize)*2)]+=heyl;
+                                    abuf[((cycle%bufsize)*2)+1]+=heyr;
                                   }
 
-#else
-#endif
         
         #define fff 0.33631372025095791864295318996109
        if (settings::muffle) {
-        muffleb0[0]=muffleb0[0]+fff*(abuf[32].contents[((cycle%bufsize)*2)]-muffleb0[0]);
+        muffleb0[0]=muffleb0[0]+fff*(abuf[((cycle%bufsize)*2)]-muffleb0[0]);
         muffleb1[0]=muffleb1[0]+fff*(muffleb0[0]-muffleb1[0]);
-        abuf[32].contents[((cycle%bufsize)*2)]=muffleb1[0];
+        abuf[((cycle%bufsize)*2)]=muffleb1[0];
         
-        muffleb0[1]=muffleb0[1]+fff*(abuf[32].contents[((cycle%bufsize)*2)+1]-muffleb0[1]);
+        muffleb0[1]=muffleb0[1]+fff*(abuf[((cycle%bufsize)*2)+1]-muffleb0[1]);
         muffleb1[1]=muffleb1[1]+fff*(muffleb0[1]-muffleb1[1]);
-        abuf[32].contents[((cycle%bufsize)*2)+1]=muffleb1[1];
+        abuf[((cycle%bufsize)*2)+1]=muffleb1[1];
        }
       }
       audioframecounter++;
       for(int ii=0;ii<nframes;ii++){
-      oscbuf[ii*128/nframes]=abuf[32].contents[ii*2];
-      oscbuf2[ii*128/nframes]=abuf[32].contents[(ii*2)+1];
+      oscbuf[ii*128/nframes]=abuf[ii*2];
+      oscbuf2[ii*128/nframes]=abuf[(ii*2)+1];
       }
 #define dointerpolate
   for (int iii=0; iii<nframes; iii++){
@@ -728,14 +713,14 @@ int nothing (jack_nframes_t nframes, void *arg){
 #else
   iii*2
 #endif
-  ]=interpolatee(abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
+  ]=interpolatee(abuf[(int)((float)iii*totalrender/(float)nframes)*2],abuf[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
   outr[
 #ifdef JACK
   iii
 #else
   (iii*2)+1
 #endif 
-  ]=interpolatee(abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[32].contents[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
+  ]=interpolatee(abuf[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
 #else
   outl[
 #ifdef JACK
@@ -743,14 +728,14 @@ int nothing (jack_nframes_t nframes, void *arg){
 #else
   iii*2
 #endif  
-  ]=abuf[32].contents[(int)((float)iii*totalrender/(float)nframes)*2]/2;
+  ]=abuf[(int)((float)iii*totalrender/(float)nframes)*2]/2;
   outr[
 #ifdef JACK
   iii
 #else
   (iii*2)+1
 #endif   
-  ]=abuf[32].contents[1+(int)((float)iii*totalrender/(float)nframes)*2]/2;
+  ]=abuf[1+(int)((float)iii*totalrender/(float)nframes)*2]/2;
 #endif
   }
   rt2=al_get_time();
@@ -763,7 +748,6 @@ void initaudio() {
   printf("ok\n");
 #ifdef JACK
   const char** jports;
-  printf("%d %d\n",joutl,joutr);
   jclient=jack_client_open("soundtracker",JackNullOption,&jstatus);
   if (jclient == NULL) {
     fprintf (stderr, "jack_client_open() failed, "
@@ -816,47 +800,26 @@ void initaudio() {
       audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,sout,spout, SDL_AUDIO_ALLOW_ANY_CHANGE);
       jacksr=44100;
 #endif
-  for (int initindex=0;initindex<33;initindex++) {
-    abuf[initindex].contents=new float[65536];
-    //printf("%d ",initindex);
-    if (initindex==32) {
-    if (ntsc) {
-    //chan[initindex]=al_create_audio_stream(3,bufsize,309000,ALLEGRO_AUDIO_DEPTH_FLOAT32,ALLEGRO_CHANNEL_CONF_2);
-    } else {
-    //chan[initindex]=al_create_audio_stream(3,bufsize,297500,ALLEGRO_AUDIO_DEPTH_FLOAT32,ALLEGRO_CHANNEL_CONF_2);
-    }
-    //al_attach_audio_stream_to_mixer(chan[initindex],al_get_default_mixer());
-    //aqueue[initindex]=al_create_event_queue();
-    //al_register_event_source(aqueue[initindex],al_get_audio_stream_event_source(chan[initindex]));
-    }
-    low[initindex]=0; high[initindex]=0; band[initindex]=0;
-  }
+      abuf=new float[65536];
 #ifdef JACK
       if (jack_activate (jclient)) {
     fprintf (stderr, "cannot activate client");
     //exit (1);
   }
-  printf("%d %d\n",joutl,joutr);
   jports = jack_get_ports (jclient, NULL, NULL,
         JackPortIsPhysical|JackPortIsInput);
-  printf("%d %d %d\n",joutl,joutr,jports);
   if (jports == NULL) {
     fprintf(stderr, "no physical playback ports\n");
     //exit (1);
   }
-  printf("you will not segfault ok?\n");
-printf("%d %d %d %d\n",joutl,joutr,jports[0],jports[1]);
   if (jack_connect (jclient, jack_port_name (joutl), jports[0])) {
     printf("cannot connect output port l\n");
   }
-  printf("%d %d\n",joutl,joutr);
   if (jack_connect (jclient, jack_port_name (joutr), jports[1])) {
     printf("cannot connect output port r\n");
   }
-printf("%d %d\n",joutl,joutr);
   free (jports);
   
-  printf("%d %d\n",joutl,joutr);
 #else
   //////////////// SDL CODE HERE ////////////////
 #endif
@@ -1217,7 +1180,6 @@ int msnoteperiod(float note, int chan) {
   return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))));
 }
 void FixCPPMemoryBug(){
-  // fixes a c++ memory bug (which was present in MSVC, but i don't know if linux has it)
   for (int nonsense3=0;nonsense3<256;nonsense3++) {
     for (int nonsense4=0;nonsense4<256;nonsense4++) {
       for (int nonsense5=0;nonsense5<8;nonsense5++) {
@@ -2099,7 +2061,6 @@ void NextTick(){
 }
 void Playback(){
   NextTick();
-#ifdef NEWCODE
   for (int iiii=0; iiii<8*soundchips; iiii++) {
     chip[iiii>>3].chan[iiii&7].vol=(cvol[iiii]*chanvol[iiii])>>7;
     chip[iiii>>3].chan[iiii&7].pan=cpan[iiii];
@@ -2117,7 +2078,6 @@ void Playback(){
     chip[iiii>>3].chan[iiii&7].cutoff=coff[iiii]/4;
     chip[iiii>>3].chan[iiii&7].reson=creso[iiii];
   }
-#endif
 }
 void JustSkip(){
   // skipping
@@ -4731,9 +4691,7 @@ void MuteControls(){
 void MuteAllChannels(){
   for (int su=0;su<8*soundchips;su++){
   cvol[su]=0;
-#ifdef NEWCODE
         chip[su>>3].chan[su&7].vol=0;
-#endif
   }
 }
 void SFXControls(){
@@ -5059,12 +5017,10 @@ int playfx(const unsigned char* fxdata,int fxpos,int achan){
 int main(int argc, char **argv){
   ALLEGRO_TRANSFORM tra;
   detunefactor=1;
-  #ifdef NEWCODE
   chip[0].Init();
   chip[1].Init();
   chip[2].Init();
   chip[3].Init();
-#endif
   printf("soundtracker (r%d)\n",ver);
   framecounter=0;
   playermode=false;
@@ -5114,11 +5070,9 @@ DETUNE_FACTOR_GLOBAL=1;
   }
    ALLEGRO_EVENT_QUEUE *event_queue = NULL;
    ALLEGRO_FILE *texthand;
-   ALLEGRO_THREAD *audiothread = NULL;
    filessorted.resize(1024);
    filenames.resize(1024);
    //int success=0;
-   bool redraw = true;
    bool is_audio_inited=false;
    int helpfilesize;
    scrW=800;
@@ -5392,7 +5346,6 @@ al_set_new_window_title("soundtracker");
       if(ev.type == ALLEGRO_EVENT_TIMER) {
      //al_set_timer_speed(timer,1.0/FPS);
  
-         redraw = true;
      skipframe=true;//!skipframe;
       }
       else if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
@@ -5437,7 +5390,7 @@ al_set_new_window_title("soundtracker");
       }
     }
       }
-      if(true/*redraw && al_is_event_queue_empty(event_queue)*/) {
+      if(true) {
         doframe=1;
   rt3=al_get_time();
       framecounter++;
@@ -5445,7 +5398,6 @@ al_set_new_window_title("soundtracker");
      scrW=al_get_display_width(display)/dpiScale;
      scrH=al_get_display_height(display)/dpiScale;
      }
-         redraw = false;
 
      maxrasterdelta=(maxval(0,raster2-raster1)>maxrasterdelta)?(maxval(0,raster2-raster1)):(maxrasterdelta);
      //printf("%f\n",raster2-raster1);
