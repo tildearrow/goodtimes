@@ -34,6 +34,7 @@ class Graphics {
   char putBuf[4096];
   bool inited;
   ALLEGRO_FONT* allegFont;
+  ALLEGRO_COLOR alCol;
   public:
     Point getTPos();
     Point getWSize();

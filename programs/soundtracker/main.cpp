@@ -2436,90 +2436,81 @@ void drawmixer(){
 }
 void drawdiskop(){
   // draws the disk operations dialog
-   al_draw_text(text,getconfigcol(colDEFA),0,60,ALLEGRO_ALIGN_LEFT,"Disk Operations|Open|Load|Save|ImportMOD|ImportS3M|ImportIT|ImportXM|LoadSample|LoadRawSample");
-   al_draw_text(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"---------------------------------------------------------------------------------------------------");
-   al_draw_text(text,getconfigcol(colDEFA),0,84,ALLEGRO_ALIGN_LEFT,"FilePath __________________________________________________________________________________________");
-   al_draw_text(text,getconfigcol(colDEFA),0,96,ALLEGRO_ALIGN_LEFT,"---------------------------------------------------------------------------------------------------");
-  al_draw_text(text,getconfigcol(colDEFA),0,108,ALLEGRO_ALIGN_LEFT,"<..>                                                                                               ^");
+  g.tPos(0,5);
+  g.tColor(15);
+  g.printf("Disk Operations|Open|Load|Save|ImportMOD|ImportS3M|ImportIT|ImportXM|LoadSample|LoadRawSample\n");
+  g.printf("---------------------------------------------------------------------------------------------------\n");
+  g.printf("FilePath __________________________________________________________________________________________\n");
+  g.printf("---------------------------------------------------------------------------------------------------\n");
+  g.printf("<..>                                                                                               ^");
   al_draw_text(text,getconfigcol(colDEFA),0,432,ALLEGRO_ALIGN_LEFT,"                                                                                                   v");
   al_draw_text(text,al_map_rgb(255,255,255),72,84,ALLEGRO_ALIGN_LEFT,curdir);
   if (selectedfileindex>(diskopscrollpos)){
   al_draw_filled_rectangle(0,111+((selectedfileindex-diskopscrollpos)*12),scrW,123+((selectedfileindex-diskopscrollpos)*12),getconfigcol(colSELE));
   }
-  for (int ii=diskopscrollpos; ii<minval(diskopscrollpos+27,filecount); ii++) {
-    al_draw_text(text,filenames[ii].isdir?(al_map_rgb(0,255,255)):(al_map_rgb(255,255,255)),0,120+(ii*12)-(diskopscrollpos*12),ALLEGRO_ALIGN_LEFT,strrchr(filenames[ii].name.c_str(),
+  for (int i=diskopscrollpos; i<minval(diskopscrollpos+27,filecount); i++) {
+    g.tPos(0,10+i-diskopscrollpos);
+    g.tColor(filenames[i].isdir?14:15);
 #ifdef _WIN32
-  '\\'
+    g.printf(strrchr(filenames[i].name.c_str(),'\\')+1);
 #else
-  '/'
+    g.printf(strrchr(filenames[i].name.c_str(),'/')+1);
 #endif
-    )+1);
   }
 }
 
-void drawmemory(){
-  // draws (not real) memory view
-  al_draw_text(text,getconfigcol(colDEFA),0,60,ALLEGRO_ALIGN_LEFT,"Memory  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f");
-  al_draw_text(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"   $00");
-  al_draw_text(text,getconfigcol(colDEFA),0,84,ALLEGRO_ALIGN_LEFT,"   $10");
-  al_draw_text(text,getconfigcol(colDEFA),0,96,ALLEGRO_ALIGN_LEFT,"   $20");
-  al_draw_text(text,getconfigcol(colDEFA),0,108,ALLEGRO_ALIGN_LEFT,"   $30");
-  al_draw_text(text,getconfigcol(colDEFA),0,120,ALLEGRO_ALIGN_LEFT,"   $40");
-  al_draw_text(text,getconfigcol(colDEFA),0,132,ALLEGRO_ALIGN_LEFT,"   $50");
-  al_draw_text(text,getconfigcol(colDEFA),0,144,ALLEGRO_ALIGN_LEFT,"   $60");
-  al_draw_text(text,getconfigcol(colDEFA),0,156,ALLEGRO_ALIGN_LEFT,"   $70");
-  al_draw_text(text,getconfigcol(colDEFA),0,168,ALLEGRO_ALIGN_LEFT,"   $80");
-  al_draw_text(text,getconfigcol(colDEFA),0,180,ALLEGRO_ALIGN_LEFT,"   $90");
-  al_draw_text(text,getconfigcol(colDEFA),0,192,ALLEGRO_ALIGN_LEFT,"   $a0");
-  al_draw_text(text,getconfigcol(colDEFA),0,204,ALLEGRO_ALIGN_LEFT,"   $b0");
-  al_draw_text(text,getconfigcol(colDEFA),0,216,ALLEGRO_ALIGN_LEFT,"   $c0");
-  al_draw_text(text,getconfigcol(colDEFA),0,228,ALLEGRO_ALIGN_LEFT,"   $d0");
-  al_draw_text(text,getconfigcol(colDEFA),0,240,ALLEGRO_ALIGN_LEFT,"   $e0");
-  al_draw_text(text,getconfigcol(colDEFA),0,252,ALLEGRO_ALIGN_LEFT,"   $f0");
-  for (int umm=0; umm<16; umm++) {
-    for (int cnt=0; cnt<16; cnt++) {
-      al_draw_textf(text,al_map_rgb(0,255,255),64+(cnt*24),72+(umm*12),ALLEGRO_ALIGN_LEFT,
-    "%.2x",((unsigned char*)(chip[curedpage].chan))[cnt+(umm<<4)]);
+void drawmemory() {
+  // draws soundchip memory view
+  g.tPos(0,5);
+  g.tColor(15);
+  g.printf("Memory  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+  g.printf("   $00\n");
+  g.printf("   $10\n");
+  g.printf("   $20\n");
+  g.printf("   $30\n");
+  g.printf("   $40\n");
+  g.printf("   $50\n");
+  g.printf("   $60\n");
+  g.printf("   $70\n");
+  g.printf("   $80\n");
+  g.printf("   $90\n");
+  g.printf("   $a0\n");
+  g.printf("   $b0\n");
+  g.printf("   $c0\n");
+  g.printf("   $d0\n");
+  g.printf("   $e0\n");
+  g.printf("   $f0\n");
+  g.tColor(14);
+  for (int j=0; j<16; j++) {
+    g.tPos(8,6+j);
+    for (int i=0; i<16; i++) {
+      g.printf("%.2x ",((unsigned char*)(chip[curedpage].chan))[i+(j<<4)]);
     }
   }
 }
 
-void drawsong(){
+void drawsong() {
   // draws the disk operations dialog
-   al_draw_text(text,getconfigcol(colDEFA),0,60,ALLEGRO_ALIGN_LEFT,"DefSpeed   v^|Channels  v^|beat   v^|bar   v^|detune   v^-+|length   v^-+|tempo   v^-+|speed   v^");
-   al_draw_text(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"---------------------------------------------------------------------------------------------------");
-   al_draw_text(text,getconfigcol(colDEFA),0,84,ALLEGRO_ALIGN_LEFT,"|Song Name ________________________________________________________");
-   al_draw_text(text,getconfigcol(colDEFA),0,96,ALLEGRO_ALIGN_LEFT,"---------------------------------------------------------------------------------------------------");
-  /*al_draw_text(text,getconfigcol(colDEFA),0,108,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,120,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,132,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,144,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,156,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,168,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,180,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,192,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,204,ALLEGRO_ALIGN_LEFT,"");*/
-  al_draw_text(text,getconfigcol(colDEFA),0,216,ALLEGRO_ALIGN_LEFT,"---------------------------------------------------------------------------------------------------");
-  al_draw_text(text,getconfigcol(colDEFA),0,228,ALLEGRO_ALIGN_LEFT,"PlaybackMode Normal|IT|FT2|PT|ST3");
-  al_draw_text(text,getconfigcol(colDEFA),0,240,ALLEGRO_ALIGN_LEFT,"CompatibleGxx|DoubleFilter|");
-  al_draw_text(text,getconfigcol(colDEFA),0,252,ALLEGRO_ALIGN_LEFT,"Slides Linear|Periods|Amiga");
-  al_draw_text(text,getconfigcol(colDEFA),0,264,ALLEGRO_ALIGN_LEFT," ");
-  al_draw_text(text,getconfigcol(colDEFA),0,276,ALLEGRO_ALIGN_LEFT,"PCM|Edit|Load|SaveDump|PlayDump");
-  al_draw_text(text,getconfigcol(colDEFA),0,288,ALLEGRO_ALIGN_LEFT," ");
-  al_draw_text(text,getconfigcol(colDEFA),0,300,ALLEGRO_ALIGN_LEFT,"Comments");
-  al_draw_text(text,getconfigcol(colDEFA),0,312,ALLEGRO_ALIGN_LEFT," ");
-  al_draw_text(text,getconfigcol(colDEFA),0,324,ALLEGRO_ALIGN_LEFT," ");
-  al_draw_text(text,getconfigcol(colDEFA),0,336,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,348,ALLEGRO_ALIGN_LEFT,"                                                                ");
-  al_draw_text(text,getconfigcol(colDEFA),0,360,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,372,ALLEGRO_ALIGN_LEFT,"                                                                ");
-  al_draw_text(text,getconfigcol(colDEFA),0,384,ALLEGRO_ALIGN_LEFT,"                    ");
-  al_draw_text(text,getconfigcol(colDEFA),0,396,ALLEGRO_ALIGN_LEFT," ");
-  al_draw_text(text,getconfigcol(colDEFA),0,408,ALLEGRO_ALIGN_LEFT,"");
-  al_draw_text(text,getconfigcol(colDEFA),0,420,ALLEGRO_ALIGN_LEFT,"                                                                ");
-  al_draw_text(text,getconfigcol(colDEFA),0,432,ALLEGRO_ALIGN_LEFT,"");
+  g.tColor(15);
+  g.tPos(0,5);
+  g.printf("DefSpeed   v^|Channels  v^|beat   v^|bar   v^|detune   v^-+|length   v^-+|tempo   v^-+|speed   v^\n");
+  g.printf("---------------------------------------------------------------------------------------------------\n");
+  g.printf("|Song Name ________________________________________________________\n");
+  g.printf("---------------------------------------------------------------------------------------------------\n");
   
-  al_draw_text(text,(inputwhere==1)?(getconfigcol(colSEL2)):(al_map_rgb(255,255,255)),88,84,ALLEGRO_ALIGN_LEFT,name);
+  g.tPos(0,18);
+  g.printf("---------------------------------------------------------------------------------------------------\n");
+  g.printf("PlaybackMode Normal|IT|FT2|PT|ST3\n");
+  g.printf("CompatibleGxx|DoubleFilter|\n");
+  g.printf("Slides Linear|Periods|Amiga\n");
+  g.printf("\n");
+  g.printf("PCM|Edit|Load|SaveDump|PlayDump\n");
+  g.printf("\n");
+  g.printf("Comments\n");
+  
+  g.tColor((inputwhere==1)?11:15);
+  g.tPos(11,7);
+  g.printf(name);
   if (inputwhere==1) {
       al_draw_line(89+(inputcurpos*8),85,89+(inputcurpos*8),97,getconfigcol(colSEL2),1);
   }
@@ -4822,19 +4813,19 @@ void drawdisp() {
   g.tColor(14);
   g.printf(PROGRAM_NAME);
   g.tPos(14,0);
-  g.printf("r%d\n",ver);
+  g.printf("r%d",ver);
 
-  al_draw_text(text,getconfigcol(colSEL1),0,0,ALLEGRO_ALIGN_LEFT,PROGRAM_NAME);
-  al_draw_textf(text,getconfigcol(colSEL1),112,0,ALLEGRO_ALIGN_LEFT,"r%d",ver);
   // properties - buttons
   //al_draw_text(text,getconfigcol(colSEL1),0,12,ALLEGRO_ALIGN_LEFT,"|");
   patseek+=(curpat-patseek)/4;
   if (fmod(patseek,1)>0.999 || fmod(patseek,1)<0.001) {
     patseek=round(patseek);
   }
-  al_draw_text(text,getucol(8),0,12,ALLEGRO_ALIGN_LEFT,"pat|ins|sfx|speed   v^|  |patID   v^|");
-  al_draw_text(text,getucol(8),0,24,ALLEGRO_ALIGN_LEFT,"sng|dsk|sed|tempo   v^|  |octave  v^|");
-  al_draw_text(text,getucol(8),0,36,ALLEGRO_ALIGN_LEFT,"lvl|cfg|vis|order   v^|  |length  v^|");
+  g.tPos(0,1);
+  g.tColor(8);
+  g.printf("pat|ins|sfx|speed   v^|  |patID   v^|\n");
+  g.printf("sng|dsk|sed|tempo   v^|  |octave  v^|\n");
+  g.printf("lvl|cfg|vis|order   v^|  |length  v^|\n");
   al_draw_text(text,(speedlock)?(al_map_rgb(0,255,255)):(getucol(8)),96,12,ALLEGRO_ALIGN_LEFT,"speed");
   al_draw_text(text,(tempolock)?(al_map_rgb(0,255,255)):(getucol(8)),96,24,ALLEGRO_ALIGN_LEFT,"tempo");
   //al_draw_text(text,getucol(15),8,12,ALLEGRO_ALIGN_LEFT,"speed   v^|fx|fxed|pos   v^|patID   v^|diskop|PATTERN|INSTR|SONG|LEVELS|config|help|ED|f|   |  |   ");
@@ -4851,9 +4842,10 @@ void drawdisp() {
   //al_draw_text(text,(leftclick && PIR(scrW-80,12,scrW-56,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[7]*10),128+(hover[7]*10),128-(hover[7]*5)),scrW-80,12,ALLEGRO_ALIGN_LEFT,"ply");
   //al_draw_text(text,(leftclick && PIR(scrW-24,12,scrW,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[8]*10),128+(hover[8]*10),128-(hover[8]*5)),scrW-24,12,ALLEGRO_ALIGN_LEFT,"stp");
   //al_draw_text(text,(leftclick && PIR(scrW-48,12,scrW-32,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[9]*10),128+(hover[9]*10),128-(hover[9]*5)),scrW-48,12,ALLEGRO_ALIGN_LEFT,"pt");
-  al_draw_textf(text,al_map_rgb(0,255,255),144,12,ALLEGRO_ALIGN_LEFT,"%.2X",speed);
-  al_draw_textf(text,al_map_rgb(0,255,255),160,24,ALLEGRO_ALIGN_RIGHT,"%d",tempo);
-  al_draw_textf(text,al_map_rgb(0,255,255),144,36,ALLEGRO_ALIGN_LEFT,"%.2X",curpat);
+  g.tColor(14);
+  g.tPos(18,1); g.printf("%.2X",speed);
+  g.tPos(17,2); g.printf("%d",tempo);
+  g.tPos(18,3); g.printf("%.2X",curpat);
   al_draw_textf(text,al_map_rgb(0,255,255),256,12,ALLEGRO_ALIGN_LEFT,"%.2X",patid[curpat]);
   al_draw_textf(text,al_map_rgb(0,255,255),256,24,ALLEGRO_ALIGN_LEFT,"%.2X",curoctave);
   al_draw_textf(text,al_map_rgb(0,255,255),256,36,ALLEGRO_ALIGN_LEFT,"%.2X",patlength[patid[curpat]]);

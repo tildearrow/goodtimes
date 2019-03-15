@@ -10,10 +10,13 @@ Point Graphics::getTPos() {
 
 void Graphics::tPos(float x, float y) {
   textPos.x=x; textPos.y=y;
-  printf("\x1b[%d;%dH",(int)y+1,(int)x+1);
+  //::fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
 }
 
 void Graphics::tColor(unsigned char color) {
+  textCol.r=0;
+  textCol.g=0;
+  textCol.b=0;
   if (color<16) {
     if (color==8) {
       textCol.r=0.5;
@@ -42,10 +45,8 @@ void Graphics::tColor(unsigned char color) {
       textCol.b=intens[(color-16)%6];
     }
   }
-  textCol.r=0;
-  textCol.g=0;
-  textCol.b=0;
-  printf("\x1b[38;5;%dm",color);
+  //::fprintf(stderr,"\x1b[38;5;%dm",color);
+  alCol=al_map_rgb_f(textCol.r,textCol.g,textCol.b);
 }
 
 int Graphics::printf(const char* format, ...) {
@@ -53,9 +54,19 @@ int Graphics::printf(const char* format, ...) {
   int ret;
   va_start(va,format);
   ret=vsnprintf(putBuf,4095,format,va);
-  write(1,putBuf,ret);
-  textPos.x+=ret;
-  al_draw_text(allegFont,al_map_rgb_f(textCol.r,textCol.g,textCol.b),8*textPos.x,12*textPos.y,ALLEGRO_ALIGN_LEFT,putBuf);
+  //write(2,putBuf,ret);
+  
+  al_hold_bitmap_drawing(true);
+  for (int i=0; i<ret; i++) {
+    if (putBuf[i]=='\n') {
+      textPos.x=0;
+      textPos.y++;
+    } else {
+      al_draw_glyph(allegFont,alCol,8*textPos.x,12*textPos.y,putBuf[i]);
+      textPos.x++;
+    }
+  }
+  al_hold_bitmap_drawing(false);
   va_end(va);
   return ret;
 }
@@ -64,5 +75,6 @@ bool Graphics::init(ALLEGRO_FONT* f) {
   tPos(0,0);
   tColor(15);
   allegFont=f;
+  //::fprintf(stderr,"\x1b[2J");
   return true;
 }
