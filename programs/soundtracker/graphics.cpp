@@ -13,6 +13,10 @@ void Graphics::tPos(float x, float y) {
   //::fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
 }
 
+void Graphics::tNLPos(float x) {
+  nlPos=x;
+}
+
 void Graphics::tColor(unsigned char color) {
   textCol.r=0;
   textCol.g=0;
@@ -59,7 +63,7 @@ int Graphics::printf(const char* format, ...) {
   al_hold_bitmap_drawing(true);
   for (int i=0; i<ret; i++) {
     if (putBuf[i]=='\n') {
-      textPos.x=0;
+      textPos.x=nlPos;
       textPos.y++;
     } else {
       al_draw_glyph(allegFont,alCol,8*textPos.x,12*textPos.y,putBuf[i]);

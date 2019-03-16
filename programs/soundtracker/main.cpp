@@ -1115,57 +1115,19 @@ ALLEGRO_COLOR getmixerposcol(int channel,int envid) {
 }
 
 int noteperiod(unsigned char note) {
-  /*switch(note%16){
-  case 1: return (18346>>(note>>4))*(1/detunefactor); break;
-  case 2: return (17316>>(note>>4))*(1/detunefactor); break;
-  case 3: return (16344>>(note>>4))*(1/detunefactor); break;
-  case 4: return (15428>>(note>>4))*(1/detunefactor); break;
-  case 5: return (14561>>(note>>4))*(1/detunefactor); break;
-  case 6: return (13744>>(note>>4))*(1/detunefactor); break;
-  case 7: return (12973>>(note>>4))*(1/detunefactor); break;
-  case 8: return (12245>>(note>>4))*(1/detunefactor); break;
-  case 9: return (11557>>(note>>4))*(1/detunefactor); break;
-  case 10: return (10909>>(note>>4))*(1/detunefactor); break;
-  case 11: return (10297>>(note>>4))*(1/detunefactor); break;
-  case 12: return (9719>>(note>>4))*(1/detunefactor); break;
-  }*/
-  // experimental linear-like code
   return 300000/(440*(pow(2.0f,(float)((hscale(note)-57)/12))));
-  //return 1; // default, if this is returned, then it's a "blank note" or "special note"
 }
+
 int mnoteperiod(float note, int chan) {
-  /*switch((note-1)%12){
-  case 0: return (18346>>((note-1)/12))*(1/detunefactor); break;
-  case 1: return (17316>>((note-1)/12))*(1/detunefactor); break;
-  case 2: return (16344>>((note-1)/12))*(1/detunefactor); break;
-  case 3: return (15428>>((note-1)/12))*(1/detunefactor); break;
-  case 4: return (14561>>((note-1)/12))*(1/detunefactor); break;
-  case 5: return (13744>>((note-1)/12))*(1/detunefactor); break;
-  case 6: return (12973>>((note-1)/12))*(1/detunefactor); break;
-  case 7: return (12245>>((note-1)/12))*(1/detunefactor); break;
-  case 8: return (11557>>((note-1)/12))*(1/detunefactor); break;
-  case 9: return (10909>>((note-1)/12))*(1/detunefactor); break;
-  case 10: return (10297>>((note-1)/12))*(1/detunefactor); break;
-  case 11: return (9719>>((note-1)/12))*(1/detunefactor); break;
-  }*/
-        //if (chip[chan>>3].chan[chan&7].flags.shape!=5) {
-          return (int)((6203.34-(songdf*2))*(pow(2.0f,(float)(((float)note-58)/12.0f))));
-        /*} else {
-  return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))));
-        }*/
-  //return 1; // default, if this is returned, then it's a "blank note" or "special note"
+  return (int)((6203.34-(songdf*2))*(pow(2.0f,(float)(((float)note-58)/12.0f))));
 }
+
 int msnoteperiod(float note, int chan) {
   return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))));
 }
-void FixCPPMemoryBug(){
-  for (int nonsense3=0;nonsense3<256;nonsense3++) {
-    for (int nonsense4=0;nonsense4<256;nonsense4++) {
-      for (int nonsense5=0;nonsense5<8;nonsense5++) {
-        bytable[nonsense5][nonsense4][nonsense3]=0;
-      }
-    }
-  }
+
+void FixCPPMemoryBug() {
+  memset(bytable,0,256*256*8);
 }
 int AllocateSequence(int seqid){
   bool nonfree[256];
@@ -2123,7 +2085,6 @@ void drawpatterns(bool force) {
   if ((!UPDATEPATTERNS || playmode==0 || playmode==1) && !force && oldpat==curpat) {oldpat=curpat;return;}
   oldpat=curpat;
   UPDATEPATTERNS=true;
-  printf("will draw! %d\n",framecounter);
   al_destroy_bitmap(patternbitmap);
   patternbitmap=al_create_bitmap(scrW,(((patlength[patid[curpat]]==0)?(256):(patlength[patid[curpat]]))*12)+8);
   al_set_target_bitmap(patternbitmap);
@@ -2156,28 +2117,43 @@ void drawpatterns(bool force) {
   }
   al_set_target_bitmap(al_get_backbuffer(display));
 }
+
 void drawinsedit() {
   // draws the instrument edit dialog
-   al_draw_text(text,getconfigcol(colDEFA),0,60,ALLEGRO_ALIGN_LEFT,"Instrument Editor|INS   ^v|+|-|Save|Load|                   |HEX|");
-   al_draw_text(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"  |Volume|Cutoff|Reson|Duty|Shape|Pitch|HiPitch|Pan|Seq  ^v|NF|X|");
+  g.tPos(0,5);
+  g.tColor(15);
+  g.printf("Instrument Editor|INS   ^v|+|-|Save|Load|                   |HEX|\n");
+  g.printf("  |Volume|Cutoff|Reson|Duty|Shape|Pitch|HiPitch|Pan|Seq  ^v|NF|X|\n");
 
-   al_draw_text(text,getconfigcol(colDEFA),scrW-272,84,ALLEGRO_ALIGN_LEFT,"RelNote    ^v+-");
-   al_draw_text(text,getconfigcol(colDEFA),scrW-272,96,ALLEGRO_ALIGN_LEFT,"VibType sin|squ|saw|tri");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,108,ALLEGRO_ALIGN_LEFT,"TrmType sin|squ|saw|tri");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,132,ALLEGRO_ALIGN_LEFT,"________________________________");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,156,ALLEGRO_ALIGN_LEFT,"Filter low|high|band");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,180,ALLEGRO_ALIGN_LEFT,"PCM|pos $     |length $    |");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,192,ALLEGRO_ALIGN_LEFT,"   |loop$     |seekmult x00|");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,216,ALLEGRO_ALIGN_LEFT,"filterH ");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,252,ALLEGRO_ALIGN_LEFT,"RM|freq   ^v+-|shape squ^v|");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,264,ALLEGRO_ALIGN_LEFT,"Sy|duty 00^v+-|");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,288,ALLEGRO_ALIGN_LEFT,"ResetOsc|ResetFilter|");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,300,ALLEGRO_ALIGN_LEFT,"ResetRMOsc|");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,324,ALLEGRO_ALIGN_LEFT,"AutoCut  ^v");
-  al_draw_text(text,getconfigcol(colDEFA),scrW-272,348,ALLEGRO_ALIGN_LEFT,"DefVol   ^v");
+  g.tNLPos((float)(scrW-272)/8.0);
+  g.tPos((float)(scrW-272)/8.0,7); g.printf("RelNote    ^v+-\n");
+  g.printf("VibType sin|squ|saw|\n");
+  g.printf("TrmType sin|squ|saw|tri\n\n");
+  
+  g.printf("________________________________\n\n");
+  
+  g.printf("Filter low|high|band\n\n");
+  
+  g.printf("PCM|pos $     |length $    |\n");
+  g.printf("   |loop$     |seekmult x00|\n\n");
+  
+  g.printf("filterH \n\n\n");
+  
+  
+  g.printf("RM|freq   ^v+-|shape squ^v|\n");
+  g.printf("Sy|duty 00^v+-|\n\n");
+  
+  g.printf("ResetOsc|ResetFilter|\n");
+  g.printf("ResetRMOsc|\n\n");
+  
+  g.printf("AutoCut  ^v\n\n");
+  
+  g.printf("DefVol   ^v");
 
-  al_draw_text(text,getconfigcol(colDEFA),0,scrH-30,ALLEGRO_ALIGN_LEFT,"                                                                |");
-  al_draw_text(text,getconfigcol(colDEFA),0,scrH-18,ALLEGRO_ALIGN_LEFT,"< Loop   ^v+- Release   ^v+- Length   ^v+-                     >|");
+  g.tNLPos(0);
+  g.tPos(0,(float)(scrH-18)/12);
+  g.printf("< Loop   ^v+- Release   ^v+- Length   ^v+-                     >");
+  
   al_draw_rectangle(0,94,516+(scrW-800),scrH-34,getconfigcol(colDEFA),1);
   // draws envelope waveform
   if (!hexmode) {
@@ -2186,42 +2162,42 @@ void drawinsedit() {
     if (bytable[5][instrument[CurrentIns][0x23+CurrentEnv]][ii]!=0) {
     if (bytable[5][instrument[CurrentIns][0x23+CurrentEnv]][ii]<0x40) {
       // up
-      al_put_pixel((ii-scrollpos)*valuewidth,145,al_map_rgb(128,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(128,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,147,al_map_rgb(128,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,148,al_map_rgb(128,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,149,al_map_rgb(128,255,128));
-      al_put_pixel(1+((ii-scrollpos)*valuewidth),149,al_map_rgb(128,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),149,al_map_rgb(128,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),148,al_map_rgb(128,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),147,al_map_rgb(128,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(128,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),145,al_map_rgb(128,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,145,al_map_rgb(128,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(128,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,147,al_map_rgb(128,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,148,al_map_rgb(128,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,149,al_map_rgb(128,255,128));
+      al_draw_pixel(1+((ii-scrollpos)*valuewidth),149,al_map_rgb(128,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),149,al_map_rgb(128,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),148,al_map_rgb(128,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),147,al_map_rgb(128,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(128,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),145,al_map_rgb(128,255,128));
       } else {
       if (bytable[5][instrument[CurrentIns][0x23+CurrentEnv]][ii]<0x80) {
       // down
-      al_put_pixel((ii-scrollpos)*valuewidth,145,al_map_rgb(255,128,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(255,128,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,147,al_map_rgb(255,128,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,148,al_map_rgb(255,128,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,149,al_map_rgb(255,128,128));
-      al_put_pixel(1+((ii-scrollpos)*valuewidth),149,al_map_rgb(255,128,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),148,al_map_rgb(255,128,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),147,al_map_rgb(255,128,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(255,128,128));
-      al_put_pixel(1+((ii-scrollpos)*valuewidth),145,al_map_rgb(255,128,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,145,al_map_rgb(255,128,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(255,128,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,147,al_map_rgb(255,128,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,148,al_map_rgb(255,128,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,149,al_map_rgb(255,128,128));
+      al_draw_pixel(1+((ii-scrollpos)*valuewidth),149,al_map_rgb(255,128,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),148,al_map_rgb(255,128,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),147,al_map_rgb(255,128,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(255,128,128));
+      al_draw_pixel(1+((ii-scrollpos)*valuewidth),145,al_map_rgb(255,128,128));
       } else {
       // absolute
-      al_put_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(255,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,147,al_map_rgb(255,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,148,al_map_rgb(255,255,128));
-      al_put_pixel((ii-scrollpos)*valuewidth,149,al_map_rgb(255,255,128));
-      al_put_pixel(1+((ii-scrollpos)*valuewidth),145,al_map_rgb(255,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(255,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),147,al_map_rgb(255,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),148,al_map_rgb(255,255,128));
-      al_put_pixel(2+((ii-scrollpos)*valuewidth),149,al_map_rgb(255,255,128));
-      al_put_pixel(1+((ii-scrollpos)*valuewidth),147,al_map_rgb(255,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(255,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,147,al_map_rgb(255,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,148,al_map_rgb(255,255,128));
+      al_draw_pixel((ii-scrollpos)*valuewidth,149,al_map_rgb(255,255,128));
+      al_draw_pixel(1+((ii-scrollpos)*valuewidth),145,al_map_rgb(255,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(255,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),147,al_map_rgb(255,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),148,al_map_rgb(255,255,128));
+      al_draw_pixel(2+((ii-scrollpos)*valuewidth),149,al_map_rgb(255,255,128));
+      al_draw_pixel(1+((ii-scrollpos)*valuewidth),147,al_map_rgb(255,255,128));
       }
     }}
   }
@@ -2249,69 +2225,145 @@ void drawinsedit() {
   }
   } else {
   for (int ii=0;ii<253;ii++) {
-    al_draw_textf(text,(ii>bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253])?al_map_rgb(63,63,63):al_map_rgb(255,255,255),8+((ii%21)*24),102+((ii/21)*24),ALLEGRO_ALIGN_LEFT,"%.2x",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]);
+    g.tColor((ii>bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253])?240:15);
+    g.tPos(1+(ii%21)*3,8.5+(ii/21)*2);
+    g.printf("%.2x",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]);
   }
   }
   // draws some GUI stuff
-  for (int ii=0;ii<32;ii++) {
-    al_draw_textf(text,(inputwhere==2)?(getconfigcol(colSEL2)):(al_map_rgb(255,255,255)),528+(ii*8),132,ALLEGRO_ALIGN_LEFT,"%c",instrument[CurrentIns][ii]);
-    if (inputwhere==2) {
-      al_draw_line(529+(inputcurpos*8),133,529+(inputcurpos*8),145,getconfigcol(colSEL2),1);
-    }
+  g.tPos((float)(scrW-272)/8.0,11);
+  g.tColor((inputwhere==2)?11:15);
+  g.printf("%s",instrument[CurrentIns]);
+  if (inputwhere==2) {
+    al_draw_line((scrW-272)+(inputcurpos*8),133,(scrW-272)+(inputcurpos*8),145,getconfigcol(colSEL2),1);
   }
-  al_draw_text(text,al_map_rgb(0,255,0),440,72,ALLEGRO_ALIGN_LEFT,gethnibble(instrument[CurrentIns][0x23+CurrentEnv]));
-  al_draw_text(text,al_map_rgb(0,255,0),448,72,ALLEGRO_ALIGN_LEFT,getlnibble(instrument[CurrentIns][0x23+CurrentEnv]));
-  al_draw_text(text,al_map_rgb(0,255,0),176,60,ALLEGRO_ALIGN_LEFT,gethnibble(CurrentIns));
-  al_draw_text(text,al_map_rgb(0,255,0),184,60,ALLEGRO_ALIGN_LEFT,getlnibble(CurrentIns));
+  
+  g.tPos(55,6);
+  g.tColor(10);
+  g.printf("%.2X",instrument[CurrentIns][0x23+CurrentEnv]);
+  
+  g.tPos(22,5);
+  g.printf("%.2X",CurrentIns);
+  
   // the right pane
-  al_draw_text(text,getconfigcol(colSEL2),scrW-208,84,ALLEGRO_ALIGN_LEFT,getnotetransp(instrument[CurrentIns][0x2b]));
-  al_draw_text(text,getconfigcol(colSEL2),scrW-192,84,ALLEGRO_ALIGN_LEFT,getoctavetransp(instrument[CurrentIns][0x2b]));
+  g.tColor(11);
+  g.tPos((float)(scrW-208)/8.0,7);
+  g.printf("%s%s\n",getnotetransp(instrument[CurrentIns][0x2b]),getoctavetransp(instrument[CurrentIns][0x2b]));
   // the thing at the bottom
-  al_draw_text(text,getconfigcol(colSEL2),56,scrH-18,ALLEGRO_ALIGN_LEFT,gethnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]));
-  al_draw_text(text,getconfigcol(colSEL2),64,scrH-18,ALLEGRO_ALIGN_LEFT,getlnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]));
-  al_draw_text(text,getconfigcol(colSEL2),56,scrH-18,ALLEGRO_ALIGN_LEFT,gethnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]));
-  al_draw_text(text,getconfigcol(colSEL2),64,scrH-18,ALLEGRO_ALIGN_LEFT,getlnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]));
-  al_draw_text(text,getconfigcol(colSEL2),176,scrH-18,ALLEGRO_ALIGN_LEFT,gethnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]));
-  al_draw_text(text,getconfigcol(colSEL2),184,scrH-18,ALLEGRO_ALIGN_LEFT,getlnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]));
-  al_draw_text(text,getconfigcol(colSEL2),288,scrH-18,ALLEGRO_ALIGN_LEFT,gethnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]));
-  al_draw_text(text,getconfigcol(colSEL2),296,scrH-18,ALLEGRO_ALIGN_LEFT,getlnibble(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]));
-  if (((instrument[CurrentIns][0x22])>>CurrentEnv)&1){
-    al_draw_text(text,al_map_rgb(0,255,0),0,72,ALLEGRO_ALIGN_LEFT,"ON");
+  g.tPos(7,(float)(scrH-18)/12.0);
+  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]);
+  g.tPos(22,(float)(scrH-18)/12.0);
+  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]);
+  g.tPos(36,(float)(scrH-18)/12.0);
+  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]);
+  
+  g.tPos(0,6);
+  if (((instrument[CurrentIns][0x22])>>CurrentEnv)&1) {
+    g.tColor(10);
+    g.printf("ON");
   } else {
-    al_draw_text(text,al_map_rgb(255,0,0),0,72,ALLEGRO_ALIGN_LEFT,"NO");
+    g.tColor(9);
+    g.printf("NO");
   }
-  switch(CurrentEnv){
-    case 0: al_draw_text(text,al_map_rgb(0,255,0),24,72,ALLEGRO_ALIGN_LEFT,"Volume"); break;
-    case 1: al_draw_text(text,al_map_rgb(0,255,0),80,72,ALLEGRO_ALIGN_LEFT,"Cutoff"); break;
-    case 2: al_draw_text(text,al_map_rgb(0,255,0),136,72,ALLEGRO_ALIGN_LEFT,"Reson"); break;
-    case 3: al_draw_text(text,al_map_rgb(0,255,0),184,72,ALLEGRO_ALIGN_LEFT,"Duty"); break;
-    case 4: al_draw_text(text,al_map_rgb(0,255,0),224,72,ALLEGRO_ALIGN_LEFT,"Shape"); break;
-    case 5: al_draw_text(text,al_map_rgb(0,255,0),272,72,ALLEGRO_ALIGN_LEFT,"Pitch"); break;
-    case 6: al_draw_text(text,al_map_rgb(0,255,0),320,72,ALLEGRO_ALIGN_LEFT,"HiPitch"); break;
-    case 7: al_draw_text(text,al_map_rgb(0,255,0),384,72,ALLEGRO_ALIGN_LEFT,"Pan"); break;
+  
+  g.tColor(10);
+  switch (CurrentEnv) {
+    case 0:
+      g.tPos(3,6);
+      g.printf("Volume");
+      break;
+    case 1:
+      g.tPos(10,6);
+      g.printf("Cutoff");
+      break;
+    case 2:
+      g.tPos(17,6);
+      g.printf("Reson");
+      break;
+    case 3:
+      g.tPos(23,6);
+      g.printf("Duty");
+      break;
+    case 4:
+      g.tPos(28,6);
+      g.printf("Shape");
+      break;
+    case 5:
+      g.tPos(34,6);
+      g.printf("Pitch");
+      break;
+    case 6:
+      g.tPos(40,6);
+      g.printf("HiPitch");
+      break;
+    case 7:
+      g.tPos(48,6);
+      g.printf("Pan");
+      break;
   }
   // the right pane is back
-  al_draw_text(text,(instrument[CurrentIns][0x2e]&1)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-216,156,ALLEGRO_ALIGN_LEFT,"low");
-  al_draw_text(text,(instrument[CurrentIns][0x2e]&2)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-184,156,ALLEGRO_ALIGN_LEFT,"high");
-  al_draw_text(text,(instrument[CurrentIns][0x2e]&4)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-144,156,ALLEGRO_ALIGN_LEFT,"band");
-  al_draw_text(text,(instrument[CurrentIns][0x2e]&8)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-272,180,ALLEGRO_ALIGN_LEFT,"PCM");
-  al_draw_text(text,(instrument[CurrentIns][0x2e]&16)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-272,252,ALLEGRO_ALIGN_LEFT,"RM");
-  al_draw_text(text,(instrument[CurrentIns][0x3e]&32)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-272,264,ALLEGRO_ALIGN_LEFT,"Sy");
-  al_draw_text(text,(instrument[CurrentIns][0x3e]&1)?getconfigcol(colSEL2):al_map_rgb(255,255,255),scrW-272,288,ALLEGRO_ALIGN_LEFT,"ResetOsc");
-  al_draw_textf(text,getconfigcol(colSEL2),scrW-200,180,ALLEGRO_ALIGN_LEFT,"%d%.2x%.2x",(instrument[CurrentIns][0x2e]&128)>>7,instrument[CurrentIns][0x37],instrument[CurrentIns][0x38]);
-  al_draw_textf(text,getconfigcol(colSEL2),scrW-200,192,ALLEGRO_ALIGN_LEFT,"%d%.2x%.2x",(instrument[CurrentIns][0x2e]&64)>>6,instrument[CurrentIns][0x39],instrument[CurrentIns][0x3a]);
-  al_draw_textf(text,getconfigcol(colSEL2),scrW-88,180,ALLEGRO_ALIGN_LEFT,"%.2x%.2x",instrument[CurrentIns][0x32],instrument[CurrentIns][0x33]);
-  al_draw_textf(text,getconfigcol(colSEL2),scrW-208,252,ALLEGRO_ALIGN_LEFT,"%.2x",instrument[CurrentIns][0x2f]);
-  al_draw_textf(text,getconfigcol(colSEL2),scrW-208,216,ALLEGRO_ALIGN_LEFT,"%.2x%.2x",0xff-instrument[CurrentIns][0x34],0xff-instrument[CurrentIns][0x35]);
-  al_draw_textf(text,getconfigcol(colSEL2),scrW-208,324,ALLEGRO_ALIGN_LEFT,"%.1x",instrument[CurrentIns][0x3e]>>6);
-  al_draw_text(text,hexmode?getconfigcol(colSEL2):al_map_rgb(255,255,255),488,60,ALLEGRO_ALIGN_LEFT,"HEX");
+  
+  g.tColor(11);
+  if (instrument[CurrentIns][0x2e]&1) {
+    g.tPos((float)(scrW-216)/8.0,13);
+    g.printf("low");
+  }
+  if (instrument[CurrentIns][0x2e]&2) {
+    g.tPos((float)(scrW-184)/8.0,13);
+    g.printf("high");
+  }
+  if (instrument[CurrentIns][0x2e]&4) {
+    g.tPos((float)(scrW-144)/8.0,13);
+    g.printf("band");
+  }
+  if (instrument[CurrentIns][0x2e]&8) {
+    g.tPos((float)(scrW-272)/8.0,15);
+    g.printf("PCM");
+  }
+  if (instrument[CurrentIns][0x2e]&16) {
+    g.tPos((float)(scrW-272)/8.0,21);
+    g.printf("RM");
+  }
+  if (instrument[CurrentIns][0x3e]&32) {
+    g.tPos((float)(scrW-272)/8.0,22);
+    g.printf("Sy");
+  }
+  if (instrument[CurrentIns][0x3e]&1) {
+    g.tPos((float)(scrW-272)/8.0,24);
+    g.printf("ResetOsc");
+  }
+  
+  g.tPos((float)(scrW-192)/8.0,15);
+  g.printf("%.2x%.2x",instrument[CurrentIns][0x37],instrument[CurrentIns][0x38]);
+  
+  g.tPos((float)(scrW-192)/8.0,16);
+  g.printf("%.2x%.2x",instrument[CurrentIns][0x39],instrument[CurrentIns][0x3a]);
+  
+  g.tPos((float)(scrW-88)/8.0,15);
+  g.printf("%.2x%.2x",instrument[CurrentIns][0x32],instrument[CurrentIns][0x33]);
+  
+  g.tPos((float)(scrW-208)/8.0,21);
+  g.printf("%.2x",instrument[CurrentIns][0x2f]);
+  
+  g.tPos((float)(scrW-208)/8.0,18);
+  g.printf("%.2x%.2x",0xff-instrument[CurrentIns][0x34],0xff-instrument[CurrentIns][0x35]);
+  
+  g.tPos((float)(scrW-208)/8.0,27);
+  g.printf("%.1x",instrument[CurrentIns][0x3e]>>6);
+  
+  if (hexmode) {
+    g.tPos(61,5);
+    g.printf("HEX");
+  }
+  
   if (rightclick && PIR(0,90,515,420,mstate.x,mstate.y) && !hexmode) {
     al_draw_circle((linex1/4)*4,liney1,4,al_map_rgb(255,255,255),1);
     al_draw_circle((mstate.x/4)*4,mstate.y,4,al_map_rgb(255,255,255),1);
     al_draw_line((linex1/4)*4,liney1,(mstate.x/4)*4,mstate.y,al_map_rgb(255,255,255),1);
   }
 }
-void EditSkip(){
+
+void EditSkip() {
   // autovolume
   /*if(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]!=0 && (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]%16)<13 && pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]==0){
     pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=0x7f;
@@ -2331,16 +2383,26 @@ void EditSkip(){
      }
   drawpatterns(true);
 }
-void ParentDir(char *thedir){
+void ParentDir(char *thedir) {
   // set thedir to parent directory
   #if defined(__unix__) || defined(__APPLE__) // slashes
-  if (strrchr(thedir,'/')!=NULL){
+  if (strrchr(thedir,'/')!=NULL) {
     memset(strrchr(thedir,'/'),0,1);
-    if (strchr(thedir,'/')==NULL){int littlestr=strlen(thedir);memset(thedir+littlestr,'/',1);memset(thedir+littlestr+1,0,1);}}
+    if (strchr(thedir,'/')==NULL) {
+      int littlestr=strlen(thedir);
+      memset(thedir+littlestr,'/',1);
+      memset(thedir+littlestr+1,0,1);
+    }
+  }
   #else // backslashes
-  if (strrchr(thedir,'\\')!=NULL){
+  if (strrchr(thedir,'\\')!=NULL) {
     memset(strrchr(thedir,'\\'),0,1);
-    if (strchr(thedir,'\\')==NULL){int littlestr=strlen(thedir);memset(thedir+littlestr,'\\',1);memset(thedir+littlestr+1,0,1);}}
+    if (strchr(thedir,'\\')==NULL) {
+      int littlestr=strlen(thedir);
+      memset(thedir+littlestr,'\\',1);
+      memset(thedir+littlestr+1,0,1);
+    }
+  }
   #endif
 }
 int NumberLetter(char cval) {
@@ -2538,35 +2600,41 @@ void drawhelp(){
   al_draw_text(text,al_map_rgb(255,255,255),0,60,ALLEGRO_ALIGN_LEFT,helptext);
 }
 void drawconfig(){
-  al_draw_text(text,al_map_rgb(255,255,255),0,72,ALLEGRO_ALIGN_LEFT, "Color Palette          |Load|Save| Audio Settings");
-  al_draw_text(text,al_map_rgb(255,255,255),0,84,ALLEGRO_ALIGN_LEFT, "                                 |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,96,ALLEGRO_ALIGN_LEFT, "Note              |          C-4 | simulate distortion");
-  al_draw_text(text,al_map_rgb(255,255,255),0,108,ALLEGRO_ALIGN_LEFT,"Instrument        |          01  | ");
-  al_draw_text(text,al_map_rgb(255,255,255),0,120,ALLEGRO_ALIGN_LEFT,"Volume            |          v20 | ");
-  al_draw_text(text,al_map_rgb(255,255,255),0,132,ALLEGRO_ALIGN_LEFT,"Effect (tempo)    |          A06 | cubic spline PCM");
-  al_draw_text(text,al_map_rgb(255,255,255),0,144,ALLEGRO_ALIGN_LEFT,"Effect (song)     |          B02 |---------------------");
-  al_draw_text(text,al_map_rgb(255,255,255),0,156,ALLEGRO_ALIGN_LEFT,"Effect (volume)   |          D06 | Importer Settings");
-  al_draw_text(text,al_map_rgb(255,255,255),0,168,ALLEGRO_ALIGN_LEFT,"Effect (pitch)    |          GFF | ");
-  al_draw_text(text,al_map_rgb(255,255,255),0,180,ALLEGRO_ALIGN_LEFT,"Effect (note)     |          J37 | import samples");
-  al_draw_text(text,al_map_rgb(255,255,255),0,192,ALLEGRO_ALIGN_LEFT,"Effect (special)  |          SC1 | split instruments");
-  al_draw_text(text,al_map_rgb(255,255,255),0,204,ALLEGRO_ALIGN_LEFT,"Effect (pan)      |          Y64 |---------------------");
-  al_draw_text(text,al_map_rgb(255,255,255),0,216,ALLEGRO_ALIGN_LEFT,"Effect (unknown)  |          ?FF | Filter Settings");
-  al_draw_text(text,al_map_rgb(255,255,255),0,228,ALLEGRO_ALIGN_LEFT,"Blank Row         |          ... | ");
-  al_draw_text(text,al_map_rgb(255,255,255),0,240,ALLEGRO_ALIGN_LEFT,"Selected 1        |          abc | disable filters");
-  al_draw_text(text,al_map_rgb(255,255,255),0,252,ALLEGRO_ALIGN_LEFT,"Selected 2        |          abc | high quality");
-  al_draw_text(text,al_map_rgb(255,255,255),0,264,ALLEGRO_ALIGN_LEFT,"Selected 3        |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,276,ALLEGRO_ALIGN_LEFT,"Peak Meter        |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,288,ALLEGRO_ALIGN_LEFT,"Default           |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,300,ALLEGRO_ALIGN_LEFT,"Dark              |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,312,ALLEGRO_ALIGN_LEFT,"Loop Highlight    |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,324,ALLEGRO_ALIGN_LEFT,"Release Highlight |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,336,ALLEGRO_ALIGN_LEFT,"CurPos Highlight  |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,348,ALLEGRO_ALIGN_LEFT,"On/Up             |          ON  |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,360,ALLEGRO_ALIGN_LEFT,"Off/Down          |          NO  |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,372,ALLEGRO_ALIGN_LEFT,"Absolute          |          A   |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,384,ALLEGRO_ALIGN_LEFT,"CurrentRow HL     |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,396,ALLEGRO_ALIGN_LEFT,"Selection         |          abc |");
-  al_draw_text(text,al_map_rgb(255,255,255),0,408,ALLEGRO_ALIGN_LEFT,"No Volume         |          v40 |");
+  g.tColor(15);
+  g.tPos(0,6);
+  
+  g.printf(
+  "Color Palette          |Load|Save| Audio Settings\n"
+  "                                 |\n"
+  "Note              |          C-4 | simulate distortion\n"
+  "Instrument        |          01  | \n"
+  "Volume            |          v20 | \n"
+  "Effect (tempo)    |          A06 | cubic spline PCM\n"
+  "Effect (song)     |          B02 |---------------------\n"
+  "Effect (volume)   |          D06 | Importer Settings\n"
+  "Effect (pitch)    |          GFF | \n"
+  "Effect (note)     |          J37 | import samples\n"
+  "Effect (special)  |          SC1 | split instruments\n"
+  "Effect (pan)      |          Y64 |---------------------\n"
+  "Effect (unknown)  |          ?FF | Filter Settings\n"
+  "Blank Row         |          ... | \n"
+  "Selected 1        |          abc | disable filters\n"
+  "Selected 2        |          abc | high quality\n"
+  "Selected 3        |          abc |\n"
+  "Peak Meter        |          abc |\n"
+  "Default           |          abc |\n"
+  "Dark              |          abc |\n"
+  "Loop Highlight    |          abc |\n"
+  "Release Highlight |          abc |\n"
+  "CurPos Highlight  |          abc |\n"
+  "On/Up             |          ON  |\n"
+  "Off/Down          |          NO  |\n"
+  "Absolute          |          A   |\n"
+  "CurrentRow HL     |          abc |\n"
+  "Selection         |          abc |\n"
+  "No Volume         |          v40 |"
+  );
+  
   for (int ii=0;ii<27;ii++) {
     al_draw_textf(text,getconfigcol(ii),160,96+(ii*12),ALLEGRO_ALIGN_LEFT,"%.2X %.2X %.2X",settings::colorR[ii],settings::colorG[ii],settings::colorB[ii]);
   }
