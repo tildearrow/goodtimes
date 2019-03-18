@@ -2671,6 +2671,7 @@ void drawpiano() {
   for(int ii=0;ii<32;ii++){
     if (muted[ii] || cvol[ii]==0) continue;
     prefreq=((log(((4.53948974609375*(double)cfreq[ii])/440.0)/64)/log(2.0))*12.0)+57.5;
+    if (prefreq<0 || prefreq>120) continue;
     if (
       (int)prefreq%12==0 || (int)prefreq%12==2 || (int)prefreq%12==4 ||
       (int)prefreq%12==5 || (int)prefreq%12==7 || (int)prefreq%12==9 ||
