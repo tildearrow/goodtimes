@@ -187,7 +187,7 @@ unsigned char defspeed=6; // default song speed
 unsigned char speed=6; // current speed
 char playmode=0; // playmode (-1: reverse, 0: stopped, 1: playing, 2: paused)
 int curstep=0; // current step
-int curpat=0; // current pattern
+unsigned char curpat=0; // current pattern
 int curtick=0; // current tick
 int curins=1; // selected instrument
 int curoctave=2;
@@ -1216,21 +1216,26 @@ void NextRow() {
        if (curpat>songlength) {curpat=0;}
   }
   } else {
-  // backward code
-  curstep--;
-  // did we reach start of pattern?
-  if(curstep<0){
-       // set current step to 0 and go to next pattern
-       curstep=getpatlen(patid[curpat-1])-1; 
-       curpat--;
-       // reset pattern loop stuff
-       for (int ii=0;ii<32;ii++){
-         plcount[ii]=0;
-         plpos[ii]=0;
-       }
-       // did we reach end of song? if yes then restart song
-       if (curpat>songlength) {curpat=0;}
-  }
+    // backward code
+    curstep--;
+    // did we reach start of pattern?
+    if (curstep<0) {
+      // are we NOT at the beginning of the song?
+      if (curpat!=0) {
+        // set current step to 0 and go to next pattern
+        curstep=getpatlen(patid[curpat-1])-1; 
+        curpat--;
+        // reset pattern loop stuff
+        for (int ii=0;ii<32;ii++){
+          plcount[ii]=0;
+          plpos[ii]=0;
+        }
+      } else {
+        curstep=-1;
+      }
+      // did we reach end of song? if yes then restart song
+      if (curpat>songlength) {curpat=0;}
+    }
   }
   // MAKE SURE PATTERNS ARE UPDATED
   UPDATEPATTERNS=true;
@@ -2644,16 +2649,16 @@ void drawabout() {
 float getLKeyOff(int tone) {
   switch (tone) {
     case 0: case 3:
-      return 1.5;
-    default: return 4.5;
+      return 1;
+    default: return 4;
   }
 }
 
 float getRKeyOff(int tone) {
   switch (tone) {
     case 2: case 6:
-      return 10.5;
-    default: return 7.5;
+      return 10;
+    default: return 7;
   }
 }
 
@@ -2680,10 +2685,10 @@ void drawpiano() {
       postfreq=round(((int)prefreq%12)/2.0);
       // upper key
       al_draw_filled_rectangle(
-        ((int)prefreq/12)*70+(((postfreq*10)+getLKeyOff(postfreq))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((((int)prefreq/12)*70+((postfreq*10)+getLKeyOff(postfreq)))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
         ((scrW)/700)+scrH-(((scrW)/700)*60),
-        ((int)prefreq/12)*70+(((postfreq*10)+getRKeyOff(postfreq))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
-        36*((scrW)/700)+scrH-(((scrW)/700)*60),
+        ((((int)prefreq/12)*70+((postfreq*10)+getRKeyOff(postfreq)))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        35*((scrW)/700)+scrH-(((scrW)/700)*60),
         al_map_rgba(
         (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(255):(0),
         (cshape[ii]!=5)?(255):(0),
@@ -2691,9 +2696,9 @@ void drawpiano() {
         cvol[ii]*2));
       // lower key
       al_draw_filled_rectangle(
-        (((int)prefreq/12)*70+(((postfreq*10)+1.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((((int)prefreq/12)*70+(((postfreq*10)+1)))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
         35*((scrW)/700)+scrH-(((scrW)/700)*60),
-        (((int)prefreq/12)*70+(((postfreq*10)+10.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((((int)prefreq/12)*70+(((postfreq*10)+10)))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
         59*((scrW)/700)+scrH-(((scrW)/700)*60),
         al_map_rgba(
         (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(255):(0),
@@ -2703,9 +2708,9 @@ void drawpiano() {
     } else {
       postfreq=((int)prefreq%12)/2.0;
       al_draw_filled_rectangle(
-        (((int)prefreq/12)*70+(((postfreq*10)+8.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((((int)prefreq/12)*70+(((postfreq*10)+8)))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
         ((scrW)/700)+scrH-(((scrW)/700)*60),
-        (((int)prefreq/12)*70+(((postfreq*10)+13.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((((int)prefreq/12)*70+(((postfreq*10)+13)))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
         (34*((scrW)/700))+scrH-(((scrW)/700)*60),
         al_map_rgba(
         (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(cvol[ii]*2):(0),
@@ -2728,10 +2733,15 @@ void drawpiano() {
                 }
                 al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_INVERSE_ALPHA);
     al_set_target_bitmap(al_get_backbuffer(display));
-    al_draw_textf(text,al_map_rgb(255,255,255),0,60+(ii*10),ALLEGRO_ALIGN_LEFT,"%d: %s%s %c%.2d",
+  }
+  al_draw_scaled_bitmap(pianoroll,0,0,700,128,(scrW/2)-((((scrW)/700)*700)/2),scrH-(((scrH-(60+((((scrW)/700)*60))))/128)*128)-(((scrW)/700)*60),((scrW)/700)*700,((scrH-(60+((((scrW)/700)*60))))/128)*128,0);
+  for(int ii=0;ii<32;ii++){
+    if (muted[ii] || cvol[ii]==0) continue;
+    prefreq=((log(((4.53948974609375*(double)cfreq[ii])/440.0)/64)/log(2.0))*12.0)+57.5;
+    if (prefreq<0 || prefreq>120) continue;
+    al_draw_textf(text,al_map_rgb(255,255,255),0,60+(ii*12),ALLEGRO_ALIGN_LEFT,"%d: %s%s %c%.2d",
       ii,getnotetransp((int)prefreq),getoctavetransp((int)prefreq),(sign((int)(fmod(prefreq,1)*100)-50)>-1)?('+'):('-'),abs((int)(fmod(prefreq,1)*100)-50));
   }
-  al_draw_scaled_bitmap(pianoroll,0,0,700,128,(scrW/2)-((((scrW)/700)*700)/2),scrH-(((scrH-120)/128)*128)-(((scrW)/700)*60),((scrW)/700)*700,((scrH-120)/128)*128,0);
 }
 void drawcomments() {
   int DRAWCUR_X=0;
@@ -4009,7 +4019,13 @@ void ClickEvents() {
   if (PIR(64,12,88,24,mstate.x,mstate.y)) {screen=9;}
   if (PIR(64,24,88,36,mstate.x,mstate.y)) {screen=10;}
   if (PIR(64,36,88,48,mstate.x,mstate.y)) {screen=12;}
-  if (PIR((scrW/2)-61,13,(scrW/2)-21,37,mstate.x,mstate.y)) {playmode=1;}
+  if (PIR((scrW/2)-61,13,(scrW/2)-21,37,mstate.x,mstate.y)) {
+    if (curtick==0) {
+      Play();
+    } else {
+      playmode=1;
+    }
+  }
   if (PIR((scrW/2)-61,37,(scrW/2)-21,48,mstate.x,mstate.y)) {reversemode=true;}
   if (PIR((scrW/2)+21,13,(scrW/2)+61,37,mstate.x,mstate.y)) {playmode=0;}
   }
@@ -4021,8 +4037,8 @@ void ClickEvents() {
     if (PIR(168,12,176,23,mstate.x,mstate.y)) {speed++; if(speed>31) {speed=31;}; if (speed<1) {speed=1;}}
     if (PIR(160,24,167,35,mstate.x,mstate.y)) {tempo--; if(tempo<31) {tempo=31;}; FPS=tempo/2.5;}
     if (PIR(168,24,176,35,mstate.x,mstate.y)) {tempo++; if(tempo>255) {tempo=255;}; FPS=tempo/2.5;}
-    if (PIR(160,36,167,48,mstate.x,mstate.y)) {curpat--; if (curpat<0) {curpat=0;}; if (playmode==1) Play();}
-    if (PIR(168,36,176,48,mstate.x,mstate.y)) {curpat++; if (curpat>255) {curpat=255;}; if (playmode==1) Play();}
+    if (PIR(160,36,167,48,mstate.x,mstate.y)) {if (curpat>0) curpat--; if (playmode==1) Play();}
+    if (PIR(168,36,176,48,mstate.x,mstate.y)) {if (curpat<255) curpat++; if (playmode==1) Play();}
     if (PIR(272,12,279,24,mstate.x,mstate.y)) {patid[curpat]--;}
     if (PIR(280,12,288,24,mstate.x,mstate.y)) {patid[curpat]++;}
     if (PIR(272,36,279,48,mstate.x,mstate.y)) {patlength[patid[curpat]]--;}
@@ -5009,7 +5025,9 @@ void drawdisp() {
   //al_draw_text(text,getucol(15),0,36,ALLEGRO_ALIGN_LEFT,"|octave   ^v|reverse|step|curstep   |curpat   |curtick   |speed ");
   //al_draw_text(text,getucol(15),512,36,ALLEGRO_ALIGN_LEFT,name);
   al_draw_textf(text,getconfigcol(colDEFA),scrW-180,8,ALLEGRO_ALIGN_LEFT,"%.2x/%.2x",curtick,speed);
-  al_draw_textf(text,getconfigcol(colDEFA),scrW-180,20,ALLEGRO_ALIGN_LEFT,"%.2x/%.2x",curstep,patlength[patid[curpat]]);
+  if (curstep>=0) {
+    al_draw_textf(text,getconfigcol(colDEFA),scrW-180,20,ALLEGRO_ALIGN_LEFT,"%.2x/%.2x",(unsigned char)curstep,patlength[patid[curpat]]);
+  }
   al_draw_textf(text,getconfigcol(colDEFA),scrW-192,32,ALLEGRO_ALIGN_LEFT,"%.2x:%.2x/%.2x",patid[curpat],curpat,songlength);
   /*al_draw_textf(text,al_map_rgb(255,255,255),272,36,ALLEGRO_ALIGN_LEFT,"%.2x",curstep);
   al_draw_textf(text,al_map_rgb(255,255,255),352,36,ALLEGRO_ALIGN_LEFT,"%.2x",curpat);
@@ -5331,7 +5349,7 @@ al_set_new_window_title("soundtracker");
   for(int ii=0;ii<10;ii++){
     for (int jj=0; jj<7; jj++) {
       al_draw_filled_rectangle((jj*10)+(ii*70),60-60,((jj+1)*10)+(ii*70),60,al_map_rgb(64,64,64));
-      al_draw_filled_rectangle((jj*10)+1+(ii*70),60-59,((jj+1)*10)+(ii*70),60-1,al_map_rgb(255,255,255));
+      al_draw_filled_rectangle((jj*10)+1+(ii*70),60-59,((jj+1)*10)+(ii*70),60-1,al_map_rgb(224,224,224));
     }
     for (int jj=0; jj<6; jj++) {
       if (jj==2) continue;
