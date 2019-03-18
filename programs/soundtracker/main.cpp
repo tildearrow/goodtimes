@@ -71,8 +71,6 @@ double FPS=50;
 int tempo;
 
 int doframe;
-const int SCREEN_W=800;
-const int SCREEN_H=450;
 ALLEGRO_BITMAP *bpatterns=NULL;
 unsigned char colorof[6]={0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff};
 int degrees=0; // global all-purpose sine
@@ -1126,9 +1124,6 @@ int msnoteperiod(float note, int chan) {
   return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))));
 }
 
-void FixCPPMemoryBug() {
-  memset(bytable,0,256*256*8);
-}
 int AllocateSequence(int seqid){
   bool nonfree[256];
   // finds the next free sequence for seqid
@@ -1186,7 +1181,7 @@ void Zxx(unsigned char value){
   }
   }
 }
-int FreeChannel(){
+int FreeChannel() {
   // returns which channel is free
   // routine is similar to IT's next free channel routine
   // 1. find first inactive channel
@@ -1201,7 +1196,7 @@ int FreeChannel(){
   }
   return candidate;
 }
-void NextRow(){
+void NextRow() {
   //// PROCESS NEXT ROW ////
   // forward code
   if (!reversemode) {
@@ -1646,7 +1641,7 @@ int ProcessPitch1(int insnumb){
   }
   else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);}
 }
-void NextTick(){
+void NextTick() {
   // process the next tick
   curtick--;
   // run envelopes
@@ -2000,7 +1995,7 @@ void NextTick(){
     if (playmode==1 || playmode==4) {NextRow();} else {curtick=1;}
   }
 }
-void Playback(){
+void Playback() {
   NextTick();
   for (int iiii=0; iiii<8*soundchips; iiii++) {
     chip[iiii>>3].chan[iiii&7].vol=(cvol[iiii]*chanvol[iiii])>>7;
@@ -2020,7 +2015,7 @@ void Playback(){
     chip[iiii>>3].chan[iiii&7].reson=creso[iiii];
   }
 }
-void JustSkip(){
+void JustSkip() {
   // skipping
   if (playmode==0){
        curtick=1;
@@ -2031,7 +2026,7 @@ void JustSkip(){
        }
      }
 }
-void GoBack(){
+void GoBack() {
   // go back
   if (playmode==0){
        curtick=1;
@@ -2041,29 +2036,25 @@ void GoBack(){
        }
      }
 }
-void CleanupPatterns(){
+
+void CleanupPatterns() {
   // cleans up all patterns
-  for (int CU0=0;CU0<256;CU0++){for (int CU1=0;CU1<256;CU1++){for (int CU2=0;CU2<32;CU2++){for (int CU3=0;CU3<5;CU3++){
-    pat[CU0][CU1][CU2][CU3]=0;
-  }}}}
+  memset(pat,0,256*256*32*5);
   // cleans up all envelopes
+  memset(bytable,0,8*256*256);
   for (int kk=0;kk<8;kk++){
-  for (int jj=0;jj<256;jj++){
-  for (int ii=0;ii<254;ii++){
-          bytable[kk][jj][ii]=0;
-        }
-        bytable[kk][jj][254]=255;
-        bytable[kk][jj][255]=255;
-  }
+    for (int jj=0;jj<256;jj++){
+      bytable[kk][jj][254]=255;
+      bytable[kk][jj][255]=255;
+    }
   }
   // cleans up all instruments
+  memset(instrument,0,256*64);
   for (int jj=0;jj<256;jj++){
-  for (int ii=0;ii<64;ii++){
-          instrument[jj][ii]=0;
-        }
-        instrument[jj][0x2b]=48;
+    instrument[jj][0x2b]=48;
   }
 }
+
 ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
   float c=value*saturation;
   float x=c*(1-fabs(fmod(hue/60,2)-1));
@@ -2421,34 +2412,34 @@ int NumberLetter(char cval) {
   fprintf(stderr,"invalid number value entered");
   return 0;
 }
-void drawmixerlayer(){
+void drawmixerlayer() {
   al_set_target_bitmap(mixer);
-  al_clear_to_color(al_map_rgb(0,0,0));
+  al_clear_to_color(al_map_rgba(0,0,0,0));
   int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
   for (int chantodraw=0;chantodraw<chanstodisplay;chantodraw++) {
-    al_draw_line(12.5+(chantodraw*96)+mixerdrawoffset,0,12.5+(chantodraw*96)+mixerdrawoffset,scrW-59,getconfigcol(colDEFA),1);
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,24,ALLEGRO_ALIGN_LEFT,"Vol  ^v");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,36,ALLEGRO_ALIGN_LEFT,"Pan  ^v");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,60,ALLEGRO_ALIGN_LEFT,"Freq");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,72,ALLEGRO_ALIGN_LEFT,"Cut");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"Ins  |Vol  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"EP0  |EP1  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,108,ALLEGRO_ALIGN_LEFT,"EP2  |EP3  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,120,ALLEGRO_ALIGN_LEFT,"EP4  |EP5  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,132,ALLEGRO_ALIGN_LEFT,"EP6  |EP7  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,144,ALLEGRO_ALIGN_LEFT,"Not  |Por  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,156,ALLEGRO_ALIGN_LEFT,"Vib  |Trm  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,168,ALLEGRO_ALIGN_LEFT,"Trr  |Pbr  ");
+    al_draw_line(12.5+(chantodraw*96)+mixerdrawoffset,60,12.5+(chantodraw*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,24+60,ALLEGRO_ALIGN_LEFT,"Vol  ^v");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,36+60,ALLEGRO_ALIGN_LEFT,"Pan  ^v");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,60+60,ALLEGRO_ALIGN_LEFT,"Freq");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,72+60,ALLEGRO_ALIGN_LEFT,"Cut");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,84+60,ALLEGRO_ALIGN_LEFT,"Ins  |Vol  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,96+60,ALLEGRO_ALIGN_LEFT,"EP0  |EP1  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,108+60,ALLEGRO_ALIGN_LEFT,"EP2  |EP3  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,120+60,ALLEGRO_ALIGN_LEFT,"EP4  |EP5  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,132+60,ALLEGRO_ALIGN_LEFT,"EP6  |EP7  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,144+60,ALLEGRO_ALIGN_LEFT,"Not  |Por  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,156+60,ALLEGRO_ALIGN_LEFT,"Vib  |Trm  ");
+    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,168+60,ALLEGRO_ALIGN_LEFT,"Trr  |Pbr  ");
   }
-  al_draw_line(0,21.5,scrW,21.5,getconfigcol(colDEFA),1);
-  al_draw_line(0,57.5,scrW,57.5,getconfigcol(colDEFA),1);
-  al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,0,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-59,getconfigcol(colDEFA),1);
+  al_draw_line(0,21.5+60,scrW,21.5+60,getconfigcol(colDEFA),1);
+  al_draw_line(0,57.5+60,scrW,57.5+60,getconfigcol(colDEFA),1);
+  al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,60,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
   al_set_target_bitmap(al_get_backbuffer(display));
 }
-void drawmixer(){
+void drawmixer() {
   // draws the mixer dialog
   int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
-  al_draw_bitmap(mixer,0,60,0);
+  al_draw_bitmap(mixer,0,0,0);
   for (int chantodraw=0;chantodraw<chanstodisplay;chantodraw++) {
     al_draw_textf(text,(midion[chantodraw+(curedpage*8)])?(al_map_rgb(255,0,0)):(getconfigcol(colDEFA)),24+(chantodraw*96)+mixerdrawoffset,60,ALLEGRO_ALIGN_LEFT,"Channel");
     al_draw_textf(text,(!muted[chantodraw+(curedpage*8)])?(al_map_rgb(0,255,255)):(al_map_rgb(128,128,128)),88+(chantodraw*96)+mixerdrawoffset,60,ALLEGRO_ALIGN_LEFT,"%d",chantodraw+(curedpage*8));
@@ -2496,7 +2487,7 @@ void drawmixer(){
 
   }
 }
-void drawdiskop(){
+void drawdiskop() {
   // draws the disk operations dialog
   g.tPos(0,5);
   g.tColor(15);
@@ -2595,11 +2586,11 @@ void drawsong() {
     al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);*/
   }
 }
-void drawhelp(){
+void drawhelp() {
   // draws the help screen
   al_draw_text(text,al_map_rgb(255,255,255),0,60,ALLEGRO_ALIGN_LEFT,helptext);
 }
-void drawconfig(){
+void drawconfig() {
   g.tColor(15);
   g.tPos(0,6);
   
@@ -2643,15 +2634,33 @@ void drawconfig(){
   al_draw_text(text,(settings::nofilters)?getconfigcol(colSEL2):getconfigcol(colDEFA),280,240,ALLEGRO_ALIGN_LEFT,"disable filters");
   al_draw_text(text,(settings::muffle)?getconfigcol(colSEL2):getconfigcol(colDEFA),280,252,ALLEGRO_ALIGN_LEFT,"high quality");
 }
-void drawabout(){
+void drawabout() {
   // draws about screen
   al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,PROGRAM_NAME);
   al_draw_textf(text,getconfigcol(colSEL1),scrW/2,72,ALLEGRO_ALIGN_CENTER,"r%d",ver);
   al_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*ALLEGRO_PI)/8)*(playmode!=0),0);
 }
-void drawpiano(){
+
+float getLKeyOff(int tone) {
+  switch (tone) {
+    case 0: case 3:
+      return 1.5;
+    default: return 4.5;
+  }
+}
+
+float getRKeyOff(int tone) {
+  switch (tone) {
+    case 2: case 6:
+      return 10.5;
+    default: return 7.5;
+  }
+}
+
+void drawpiano() {
   double prefreq;
-  al_draw_scaled_bitmap(piano,0,0,720,60,(scrW/2)-(((scrW)/720)*720)/2,scrH-(60*((scrW)/720)),((scrW)/720)*720,((scrW)/720)*60,0);
+  int postfreq;
+  al_draw_scaled_bitmap(piano,0,0,700,60,(scrW/2)-(((scrW)/700)*700)/2,scrH-(60*((scrW)/700)),((scrW)/700)*700,((scrW)/700)*60,0);
   al_set_target_bitmap(pianoroll_temp);
   al_draw_bitmap(pianoroll,0,-1,0);
   al_set_target_bitmap(pianoroll);
@@ -2662,19 +2671,47 @@ void drawpiano(){
   for(int ii=0;ii<32;ii++){
     if (muted[ii] || cvol[ii]==0) continue;
     prefreq=((log(((4.53948974609375*(double)cfreq[ii])/440.0)/64)/log(2.0))*12.0)+57.5;
-    //printf("prefreq (%d): %f\n",ii,prefreq);
+    if (prefreq<0 || prefreq>120) continue;
     if (
       (int)prefreq%12==0 || (int)prefreq%12==2 || (int)prefreq%12==4 ||
       (int)prefreq%12==5 || (int)prefreq%12==7 || (int)prefreq%12==9 ||
       (int)prefreq%12==11
       ) {
-    al_draw_filled_rectangle(((((int)prefreq*6)+1)*((scrW)/720))+(scrW/2)-(((scrW)/720)*720)/2,
-      ((scrW)/720)+scrH-(((scrW)/720)*60),((((int)prefreq*6)+5)*((scrW)/720))+(scrW/2)-(((scrW)/720)*720)/2,
-      59*((scrW)/720)+scrH-(((scrW)/720)*60),
-      al_map_rgb(255-cvol[ii]*2,255,255));
+      postfreq=round(((int)prefreq%12)/2.0);
+      // upper key
+      al_draw_filled_rectangle(
+        ((int)prefreq/12)*70+(((postfreq*10)+getLKeyOff(postfreq))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((scrW)/700)+scrH-(((scrW)/700)*60),
+        ((int)prefreq/12)*70+(((postfreq*10)+getRKeyOff(postfreq))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        36*((scrW)/700)+scrH-(((scrW)/700)*60),
+        al_map_rgba(
+        (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(255):(0),
+        (cshape[ii]!=5)?(255):(0),
+        (cshape[ii]!=1 && cshape[ii]!=2)?(255):(0),
+        cvol[ii]*2));
+      // lower key
+      al_draw_filled_rectangle(
+        (((int)prefreq/12)*70+(((postfreq*10)+1.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        35*((scrW)/700)+scrH-(((scrW)/700)*60),
+        (((int)prefreq/12)*70+(((postfreq*10)+10.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        59*((scrW)/700)+scrH-(((scrW)/700)*60),
+        al_map_rgba(
+        (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(255):(0),
+        (cshape[ii]!=5)?(255):(0),
+        (cshape[ii]!=1 && cshape[ii]!=2)?(255):(0),
+        cvol[ii]*2));
     } else {
-      al_draw_filled_rectangle(((((int)prefreq*6)+1)*((scrW)/720))+(scrW/2)-(((scrW)/720)*720)/2,((scrW)/720)+scrH-(((scrW)/720)*60),
-        ((((int)prefreq*6)+5)*((scrW)/720))+(scrW/2)-(((scrW)/720)*720)/2,(31*((scrW)/720))+scrH-(((scrW)/720)*60),al_map_rgb(0,cvol[ii]*2,cvol[ii]*2));
+      postfreq=((int)prefreq%12)/2.0;
+      al_draw_filled_rectangle(
+        (((int)prefreq/12)*70+(((postfreq*10)+8.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        ((scrW)/700)+scrH-(((scrW)/700)*60),
+        (((int)prefreq/12)*70+(((postfreq*10)+13.5))*((scrW)/700))+(scrW/2)-(((scrW)/700)*700)/2,
+        (34*((scrW)/700))+scrH-(((scrW)/700)*60),
+        al_map_rgba(
+        (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(cvol[ii]*2):(0),
+        (cshape[ii]!=5)?(cvol[ii]*2):(0),
+        (cshape[ii]!=1 && cshape[ii]!=2)?(cvol[ii]*2):(0),
+        255));
     }
     al_set_target_bitmap(pianoroll);
                 al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_ONE);
@@ -2682,7 +2719,7 @@ void drawpiano(){
                  al_draw_filled_rectangle(((prefreq-0.5)*6)+1-0.5,127,((prefreq-0.5)*6)+5,128,
       mapHSV(240-(cduty[ii]),1,(float)cvol[ii]/127)); 
                 } else {
-    al_draw_filled_rectangle(((prefreq-0.5)*6)+1-0.5,127,((prefreq-0.5)*6)+5,128,
+    al_draw_filled_rectangle(((prefreq-0.5)*5.83333333)+1-0.5,127,((prefreq-0.5)*5.833333333)+5,128,
       al_map_rgb(
       (cshape[ii]==4 || cshape[ii]==1 || cshape[ii]==5)?(cvol[ii]*2):(0),
       (cshape[ii]!=5)?(cvol[ii]*2):(0),
@@ -2691,12 +2728,12 @@ void drawpiano(){
                 }
                 al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_INVERSE_ALPHA);
     al_set_target_bitmap(al_get_backbuffer(display));
-    al_draw_textf(text,al_map_rgb(255,255,255),0,60+(ii*12),ALLEGRO_ALIGN_LEFT,"%d: %s%s %c%.2d",
+    al_draw_textf(text,al_map_rgb(255,255,255),0,60+(ii*10),ALLEGRO_ALIGN_LEFT,"%d: %s%s %c%.2d",
       ii,getnotetransp((int)prefreq),getoctavetransp((int)prefreq),(sign((int)(fmod(prefreq,1)*100)-50)>-1)?('+'):('-'),abs((int)(fmod(prefreq,1)*100)-50));
   }
-  al_draw_scaled_bitmap(pianoroll,0,0,720,128,(scrW/2)-((((scrW)/720)*720)/2),scrH-(((scrH-120)/128)*128)-(((scrW)/720)*60),((scrW)/720)*720,((scrH-120)/128)*128,0);
+  al_draw_scaled_bitmap(pianoroll,0,0,700,128,(scrW/2)-((((scrW)/700)*700)/2),scrH-(((scrH-120)/128)*128)-(((scrW)/700)*60),((scrW)/700)*700,((scrH-120)/128)*128,0);
 }
-void drawcomments(){
+void drawcomments() {
   int DRAWCUR_X=0;
   int DRAWCUR_Y=0;
   for (int ii=0;ii<strlen(comments);ii++){
@@ -2710,10 +2747,10 @@ void drawcomments(){
   }
   }
 }
-void drawsfxpanel(){
+void drawsfxpanel() {
   al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,"--- Sound Effects ---");
 }
-void drawsfxeditor(){
+void drawsfxeditor() {
   al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,"--- Sound Effect Editor ---");
   int sfxframe=0;
   for (int fxoffset=0;fxoffset<1024;fxoffset++) {
@@ -2752,7 +2789,7 @@ void drawsfxeditor(){
     //al_draw_text(text,getconfigcol(colDEFA),8,72+(sfxframe*12),ALLEGRO_ALIGN_LEFT,"PV|P|S|RM|PCM|F");
     //al_draw_textf(text,(sfxpos==ii)?(getconfigcol(colCPOS)):(al_map_rgb(255,255,255)),(ii%(scrW/24))*24,84+((ii/(scrW/24))*24),ALLEGRO_ALIGN_LEFT,"%.2x",sfxdata[cursfx][ii]);
 }
-void drawpcmeditor(){
+void drawpcmeditor() {
   pcmeditseek=mstate.x;
   if (sign(pcmeditscale)>-1) {
   al_draw_textf(text,getconfigcol(colDEFA),0,60,ALLEGRO_ALIGN_LEFT,"scale: %d:1",(int)pow(2.0f,pcmeditscale));
@@ -2861,7 +2898,7 @@ unsigned char ITVolumeConverter(unsigned char itvol){
   }
   return itvol;
 }
-int ImportIT(){
+int ImportIT() {
   // import IT file, after YEARS I wasn't able to do this.
   // check out http://schismtracker.org/wiki/ITTECH.TXT for specs in IT format
     int64_t size;
@@ -3248,7 +3285,7 @@ int ImportMOD(const char* rfn){
   else {/*cout << "error while importing file! file doesn't exist\n";*/ return 1;}
   return 0;
 }
-int ImportS3M(){
+int ImportS3M() {
   // import S3M file
     int64_t size;
   char * memblock;
@@ -3278,7 +3315,6 @@ int ImportS3M(){
     patlength[nonsense]=64;
     //instrument[nonsense][0x2a]=48;
   }
-  //FixCPPMemoryBug();
   // module name
   printf("module name is ");
   for (sk=0;sk<28;sk++){
@@ -3353,7 +3389,7 @@ int ImportS3M(){
   delete[] memblock;
   return 0;
 }
-int SaveFile(){
+int SaveFile() {
   // save file
   ALLEGRO_FILE *sfile;
   //printf("\nplease write filename? ");
@@ -3786,7 +3822,7 @@ int LoadFile(const char* filename){
     delete[] checkstr;
   return 1;
 }
-void SaveInstrument(){
+void SaveInstrument() {
   // save instrument
   ALLEGRO_FILE *sfile;
   printf("\nplease write filename? ");
@@ -3811,7 +3847,7 @@ void SaveInstrument(){
     printf("done\n");
   } else {fprintf(stderr,"error: couldn't open file for writing!\n");}
 }
-void LoadInstrument(){
+void LoadInstrument() {
   // load instrument
   ALLEGRO_FILE *sfile;
   printf("\nplease write filename? ");
@@ -4638,7 +4674,7 @@ void InstrumentTest(int testnote,int testchan){
       cfreq[testchan]=mnoteperiod(((testnote%16)+((testnote>>4)*12))+(((unsigned char)instrument[Mins[testchan]][0x2b])-48),testchan); // sets the frequency to match the current note and applies instrument transposition
       }
 }
-void ModPlug(){
+void ModPlug() {
   // ModPlug Tracker-OpenMPT-like pattern editor
 
 
@@ -4719,7 +4755,7 @@ void RunTestNote(int keycode){
   case 65: InstrumentTest(0x07+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
   }
 }
-void MuteControls(){
+void MuteControls() {
   if(kbpressed[ALLEGRO_KEY_1]) {muted[0]=!muted[0];}
   if(kbpressed[ALLEGRO_KEY_2]) {muted[1]=!muted[1];}
   if(kbpressed[ALLEGRO_KEY_3]) {muted[2]=!muted[2];}
@@ -4753,13 +4789,13 @@ void MuteControls(){
   if(kbpressed[ALLEGRO_KEY_M]) {muted[30]=!muted[30];}
   if(kbpressed[ALLEGRO_KEY_COMMA]) {muted[31]=!muted[31];}
 }
-void MuteAllChannels(){
+void MuteAllChannels() {
   for (int su=0;su<8*soundchips;su++){
   cvol[su]=0;
         chip[su>>3].chan[su&7].vol=0;
   }
 }
-void SFXControls(){
+void SFXControls() {
   if(kbpressed[ALLEGRO_KEY_1]) {cursfx=0;sfxpos=0;}
   if(kbpressed[ALLEGRO_KEY_2]) {cursfx=1;sfxpos=0;}
   if(kbpressed[ALLEGRO_KEY_3]) {cursfx=2;sfxpos=0;}
@@ -4794,7 +4830,7 @@ void SFXControls(){
   if(kbpressed[ALLEGRO_KEY_M]) {if(playmode==0) {playmode=1;} else {playmode=0;};cursfx=30;sfxpos=0;}
   if(kbpressed[ALLEGRO_KEY_COMMA]) {if(playmode==0) {playmode=1;} else {playmode=0;};cursfx=31;sfxpos=0;}
 }
-void KeyboardEvents(){
+void KeyboardEvents() {
   // keyboard states
   al_get_keyboard_state(&kbstate);
   // check for presses
@@ -4944,7 +4980,7 @@ void drawdisp() {
   g.tPos(0,1);
   g.tColor(8);
   g.printf("pat|ins|sfx|speed   v^|  |patID   v^|\n");
-  g.printf("sng|dsk|sed|tempo   v^|  |octave  v^|\n");
+  g.printf("sng|dsk|mem|tempo   v^|  |octave  v^|\n");
   g.printf("lvl|cfg|vis|order   v^|  |length  v^|\n");
   al_draw_text(text,(speedlock)?(al_map_rgb(0,255,255)):(getucol(8)),96,12,ALLEGRO_ALIGN_LEFT,"speed");
   al_draw_text(text,(tempolock)?(al_map_rgb(0,255,255)):(getucol(8)),96,24,ALLEGRO_ALIGN_LEFT,"tempo");
@@ -5250,11 +5286,11 @@ al_set_new_window_title("soundtracker");
    if(!iskb){
      fprintf(stderr,"there will be no keyboard! :(");
    }
-   patternbitmap=al_create_bitmap(SCREEN_W,SCREEN_H);
-   piano=al_create_bitmap(720,60);
-   pianoroll=al_create_bitmap(720,128);
-   pianoroll_temp=al_create_bitmap(720,128);
-   mixer=al_create_bitmap(800,390);
+   patternbitmap=al_create_bitmap(scrW,scrH);
+   piano=al_create_bitmap(700,60);
+   pianoroll=al_create_bitmap(700,128);
+   pianoroll_temp=al_create_bitmap(700,128);
+   mixer=al_create_bitmap(scrW,scrH);
    al_init_image_addon();
    logo=al_load_bitmap("logo.png");
    //logo=al_create_bitmap(360,240);
@@ -5293,6 +5329,15 @@ al_set_new_window_title("soundtracker");
    al_clear_to_color(al_map_rgb(0,0,0));
    // draw a piano
   for(int ii=0;ii<10;ii++){
+    for (int jj=0; jj<7; jj++) {
+      al_draw_filled_rectangle((jj*10)+(ii*70),60-60,((jj+1)*10)+(ii*70),60,al_map_rgb(64,64,64));
+      al_draw_filled_rectangle((jj*10)+1+(ii*70),60-59,((jj+1)*10)+(ii*70),60-1,al_map_rgb(255,255,255));
+    }
+    for (int jj=0; jj<6; jj++) {
+      if (jj==2) continue;
+      al_draw_filled_rectangle((jj+0.666666667)*10+(ii*70),60-60,((jj+1.36)*10)+(ii*70),60-25,al_map_rgb(0,0,0));
+    }
+/*
     for (int jj=0;jj<12;jj++) {
     if (jj==0 || jj==2 || jj==4 || jj==5 || jj==7 || jj==9 || jj==11){
     al_draw_filled_rectangle((jj*6)+(ii*72),60-60,(jj*6)+6+(ii*72),60,al_map_rgb(64,64,64));
@@ -5304,6 +5349,7 @@ al_set_new_window_title("soundtracker");
     al_draw_filled_rectangle((jj*6)+1+(ii*72),60-28,(jj*6)+5+(ii*72),60-1,al_map_rgb(255,255,255));
     }
     }
+*/
   }
    if (!playermode) {
      al_set_target_bitmap(mixer);
@@ -5459,7 +5505,7 @@ al_set_new_window_title("soundtracker");
       patternbitmap=al_create_bitmap(al_get_display_width(display)/dpiScale,al_get_display_height(display)/dpiScale);
       scrW=al_get_display_width(display)/dpiScale;
       scrH=al_get_display_height(display)/dpiScale;
-      mixer=al_create_bitmap(scrW,scrH-60);
+      mixer=al_create_bitmap(scrW,scrH);
       drawmixerlayer();
       drawpatterns(true);
     } else if(ev.type == ALLEGRO_EVENT_KEY_CHAR){
