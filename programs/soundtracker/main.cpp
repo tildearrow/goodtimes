@@ -2041,29 +2041,25 @@ void GoBack(){
        }
      }
 }
-void CleanupPatterns(){
+
+void CleanupPatterns() {
   // cleans up all patterns
-  for (int CU0=0;CU0<256;CU0++){for (int CU1=0;CU1<256;CU1++){for (int CU2=0;CU2<32;CU2++){for (int CU3=0;CU3<5;CU3++){
-    pat[CU0][CU1][CU2][CU3]=0;
-  }}}}
+  memset(pat,0,256*256*32*5);
   // cleans up all envelopes
+  memset(bytable,0,8*256*256);
   for (int kk=0;kk<8;kk++){
-  for (int jj=0;jj<256;jj++){
-  for (int ii=0;ii<254;ii++){
-          bytable[kk][jj][ii]=0;
-        }
-        bytable[kk][jj][254]=255;
-        bytable[kk][jj][255]=255;
-  }
+    for (int jj=0;jj<256;jj++){
+      bytable[kk][jj][254]=255;
+      bytable[kk][jj][255]=255;
+    }
   }
   // cleans up all instruments
+  memset(instrument,0,256*64);
   for (int jj=0;jj<256;jj++){
-  for (int ii=0;ii<64;ii++){
-          instrument[jj][ii]=0;
-        }
-        instrument[jj][0x2b]=48;
+    instrument[jj][0x2b]=48;
   }
 }
+
 ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
   float c=value*saturation;
   float x=c*(1-fabs(fmod(hue/60,2)-1));
