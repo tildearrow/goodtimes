@@ -3963,7 +3963,7 @@ void ClickEvents() {
   // screen event
   if (leftclick) {
   if (PIR(32,12,56,24,mstate.x,mstate.y)) {screen=1;}
-  if (PIR(0,12,24,24,mstate.x,mstate.y)) {screen=0;}
+  if (PIR(0,12,24,24,mstate.x,mstate.y)) {screen=0;drawpatterns(true);}
   if (PIR(32,24,56,36,mstate.x,mstate.y)) {screen=2;}
   if (PIR(0,24,24,36,mstate.x,mstate.y)) {screen=3;}
   if (PIR(0,36,24,48,mstate.x,mstate.y)) {screen=4;}
@@ -3999,40 +3999,42 @@ void ClickEvents() {
   }
   // events only in pattern view
   if (screen==0) {
-    if (leftpress) {
-      curedchan=minval(maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0),chanstodisplay-1);
-      switch ((((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/8)%12) {
-      case 0: curedmode=0; break;
-      case 1: curedmode=0; break;
-      case 2: curedmode=0; break;
-      case 3: curedmode=0; break;
-      case 4: curedmode=1; break;
-      case 5: curedmode=1; break;
-      case 6: curedmode=2; break;
-      case 7: curedmode=2; break;
-      case 8: curedmode=2; break;
-      case 9: curedmode=3; break;
-      case 10: curedmode=4; break;
-      case 11: curedmode=4; break;
+    if (mstate.y>60) {
+      if (leftpress) {
+        curedchan=minval(maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0),chanstodisplay-1);
+        switch ((((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/8)%12) {
+        case 0: curedmode=0; break;
+        case 1: curedmode=0; break;
+        case 2: curedmode=0; break;
+        case 3: curedmode=0; break;
+        case 4: curedmode=1; break;
+        case 5: curedmode=1; break;
+        case 6: curedmode=2; break;
+        case 7: curedmode=2; break;
+        case 8: curedmode=2; break;
+        case 9: curedmode=3; break;
+        case 10: curedmode=4; break;
+        case 11: curedmode=4; break;
+        }
       }
-    }
-    if (leftclick) {
-      curselchan=minval(maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0),chanstodisplay-1);
-      switch ((((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/8)%12) {
-      case 0: curselmode=0; break;
-      case 1: curselmode=0; break;
-      case 2: curselmode=0; break;
-      case 3: curselmode=0; break;
-      case 4: curselmode=1; break;
-      case 5: curselmode=1; break;
-      case 6: curselmode=2; break;
-      case 7: curselmode=2; break;
-      case 8: curselmode=2; break;
-      case 9: curselmode=3; break;
-      case 10: curselmode=4; break;
-      case 11: curselmode=4; break;
+      if (leftclick) {
+        curselchan=minval(maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0),chanstodisplay-1);
+        switch ((((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/8)%12) {
+        case 0: curselmode=0; break;
+        case 1: curselmode=0; break;
+        case 2: curselmode=0; break;
+        case 3: curselmode=0; break;
+        case 4: curselmode=1; break;
+        case 5: curselmode=1; break;
+        case 6: curselmode=2; break;
+        case 7: curselmode=2; break;
+        case 8: curselmode=2; break;
+        case 9: curselmode=3; break;
+        case 10: curselmode=4; break;
+        case 11: curselmode=4; break;
+        }
+        drawpatterns(true);
       }
-      drawpatterns(true);
     }
     if ((mstate.z-prevZ)<0) {
       curpatrow-=(mstate.z-prevZ);curpatrow=fmin(curpatrow,(unsigned char)(patlength[patid[curpat]]-1));drawpatterns(true);
@@ -4353,8 +4355,10 @@ void ClickEvents() {
   prevY=mstate.y;
   prevZ=mstate.z;
 }
-void FastTracker(){
+void FastTracker() {
   // FT2-like pattern editor
+  int firstChan, firstMode;
+  int lastChan, lastMode;
   // scroll code
   if(kbpressed[ALLEGRO_KEY_UP]){GoBack();drawpatterns(true);}
   if(kbpressed[ALLEGRO_KEY_DOWN]){JustSkip();drawpatterns(true);}
@@ -4375,9 +4379,33 @@ void FastTracker(){
   if(curedchan<0){curedchan=0;curedmode=0;}}
     drawpatterns(true);
   }
+  if (kbpressed[ALLEGRO_KEY_DELETE]) {
+    // delete from selection start to end
+    firstChan=curedchan; firstMode=curedmode;
+    lastChan=curselchan; lastMode=curselmode;
+    if (lastChan<firstChan) {
+      lastChan^=firstChan;
+      firstChan^=lastChan;
+      lastChan^=firstChan;
+      
+      lastMode^=firstMode;
+      firstMode^=lastMode;
+      lastMode^=firstMode;
+    } else if (lastChan==firstChan) {
+      if (lastMode<firstMode) {
+        lastMode^=firstMode;
+        firstMode^=lastMode;
+        lastMode^=firstMode;
+      }
+    }
+    for (int i=firstChan; i<=lastChan; i++) {
+      for (int j=(i==firstChan)?firstMode:0; (j<5 && (i<lastChan || j<=lastMode)); j++) {
+        pat[patid[curpat]][curstep][(8*curedpage)+i][j]=0x00;
+      }
+    }
+  }
   if(curedmode==0){
   // silences and stuff
-  if(kbpressed[ALLEGRO_KEY_DELETE]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x00;EditSkip();}
   if(kbpressed[71]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0d;EditSkip();}
   if(kbpressed[70]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0f;EditSkip();}
   if(kbpressed[28]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0e;EditSkip();}
@@ -4456,7 +4484,6 @@ void FastTracker(){
   if(kbpressed[ALLEGRO_KEY_F]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+15;drawpatterns(true);}
   }
   if(curedmode==3){
-  if(kbpressed[ALLEGRO_KEY_DELETE]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=0;drawpatterns(true);}
   if(kbpressed[ALLEGRO_KEY_A]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=1;drawpatterns(true);}
   if(kbpressed[ALLEGRO_KEY_B]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=2;drawpatterns(true);}
   if(kbpressed[ALLEGRO_KEY_C]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=3;drawpatterns(true);}
@@ -4838,6 +4865,8 @@ void KeyboardEvents(){
 }
 void drawdisp() {
   int delta;
+  int firstChan, firstMode;
+  int lastChan, lastMode;
   if (playermode) {return;}
   ClickEvents();
   KeyboardEvents();
@@ -4854,13 +4883,35 @@ void drawdisp() {
   //al_draw_filled_rectangle(24+(j*96),255,112+(j*96),266,mapHSV(((float)cduty[j+(curedpage*8)]/128)*360,(cshape[j+(curedpage*8)]==4)?(0):(1),(float)cvol[j+(curedpage*8)]/128));
   }
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
-  switch(curedmode){
-  case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-  case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-  case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-  case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
-  case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curedchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curedchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+  firstChan=curedchan; firstMode=curedmode;
+  lastChan=curselchan; lastMode=curselmode;
+  if (lastChan<firstChan) {
+    lastChan^=firstChan;
+    firstChan^=lastChan;
+    lastChan^=firstChan;
+    
+    lastMode^=firstMode;
+    firstMode^=lastMode;
+    lastMode^=firstMode;
+  } else if (lastChan==firstChan) {
+    if (lastMode<firstMode) {
+      lastMode^=firstMode;
+      firstMode^=lastMode;
+      lastMode^=firstMode;
+    }
   }
+  for (int i=firstChan; i<=lastChan; i++) {
+    for (int j=(i==firstChan)?firstMode:0; (j<5 && (i<lastChan || j<=lastMode)); j++) {
+      switch (j) {
+        case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(i*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(i*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+        case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(i*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(i*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+        case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(i*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(i*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+        case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(i*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(i*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+        case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(i*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(i*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
+      }
+    }
+  }
+  /*
   switch(curselmode){
   case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
   case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
@@ -4868,6 +4919,7 @@ void drawdisp() {
   case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
   case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
   }
+  */
   al_draw_filled_rectangle(0,(follow)?(255):(fmax(60,255+(curstep-curpatrow)*12)),scrW+1,((follow)?(266):(fmax(60,(255+(curstep-curpatrow)*12)+11))),al_map_rgba(64,64,64,128));
   }
   // grid markers
