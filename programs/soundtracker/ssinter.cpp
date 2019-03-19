@@ -26,6 +26,8 @@ FILE* f;
 int curChan;
 int frame;
 
+int curOctave;
+
 size_t fsize;
 
 float resa0[2], resa1[2];
@@ -33,6 +35,22 @@ float resa0[2], resa1[2];
 #define resaf 0.33631372025095791864295318996109
 
 std::string str;
+
+// maximum permissible notes
+unsigned short noteFreqs[12]={
+  0x7344,
+  0x7a1e,
+  0x8161,
+  0x8913,
+  0x913a,
+  0x99dc,
+  0xa302,
+  0xacb4,
+  0xb6f9,
+  0xc1da,
+  0xcd61,
+  0xd998
+};
 
 int decHex(int ch) {
   switch (ch) {
@@ -90,13 +108,18 @@ bool runSSOps(const char* buf, size_t set, size_t size) {
         curChan=(_NEXT_-'0')&7;
         break;
       case 'V':
-        sc.chan[curChan].vol=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].vol=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].vol+=decHex(_NEXT_);
         break;
       case 'Y':
-        sc.chan[curChan].duty=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].duty=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].duty+=decHex(_NEXT_);
         break;
       case 'f':
-        sc.chan[curChan].freq=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].freq=(decHex(_NEXT_)<<12);
+        sc.chan[curChan].freq+=(decHex(_NEXT_)<<8);
+        sc.chan[curChan].freq+=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].freq+=decHex(_NEXT_);
         break;
       case 'S':
         sc.chan[curChan].flags.shape=_NEXT_-'0';
@@ -105,10 +128,14 @@ bool runSSOps(const char* buf, size_t set, size_t size) {
         sc.chan[curChan].flags.fmode=_NEXT_-'0';
         break;
       case 'c':
-        sc.chan[curChan].cutoff=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].cutoff=(decHex(_NEXT_)<<12);
+        sc.chan[curChan].cutoff+=(decHex(_NEXT_)<<8);
+        sc.chan[curChan].cutoff+=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].cutoff+=decHex(_NEXT_);
         break;
       case 'r':
-        sc.chan[curChan].reson=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].reson=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].reson+=decHex(_NEXT_);
         break;
       case 'M':
         temp=(_NEXT_-'0')&7;
@@ -117,27 +144,88 @@ bool runSSOps(const char* buf, size_t set, size_t size) {
         sc.chan[curChan].flags.swcut=!!(temp&4);
         break;
       case 'v':
-        sc.chan[curChan].swvol.speed=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
-        temp=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].swvol.speed=(decHex(_NEXT_)<<12);
+        sc.chan[curChan].swvol.speed+=(decHex(_NEXT_)<<8);
+        sc.chan[curChan].swvol.speed+=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].swvol.speed+=decHex(_NEXT_);
+        temp=(decHex(_NEXT_)<<4);
+        temp+=decHex(_NEXT_);
         sc.chan[curChan].swvol.amt=temp&0x1f;
         sc.chan[curChan].swvol.dir=!!(temp&0x20);
         sc.chan[curChan].swvol.loop=!!(temp&0x40);
         sc.chan[curChan].swvol.loopi=!!(temp&0x80);
-        sc.chan[curChan].swvol.bound=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].swvol.bound=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].swvol.bound+=decHex(_NEXT_);
         break;
       case 'k':
-        sc.chan[curChan].swfreq.speed=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
-        temp=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].swfreq.speed=(decHex(_NEXT_)<<12);
+        sc.chan[curChan].swfreq.speed+=(decHex(_NEXT_)<<8);
+        sc.chan[curChan].swfreq.speed+=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].swfreq.speed+=decHex(_NEXT_);
+        temp=(decHex(_NEXT_)<<4);
+        temp+=decHex(_NEXT_);
         sc.chan[curChan].swfreq.amt=temp&0x7f;
         sc.chan[curChan].swfreq.dir=!!(temp&0x80);
-        sc.chan[curChan].swfreq.bound=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].swfreq.bound=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].swfreq.bound+=decHex(_NEXT_);
         break;
       case 'l':
-        sc.chan[curChan].swcut.speed=(decHex(_NEXT_)<<12)+(decHex(_NEXT_)<<8)+(decHex(_NEXT_)<<4)+decHex(_NEXT_);
-        temp=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].swcut.speed=(decHex(_NEXT_)<<12);
+        sc.chan[curChan].swcut.speed+=(decHex(_NEXT_)<<8);
+        sc.chan[curChan].swcut.speed+=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].swcut.speed+=decHex(_NEXT_);
+        temp=(decHex(_NEXT_)<<4);
+        temp+=decHex(_NEXT_);
         sc.chan[curChan].swcut.amt=temp&0x7f;
         sc.chan[curChan].swcut.dir=!!(temp&0x80);
-        sc.chan[curChan].swcut.bound=(decHex(_NEXT_)<<4)+decHex(_NEXT_);
+        sc.chan[curChan].swcut.bound=(decHex(_NEXT_)<<4);
+        sc.chan[curChan].swcut.bound+=decHex(_NEXT_);
+        break;
+      case 'O':
+        curOctave=_NEXT_-'0';
+        if (curOctave<0) curOctave=0;
+        if (curOctave>7) curOctave=7;
+        break;
+      case 'C':
+        sc.chan[curChan].freq=noteFreqs[0]>>(7-curOctave);
+        break;
+      case 'D':
+        sc.chan[curChan].freq=noteFreqs[2]>>(7-curOctave);
+        break;
+      case 'E':
+        sc.chan[curChan].freq=noteFreqs[4]>>(7-curOctave);
+        break;
+      case 'F':
+        sc.chan[curChan].freq=noteFreqs[5]>>(7-curOctave);
+        break;
+      case 'G':
+        sc.chan[curChan].freq=noteFreqs[7]>>(7-curOctave);
+        break;
+      case 'A':
+        sc.chan[curChan].freq=noteFreqs[9]>>(7-curOctave);
+        break;
+      case 'B':
+        sc.chan[curChan].freq=noteFreqs[11]>>(7-curOctave);
+        break;
+      case '#':
+        c=_NEXT_;
+        switch (c) {
+          case 'C':
+            sc.chan[curChan].freq=noteFreqs[1]>>(7-curOctave);
+            break;
+          case 'D':
+            sc.chan[curChan].freq=noteFreqs[3]>>(7-curOctave);
+            break;
+          case 'F':
+            sc.chan[curChan].freq=noteFreqs[6]>>(7-curOctave);
+            break;
+          case 'G':
+            sc.chan[curChan].freq=noteFreqs[8]>>(7-curOctave);
+            break;
+          case 'A':
+            sc.chan[curChan].freq=noteFreqs[10]>>(7-curOctave);
+            break;
+        }
         break;
     }
     if (c=='R') break;
@@ -198,6 +286,7 @@ int main(int argc, char** argv) {
   int which;
   sc.Init();
   procPos=0;
+  curOctave=4;
   frame=0;
   ticks=0;
   resa0[0]=0; resa0[1]=0;
