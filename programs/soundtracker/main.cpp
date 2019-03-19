@@ -2372,13 +2372,18 @@ void EditSkip() {
   }
   // skipping
   if (playmode==0){
-       curtick=1;
-       curstep++;
-       if(curstep>(getpatlen(patid[curpat])-1)){
-         curstep=0;
-         curpat++;
-       }
-     }
+    curtick=1;
+    curstep++;
+    if (curstep>(getpatlen(patid[curpat])-1)){
+      curstep=0;
+      curpat++;
+    }
+    selStart=curstep;
+    selEnd=curstep;
+    curpatrow=curstep;
+    curselchan=curedchan;
+    curselmode=curedmode;
+  }
   drawpatterns(true);
 }
 void ParentDir(char *thedir) {
@@ -4019,7 +4024,9 @@ void ClickEvents() {
   if (PIR(0,24,24,36,mstate.x,mstate.y)) {screen=3;}
   if (PIR(0,36,24,48,mstate.x,mstate.y)) {screen=4;}
   if (PIR(32,36,56,48,mstate.x,mstate.y)) {screen=5;}
+  /*
   if (PIR(640,12,672,28,mstate.x,mstate.y)) {screen=6;}
+  */
   if (PIR(0,0,128,11,mstate.x,mstate.y)) {screen=7;}
   if (PIR(64,12,88,24,mstate.x,mstate.y)) {screen=9;}
   if (PIR(64,24,88,36,mstate.x,mstate.y)) {screen=10;}
@@ -4050,7 +4057,17 @@ void ClickEvents() {
     if (PIR(280,36,288,48,mstate.x,mstate.y)) {patlength[patid[curpat]]++;}
     if (PIR((scrW/2)-20,37,(scrW/2)+20,48,mstate.x,mstate.y)) {StepPlay();}
     if (PIR((scrW/2)-20,13,(scrW/2)+20,37,mstate.x,mstate.y)) {Play();}
-    if (PIR(704,12,712,24,mstate.x,mstate.y)) {follow=!follow;}
+    if (PIR(scrW-34*8,24,scrW-28*8,36,mstate.x,mstate.y)) {follow=!follow;}
+    
+    if (PIR(scrW-28*8,12,scrW-27*8,24,mstate.x,mstate.y)) {
+      curins--;
+      if (curins<0) curins=0;
+    }
+    if (PIR(scrW-27*8,12,scrW-26*8,24,mstate.x,mstate.y)) {
+      curins++;
+      if (curins>255) curins=255;
+    }
+    
     if (PIR(96,12,136,24,mstate.x,mstate.y)) {speedlock=!speedlock;}
     if (PIR(96,24,136,36,mstate.x,mstate.y)) {tempolock=!tempolock;}
   }
@@ -4082,7 +4099,7 @@ void ClickEvents() {
         selEnd=(int)((mstate.y-255+curpatrow*12)/12);
         if (selEnd<0) selEnd=0;
         if (selEnd>=patlength[patid[curpat]]) selEnd=patlength[patid[curpat]]-1;
-        curselchan=minval(maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0),chanstodisplay-1);
+        curselchan=maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0);
         switch ((((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/8)%12) {
         case 0: curselmode=0; break;
         case 1: curselmode=0; break;
@@ -4097,14 +4114,38 @@ void ClickEvents() {
         case 10: curselmode=4; break;
         case 11: curselmode=4; break;
         }
+        if (curselchan>=chanstodisplay) {
+          curselchan=chanstodisplay-1;
+          curselmode=4;
+        }
         drawpatterns(true);
       }
     }
     if ((mstate.z-prevZ)<0) {
-      curpatrow-=(mstate.z-prevZ);curpatrow=fmin(curpatrow,(unsigned char)(patlength[patid[curpat]]-1));drawpatterns(true);
+      if (follow) {
+        curstep-=(mstate.z-prevZ);
+      } else {
+        curpatrow-=(mstate.z-prevZ)*3;
+        curpatrow=fmin(curpatrow,(unsigned char)(patlength[patid[curpat]]-1));
+      }
+      drawpatterns(true);
     }
     if ((mstate.z-prevZ)>0) {
-      curpatrow-=(mstate.z-prevZ);curpatrow=fmax(curpatrow,0);drawpatterns(true);
+      if (follow) {
+        curstep-=(mstate.z-prevZ);
+        if (curstep<0) {
+          if (curpat!=0) {
+            curpat--;
+            curstep+=patlength[patid[curpat]];
+          } else {
+            curstep=-1;
+          }
+        }
+      } else {
+        curpatrow-=(mstate.z-prevZ)*3;
+        curpatrow=fmax(curpatrow,0);
+      }
+      drawpatterns(true);
     }
   }
   // events only in instrument view
@@ -4477,6 +4518,10 @@ void FastTracker() {
       }
     }
     drawpatterns(true);
+    selStart=curstep;
+    selEnd=curstep;
+    curselchan=curedchan;
+    curselmode=curedmode;
   }
   if(curedmode==0){
   // silences and stuff
@@ -5027,10 +5072,15 @@ void drawdisp() {
   g.printf("pat|ins|sfx|speed   v^|  |patID   v^|\n");
   g.printf("sng|dsk|mem|tempo   v^|  |octave  v^|\n");
   g.printf("lvl|cfg|vis|order   v^|  |length  v^|\n");
+  g.tPos(((float)scrW)/8.0-37,1);
+  g.tNLPos(((float)scrW)/8.0-37);
+  g.printf("|instr   v^\n");
+  g.printf("|  follow  \n");
+  g.printf("|   loop   \n");
+  g.tNLPos(0);
   al_draw_text(text,(speedlock)?(al_map_rgb(0,255,255)):(getucol(8)),96,12,ALLEGRO_ALIGN_LEFT,"speed");
   al_draw_text(text,(tempolock)?(al_map_rgb(0,255,255)):(getucol(8)),96,24,ALLEGRO_ALIGN_LEFT,"tempo");
   //al_draw_text(text,getucol(15),8,12,ALLEGRO_ALIGN_LEFT,"speed   v^|fx|fxed|pos   v^|patID   v^|diskop|PATTERN|INSTR|SONG|LEVELS|config|help|ED|f|   |  |   ");
-  al_draw_text(text,(follow)?(al_map_rgb(0,255,255)):(getucol(15)),704,12,ALLEGRO_ALIGN_LEFT,"f");
 
   al_draw_text(text,(leftclick && PIR(32,12,56,24,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[1]*10),128+(hover[1]*10),128-(hover[1]*5)),32,12,ALLEGRO_ALIGN_LEFT,"ins");
   al_draw_text(text,(leftclick && PIR(0,12,24,24,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[0]*10),128+(hover[0]*10),128-(hover[0]*5)),0,12,ALLEGRO_ALIGN_LEFT,"pat");
@@ -5038,7 +5088,7 @@ void drawdisp() {
   al_draw_text(text,(leftclick && PIR(0,24,24,36,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[3]*10),128+(hover[3]*10),128-(hover[3]*5)),0,24,ALLEGRO_ALIGN_LEFT,"sng");
   al_draw_text(text,(leftclick && PIR(0,36,24,48,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[4]*10),128+(hover[4]*10),128-(hover[4]*5)),0,36,ALLEGRO_ALIGN_LEFT,"lvl");
   al_draw_text(text,(leftclick && PIR(32,36,56,48,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[5]*10),128+(hover[5]*10),128-(hover[5]*5)),32,36,ALLEGRO_ALIGN_LEFT,"cfg");
-  al_draw_text(text,(leftclick && PIR(640,12,672,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[6]*10),128+(hover[6]*10),128-(hover[6]*5)),640,12,ALLEGRO_ALIGN_LEFT,"?");
+  //al_draw_text(text,(leftclick && PIR(640,12,672,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[6]*10),128+(hover[6]*10),128-(hover[6]*5)),640,12,ALLEGRO_ALIGN_LEFT,"?");
   // because of the new top bar
   //al_draw_text(text,(leftclick && PIR(scrW-80,12,scrW-56,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[7]*10),128+(hover[7]*10),128-(hover[7]*5)),scrW-80,12,ALLEGRO_ALIGN_LEFT,"ply");
   //al_draw_text(text,(leftclick && PIR(scrW-24,12,scrW,28,mstate.x,mstate.y))?getconfigcol(colSEL2):al_map_rgb(128+(hover[8]*10),128+(hover[8]*10),128-(hover[8]*5)),scrW-24,12,ALLEGRO_ALIGN_LEFT,"stp");
@@ -5050,6 +5100,16 @@ void drawdisp() {
   al_draw_textf(text,al_map_rgb(0,255,255),256,12,ALLEGRO_ALIGN_LEFT,"%.2X",patid[curpat]);
   al_draw_textf(text,al_map_rgb(0,255,255),256,24,ALLEGRO_ALIGN_LEFT,"%.2X",curoctave);
   al_draw_textf(text,al_map_rgb(0,255,255),256,36,ALLEGRO_ALIGN_LEFT,"%.2X",patlength[patid[curpat]]);
+  
+  if (curins==0) {
+    al_draw_text(text,al_map_rgb(0,255,255),scrW-30*8,12,ALLEGRO_ALIGN_LEFT,"--");
+  } else {
+    al_draw_textf(text,al_map_rgb(0,255,255),scrW-30*8,12,ALLEGRO_ALIGN_LEFT,"%.2X",curins);
+  }
+  if (follow) {
+    al_draw_text(text,al_map_rgb(0,255,255),scrW-34*8,24,ALLEGRO_ALIGN_LEFT,"follow");
+  }
+  
   //al_draw_text(text,getconfigcol(colDEFA),0,24,ALLEGRO_ALIGN_LEFT,"----------------------------------------------------------------------------------------------------");
   //al_draw_text(text,getucol(15),0,36,ALLEGRO_ALIGN_LEFT,"|octave   ^v|reverse|step|curstep   |curpat   |curtick   |speed ");
   //al_draw_text(text,getucol(15),512,36,ALLEGRO_ALIGN_LEFT,name);
