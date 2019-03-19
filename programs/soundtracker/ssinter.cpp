@@ -1,5 +1,6 @@
 // specs2 soundchip sequence interpreter...
 #include "soundchip.h"
+#include "ssinter.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,10 +24,9 @@ double procPos;
 int ticks, speed;
 
 FILE* f;
-int curChan;
 int frame;
 
-int curOctave;
+SSInter s;
 
 size_t fsize;
 
@@ -94,7 +94,7 @@ int bufchar(const char* buf, size_t tell, size_t bound) {
 #define _NEXT_ bufchar(buf,set++,size)
 
 // returns false if end of stream
-bool runSSOps(const char* buf, size_t set, size_t size) {
+bool SSInter::next(const char* buf, size_t set, size_t size) {
   char temp;
   int c;
   if (set>=size) {
@@ -108,122 +108,122 @@ bool runSSOps(const char* buf, size_t set, size_t size) {
         curChan=(_NEXT_-'0')&7;
         break;
       case 'V':
-        sc.chan[curChan].vol=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].vol+=decHex(_NEXT_);
+        out->chan[curChan].vol=(decHex(_NEXT_)<<4);
+        out->chan[curChan].vol+=decHex(_NEXT_);
         break;
       case 'Y':
-        sc.chan[curChan].duty=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].duty+=decHex(_NEXT_);
+        out->chan[curChan].duty=(decHex(_NEXT_)<<4);
+        out->chan[curChan].duty+=decHex(_NEXT_);
         break;
       case 'f':
-        sc.chan[curChan].freq=(decHex(_NEXT_)<<12);
-        sc.chan[curChan].freq+=(decHex(_NEXT_)<<8);
-        sc.chan[curChan].freq+=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].freq+=decHex(_NEXT_);
+        out->chan[curChan].freq=(decHex(_NEXT_)<<12);
+        out->chan[curChan].freq+=(decHex(_NEXT_)<<8);
+        out->chan[curChan].freq+=(decHex(_NEXT_)<<4);
+        out->chan[curChan].freq+=decHex(_NEXT_);
         break;
       case 'S':
-        sc.chan[curChan].flags.shape=_NEXT_-'0';
+        out->chan[curChan].flags.shape=_NEXT_-'0';
         break;
       case 'I':
-        sc.chan[curChan].flags.fmode=_NEXT_-'0';
+        out->chan[curChan].flags.fmode=_NEXT_-'0';
         break;
       case 'c':
-        sc.chan[curChan].cutoff=(decHex(_NEXT_)<<12);
-        sc.chan[curChan].cutoff+=(decHex(_NEXT_)<<8);
-        sc.chan[curChan].cutoff+=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].cutoff+=decHex(_NEXT_);
+        out->chan[curChan].cutoff=(decHex(_NEXT_)<<12);
+        out->chan[curChan].cutoff+=(decHex(_NEXT_)<<8);
+        out->chan[curChan].cutoff+=(decHex(_NEXT_)<<4);
+        out->chan[curChan].cutoff+=decHex(_NEXT_);
         break;
       case 'r':
-        sc.chan[curChan].reson=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].reson+=decHex(_NEXT_);
+        out->chan[curChan].reson=(decHex(_NEXT_)<<4);
+        out->chan[curChan].reson+=decHex(_NEXT_);
         break;
       case 'M':
         temp=(_NEXT_-'0')&7;
-        sc.chan[curChan].flags.swvol=!!(temp&1);
-        sc.chan[curChan].flags.swfreq=!!(temp&2);
-        sc.chan[curChan].flags.swcut=!!(temp&4);
+        out->chan[curChan].flags.swvol=!!(temp&1);
+        out->chan[curChan].flags.swfreq=!!(temp&2);
+        out->chan[curChan].flags.swcut=!!(temp&4);
         break;
       case 'v':
-        sc.chan[curChan].swvol.speed=(decHex(_NEXT_)<<12);
-        sc.chan[curChan].swvol.speed+=(decHex(_NEXT_)<<8);
-        sc.chan[curChan].swvol.speed+=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].swvol.speed+=decHex(_NEXT_);
+        out->chan[curChan].swvol.speed=(decHex(_NEXT_)<<12);
+        out->chan[curChan].swvol.speed+=(decHex(_NEXT_)<<8);
+        out->chan[curChan].swvol.speed+=(decHex(_NEXT_)<<4);
+        out->chan[curChan].swvol.speed+=decHex(_NEXT_);
         temp=(decHex(_NEXT_)<<4);
         temp+=decHex(_NEXT_);
-        sc.chan[curChan].swvol.amt=temp&0x1f;
-        sc.chan[curChan].swvol.dir=!!(temp&0x20);
-        sc.chan[curChan].swvol.loop=!!(temp&0x40);
-        sc.chan[curChan].swvol.loopi=!!(temp&0x80);
-        sc.chan[curChan].swvol.bound=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].swvol.bound+=decHex(_NEXT_);
+        out->chan[curChan].swvol.amt=temp&0x1f;
+        out->chan[curChan].swvol.dir=!!(temp&0x20);
+        out->chan[curChan].swvol.loop=!!(temp&0x40);
+        out->chan[curChan].swvol.loopi=!!(temp&0x80);
+        out->chan[curChan].swvol.bound=(decHex(_NEXT_)<<4);
+        out->chan[curChan].swvol.bound+=decHex(_NEXT_);
         break;
       case 'k':
-        sc.chan[curChan].swfreq.speed=(decHex(_NEXT_)<<12);
-        sc.chan[curChan].swfreq.speed+=(decHex(_NEXT_)<<8);
-        sc.chan[curChan].swfreq.speed+=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].swfreq.speed+=decHex(_NEXT_);
+        out->chan[curChan].swfreq.speed=(decHex(_NEXT_)<<12);
+        out->chan[curChan].swfreq.speed+=(decHex(_NEXT_)<<8);
+        out->chan[curChan].swfreq.speed+=(decHex(_NEXT_)<<4);
+        out->chan[curChan].swfreq.speed+=decHex(_NEXT_);
         temp=(decHex(_NEXT_)<<4);
         temp+=decHex(_NEXT_);
-        sc.chan[curChan].swfreq.amt=temp&0x7f;
-        sc.chan[curChan].swfreq.dir=!!(temp&0x80);
-        sc.chan[curChan].swfreq.bound=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].swfreq.bound+=decHex(_NEXT_);
+        out->chan[curChan].swfreq.amt=temp&0x7f;
+        out->chan[curChan].swfreq.dir=!!(temp&0x80);
+        out->chan[curChan].swfreq.bound=(decHex(_NEXT_)<<4);
+        out->chan[curChan].swfreq.bound+=decHex(_NEXT_);
         break;
       case 'l':
-        sc.chan[curChan].swcut.speed=(decHex(_NEXT_)<<12);
-        sc.chan[curChan].swcut.speed+=(decHex(_NEXT_)<<8);
-        sc.chan[curChan].swcut.speed+=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].swcut.speed+=decHex(_NEXT_);
+        out->chan[curChan].swcut.speed=(decHex(_NEXT_)<<12);
+        out->chan[curChan].swcut.speed+=(decHex(_NEXT_)<<8);
+        out->chan[curChan].swcut.speed+=(decHex(_NEXT_)<<4);
+        out->chan[curChan].swcut.speed+=decHex(_NEXT_);
         temp=(decHex(_NEXT_)<<4);
         temp+=decHex(_NEXT_);
-        sc.chan[curChan].swcut.amt=temp&0x7f;
-        sc.chan[curChan].swcut.dir=!!(temp&0x80);
-        sc.chan[curChan].swcut.bound=(decHex(_NEXT_)<<4);
-        sc.chan[curChan].swcut.bound+=decHex(_NEXT_);
+        out->chan[curChan].swcut.amt=temp&0x7f;
+        out->chan[curChan].swcut.dir=!!(temp&0x80);
+        out->chan[curChan].swcut.bound=(decHex(_NEXT_)<<4);
+        out->chan[curChan].swcut.bound+=decHex(_NEXT_);
         break;
       case 'O':
-        curOctave=_NEXT_-'0';
-        if (curOctave<0) curOctave=0;
-        if (curOctave>7) curOctave=7;
+        octave=_NEXT_-'0';
+        if (octave<0) octave=0;
+        if (octave>7) octave=7;
         break;
       case 'C':
-        sc.chan[curChan].freq=noteFreqs[0]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[0]>>(7-octave);
         break;
       case 'D':
-        sc.chan[curChan].freq=noteFreqs[2]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[2]>>(7-octave);
         break;
       case 'E':
-        sc.chan[curChan].freq=noteFreqs[4]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[4]>>(7-octave);
         break;
       case 'F':
-        sc.chan[curChan].freq=noteFreqs[5]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[5]>>(7-octave);
         break;
       case 'G':
-        sc.chan[curChan].freq=noteFreqs[7]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[7]>>(7-octave);
         break;
       case 'A':
-        sc.chan[curChan].freq=noteFreqs[9]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[9]>>(7-octave);
         break;
       case 'B':
-        sc.chan[curChan].freq=noteFreqs[11]>>(7-curOctave);
+        out->chan[curChan].freq=noteFreqs[11]>>(7-octave);
         break;
       case '#':
         c=_NEXT_;
         switch (c) {
           case 'C':
-            sc.chan[curChan].freq=noteFreqs[1]>>(7-curOctave);
+            out->chan[curChan].freq=noteFreqs[1]>>(7-octave);
             break;
           case 'D':
-            sc.chan[curChan].freq=noteFreqs[3]>>(7-curOctave);
+            out->chan[curChan].freq=noteFreqs[3]>>(7-octave);
             break;
           case 'F':
-            sc.chan[curChan].freq=noteFreqs[6]>>(7-curOctave);
+            out->chan[curChan].freq=noteFreqs[6]>>(7-octave);
             break;
           case 'G':
-            sc.chan[curChan].freq=noteFreqs[8]>>(7-curOctave);
+            out->chan[curChan].freq=noteFreqs[8]>>(7-octave);
             break;
           case 'A':
-            sc.chan[curChan].freq=noteFreqs[10]>>(7-curOctave);
+            out->chan[curChan].freq=noteFreqs[10]>>(7-octave);
             break;
         }
         break;
@@ -232,6 +232,10 @@ bool runSSOps(const char* buf, size_t set, size_t size) {
   }
   return true;
 };
+
+void SSInter::init(soundchip* where) {
+  out=where;
+}
 
 int process(jack_nframes_t nframes, void* arg) {
   float* buf[2];
@@ -249,7 +253,7 @@ int process(jack_nframes_t nframes, void* arg) {
         str+=wc;
         if (wc=='R') break;
       }
-      runSSOps(str.c_str(),0,str.size());
+      s.next(str.c_str(),0,str.size());
       printf("ssinter: filename                      % 8ld/%ld  % 8d\n",ftell(f),fsize,frame);
       printf("\x1b[1;33m----\x1b[32m--\x1b[36m--\x1b[m----\x1b[1;34m----\x1b[31m--\x1b[35m--\x1b[30m------------\x1b[33m--------\x1b[32m--------\x1b[34m--------\x1b[m----\x1b[33m----\x1b[m\n");
       for (int i=0; i<256; i++) {
@@ -286,7 +290,6 @@ int main(int argc, char** argv) {
   int which;
   sc.Init();
   procPos=0;
-  curOctave=4;
   frame=0;
   ticks=0;
   resa0[0]=0; resa0[1]=0;
@@ -299,6 +302,8 @@ int main(int argc, char** argv) {
   targetSR=297500; // PAL.
   speed=119000; // PAL.
   which=1;
+
+  s.init(&sc);
 
   if (strcmp(argv[1],"-n")==0) {
     which=2;
