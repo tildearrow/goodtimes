@@ -2080,7 +2080,7 @@ ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
 }
 void drawpatterns(bool force) {
   if (playermode) {return;}
-  if (follow) {curpatrow=curstep;}
+  if (follow) {curpatrow=curstep; if (curpatrow<0) curpatrow=0;}
   //curpatrow=0;
   // will be replaced
   if ((!UPDATEPATTERNS || playmode==0 || playmode==1) && !force && oldpat==curpat) {oldpat=curpat;return;}
@@ -5047,7 +5047,7 @@ void drawdisp() {
   case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+112+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
   }
   */
-  al_draw_filled_rectangle(0,(follow)?(255):(fmax(60,255+(curstep-curpatrow)*12)),scrW+1,((follow)?(266):(fmax(60,(255+(curstep-curpatrow)*12)+11))),al_map_rgba(64,64,64,128));
+  al_draw_filled_rectangle(0,(follow)?(255):(fmax(60,255+(maxval(0,curstep)-curpatrow)*12)),scrW+1,((follow)?(266):(fmax(60,(255+(maxval(0,curstep)-curpatrow)*12)+11))),al_map_rgba(64,64,64,128));
   }
   // grid markers
   #ifdef MOUSE_GRID
@@ -5115,9 +5115,7 @@ void drawdisp() {
   //al_draw_text(text,getucol(15),0,36,ALLEGRO_ALIGN_LEFT,"|octave   ^v|reverse|step|curstep   |curpat   |curtick   |speed ");
   //al_draw_text(text,getucol(15),512,36,ALLEGRO_ALIGN_LEFT,name);
   al_draw_textf(text,getconfigcol(colDEFA),scrW-180,8,ALLEGRO_ALIGN_LEFT,"%.2x/%.2x",curtick,speed);
-  if (curstep>=0) {
-    al_draw_textf(text,getconfigcol(colDEFA),scrW-180,20,ALLEGRO_ALIGN_LEFT,"%.2x/%.2x",(unsigned char)curstep,patlength[patid[curpat]]);
-  }
+  al_draw_textf(text,getconfigcol(colDEFA),scrW-180,20,ALLEGRO_ALIGN_LEFT,"%.2x/%.2x",maxval(0,curstep),patlength[patid[curpat]]);
   al_draw_textf(text,getconfigcol(colDEFA),scrW-192,32,ALLEGRO_ALIGN_LEFT,"%.2x:%.2x/%.2x",patid[curpat],curpat,songlength);
   /*al_draw_textf(text,al_map_rgb(255,255,255),272,36,ALLEGRO_ALIGN_LEFT,"%.2x",curstep);
   al_draw_textf(text,al_map_rgb(255,255,255),352,36,ALLEGRO_ALIGN_LEFT,"%.2x",curpat);
