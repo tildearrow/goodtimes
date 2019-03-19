@@ -457,7 +457,7 @@ namespace settings {
   bool samples=true;
   // filter settings
   bool nofilters=false;
-  bool muffle=false;
+  bool muffle=true;
 }
 
 // NEW VARIABLES BEGIN //
