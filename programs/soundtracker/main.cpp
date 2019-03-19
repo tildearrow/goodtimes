@@ -3619,6 +3619,7 @@ int LoadFile(const char* filename){
   int pcmpointer=0;
   int maxpcmread=0;
   int TVER;
+  int oplaymode;
   bool IS_SEQ_BLANK[256];
   char *checkstr=new char[8];
   sfile=al_fopen(filename,"rb");
@@ -3640,6 +3641,8 @@ int LoadFile(const char* filename){
     cursfx=1;sfxpos=0;
     #endif
     return 1;}
+    oplaymode=playmode;
+    playmode=0;
     CleanupPatterns();
     //printf("%d ",al_ftell(sfile));
     TVER=al_fread16le(sfile); // version
@@ -3821,7 +3824,7 @@ int LoadFile(const char* filename){
     al_fclose(sfile);
     printf("done\n");
     if (!playermode && !fileswitch) {curpat=0;}
-    if (playmode==1) {Play();}
+    if (oplaymode==1) {Play();}
     return 0;
   } else {
     perror("can't open file");
@@ -5385,32 +5388,7 @@ al_set_new_window_title("soundtracker");
    printf("initializing audio channels\n");
    initaudio();
    //success=ImportMOD();
-  // fixes a c++ memory bug
-  for (int nonsense3=0;nonsense3<256;nonsense3++) {
-    for (int nonsense4=0;nonsense4<256;nonsense4++) {
-      for (int nonsense5=0;nonsense5<8;nonsense5++) {
-        bytable[nonsense5][nonsense4][nonsense3]=0;
-      }
-    }
-  }
-  for (int nonsense=0;nonsense<256;nonsense++) {
-    bytable[0][nonsense][254]=255;
-    bytable[1][nonsense][254]=255;
-    bytable[2][nonsense][254]=255;
-    bytable[3][nonsense][254]=255;
-    bytable[4][nonsense][254]=255;
-    bytable[5][nonsense][254]=255;
-    bytable[6][nonsense][254]=255;
-    bytable[7][nonsense][254]=255;
-    bytable[0][nonsense][255]=255;
-    bytable[1][nonsense][255]=255;
-    bytable[2][nonsense][255]=255;
-    bytable[3][nonsense][255]=255;
-    bytable[4][nonsense][255]=255;
-    bytable[5][nonsense][255]=255;
-    bytable[6][nonsense][255]=255;
-    bytable[7][nonsense][255]=255;
-  }
+   CleanupPatterns();
    // register_event_sources
   if (!playermode) {al_register_event_source(event_queue, al_get_display_event_source(display));
   al_register_event_source(event_queue, al_get_keyboard_event_source());}
