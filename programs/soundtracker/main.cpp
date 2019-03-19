@@ -335,6 +335,9 @@ const int sine[256]={
                -24,-23,-22,-20,-19,-17,-16,-14,-12,-11, -9, -8, -6, -5, -3, -2
 }; // taken directly from Jeffrey Lim's fine sine table
 const char HEXVALS[17]="0123456789ABCDEF"; // 17 for the null
+const int modeOff[6]={
+  24,48,64,88,96,112
+};
 int sfxcvol=0;
 int sfxcpan=0;
 int sfxcshape=0;
@@ -5028,13 +5031,11 @@ void drawdisp() {
   }
   for (int i=firstChan; i<=lastChan; i++) {
     for (int j=(i==firstChan)?firstMode:0; (j<5 && (i<lastChan || j<=lastMode)); j++) {
-      switch (j) {
-        case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(i*96)+((8-chanstodisplay)*45),255-(curpatrow-selTop)*12,((scrW/2)-400)+48+(i*96)+((8-chanstodisplay)*45),266-(curpatrow-selBottom)*12,al_map_rgba(128,128,128,128)); break;
-        case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(i*96)+((8-chanstodisplay)*45),255-(curpatrow-selTop)*12,((scrW/2)-400)+64+(i*96)+((8-chanstodisplay)*45),266-(curpatrow-selBottom)*12,al_map_rgba(128,128,128,128)); break;
-        case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(i*96)+((8-chanstodisplay)*45),255-(curpatrow-selTop)*12,((scrW/2)-400)+88+(i*96)+((8-chanstodisplay)*45),266-(curpatrow-selBottom)*12,al_map_rgba(128,128,128,128)); break;
-        case 3: al_draw_filled_rectangle(((scrW/2)-400)+88+(i*96)+((8-chanstodisplay)*45),255-(curpatrow-selTop)*12,((scrW/2)-400)+96+(i*96)+((8-chanstodisplay)*45),266-(curpatrow-selBottom)*12,al_map_rgba(128,128,128,128)); break;
-        case 4: al_draw_filled_rectangle(((scrW/2)-400)+96+(i*96)+((8-chanstodisplay)*45),255-(curpatrow-selTop)*12,((scrW/2)-400)+112+(i*96)+((8-chanstodisplay)*45),266-(curpatrow-selBottom)*12,al_map_rgba(128,128,128,128)); break;
-      }
+      al_draw_filled_rectangle(((scrW/2)-400)+modeOff[j]+(i*96)+((8-chanstodisplay)*45),
+                               maxval(60,255-(curpatrow-selTop)*12),
+                               ((scrW/2)-400)+modeOff[j+1]+(i*96)+((8-chanstodisplay)*45),
+                               maxval(60,266-(curpatrow-selBottom)*12),
+                               al_map_rgba(128,128,128,128));
     }
   }
   /*
