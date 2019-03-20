@@ -41,6 +41,7 @@ float DETUNE_FACTOR_GLOBAL;
 
 //// INCLUDES AND STUFF ////
 #include "tracker.h"
+#include "ssinter.h"
 #ifdef JACK
 #include <jack/jack.h>
 #include <jack/midiport.h>
@@ -308,26 +309,16 @@ unsigned char nfxid[32]={}; // next effect
 unsigned char nfxvl[32]={}; // next effect value
 int portastatic[32]={}; // current note
 int sfxpos=-1; // sound effect position
-unsigned char sfxdata[32][1024]={
-                {39,0,8,127,0,15,4,0,2,0,0,0,
-                1,0,31,63,
-                1,1,0,63,
-                1,2,0,53,
-                1,3,0,53,
-                1,4,0,43,
-                1,5,0,43,
-                1,6,0,33,
-                1,7,0,33,
-                1,8,0,23,
-                1,9,0,23,
-                1,10,0,11,
-                1,11,0,5,
-                0},{},{5,0,10,16,4,4,1,0,20,32,1,0,30,64,1,0,40,96,1,0,50,96,1,0,60,96
-                     ,1,0,70,96,1,0,80,96,1,0,90,96,1,0,100,88,1,0,110,80,1,0,120,72,1,0,130,64
-                    ,1,0,140,56,1,0,150,48,1,0,160,40,1,0,170,32,1,0,180,24,1,0,190,16,1,0,200,8,0},
-                {5,1,64,127,31,0,1,1,64,127,1,1,64,127,0},
-                {5,6,64,127,31,0,1,6,64,112,1,6,0,96,1,5,192,80,1,5,128,64,1,5,64,48,
-                1,5,0,32,1,4,192,16,1,4,128,8,0}}; // sound effect data
+const char* sfxdata[32]={
+  // pause
+  "$x!O6V7fEM1v03e00100RRRRRR"
+  "V7fCRRRRRR"
+  "V7fERRRRRR"
+  "V7fCRRRRRRRRRRRRRRRRRRRRR!",
+  // error
+  "$x!O6V7fAM1v02000100RRRRV7fO5ARRRRRRRRRRR!",
+  NULL
+}; // sound effect data
 int cursfx=0; // current effect
 
 const int sine[256]={
@@ -371,6 +362,8 @@ int sfxsoff=0;
 int sfxsreso=0;
 int sfxsfmode=0;
 int sfxsfreq=0;
+
+SSInter sfxInst;
 
 bool sfxplaying=false;
 
@@ -502,7 +495,8 @@ ALLEGRO_COLOR getconfigcol(int colid) {
 }
 void Playback();
 void MuteAllChannels();
-int playfx(const unsigned char* fxdata,int fxpos,int achan);
+int playfx(const char* fxdata,int fxpos,int achan);
+void triggerfx(int num);
 bool PIR(float x1, float y1, float x2, float y2, float checkx, float checky) {
   // point-in-rectangle collision detection
   if (checkx>x1 && checkx<x2 && checky>y1 && checky<y2) {
@@ -654,7 +648,12 @@ int nothing (jack_nframes_t nframes, void *arg) {
             else {
               MuteAllChannels();
             }
-            sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
+            if (sfxplaying) {
+              sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
+              if (sfxpos==-1) {
+                sfxplaying=false;
+              }
+            }
             for (int updateindex1=0;updateindex1<32;updateindex1++) {
               if (muted[updateindex1]) { cvol[updateindex1]=0;
                                                     if (updateindex1<(8*soundchips)) {
@@ -1189,7 +1188,7 @@ int AllocateSequence(int seqid) {
   }
   printf("could not allocate sequence! %d\n",seqid); 
   #ifdef SOUNDS
-  cursfx=1;sfxpos=0;
+  triggerfx(1);
   #endif
   return 0;
 }
@@ -1220,7 +1219,7 @@ int FreeChannel() {
   // routine is similar to IT's next free channel routine
   // 1. find first inactive channel
   // failed? 2. find first channel with zero volume
-  for (int ii=0;ii<32;ii++) {
+  for (int ii=0;ii<8;ii++) {
     if (cvol[ii]==0) {return ii;}
   }
   // failed? 3. find channel with lowest volume
@@ -2011,6 +2010,7 @@ void NextTick() {
 void Playback() {
   NextTick();
   for (int iiii=0; iiii<8*soundchips; iiii++) {
+    if (sfxplaying && iiii==chantoplayfx) continue;
     chip[iiii>>3].chan[iiii&7].vol=(cvol[iiii]*chanvol[iiii])>>7;
     chip[iiii>>3].chan[iiii&7].pan=cpan[iiii];
           if (cshape[iiii]==4) {
@@ -3648,7 +3648,7 @@ int LoadFile(const char* filename) {
       checkstr[6]!='B' ||
       checkstr[7]!='T') {printf("error: not a soundtracker file!\n");al_fclose(sfile);
     #ifdef SOUNDS
-    cursfx=1;sfxpos=0;
+    triggerfx(1);
     #endif
     return 1;}
     oplaymode=playmode;
@@ -3851,7 +3851,7 @@ int LoadFile(const char* filename) {
   } else {
     perror("can't open file");
     #ifdef SOUNDS
-    cursfx=1;sfxpos=0;
+    triggerfx(1);
     #endif
     }
     delete[] checkstr;
@@ -4450,16 +4450,6 @@ void ClickEvents() {
   }
   // events only in sound effect editor
   if (screen==10) {
-  for (int ii=0;ii<128;ii++) {
-    if (leftpress) {
-    if (PIR((ii%(scrW/24))*24,84+((ii/(scrW/24))*24),((ii%(scrW/24))*24)+7,(84+((ii/(scrW/24))*24))+12,mstate.x,mstate.y)) {sfxdata[cursfx][ii]+=16;}
-    if (PIR(((ii%(scrW/24))*24)+8,84+((ii/(scrW/24))*24),((ii%(scrW/24))*24)+16,(84+((ii/(scrW/24))*24))+12,mstate.x,mstate.y)) {sfxdata[cursfx][ii]++;}
-    }
-    if (rightpress) {
-    if (PIR((ii%(scrW/24))*24,84+((ii/(scrW/24))*24),((ii%(scrW/24))*24)+7,(84+((ii/(scrW/24))*24))+12,mstate.x,mstate.y)) {sfxdata[cursfx][ii]-=16;}
-    if (PIR(((ii%(scrW/24))*24)+8,84+((ii/(scrW/24))*24),((ii%(scrW/24))*24)+16,(84+((ii/(scrW/24))*24))+12,mstate.x,mstate.y)) {sfxdata[cursfx][ii]--;}
-    }
-  }
   }
   // events only in PCM editor
   if (screen==11) {
@@ -4781,44 +4771,55 @@ void MuteControls() {
 }
 void MuteAllChannels() {
   for (int su=0;su<8*soundchips;su++) {
-  cvol[su]=0;
-        chip[su>>3].chan[su&7].vol=0;
+    if (sfxplaying && su==chantoplayfx) continue;
+    cvol[su]=0;
+    chip[su>>3].chan[su&7].vol=0;
   }
 }
+
+void triggerfx(int num) {
+  cursfx=num;
+  if (sfxdata[cursfx]==NULL) return;
+  sfxpos=0;
+  chantoplayfx=FreeChannel();
+  sfxInst.setChan(chantoplayfx);
+  sfxplaying=true;
+}
+
 void SFXControls() {
-  if (kbpressed[ALLEGRO_KEY_1]) {cursfx=0;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_2]) {cursfx=1;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_3]) {cursfx=2;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_4]) {cursfx=3;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_5]) {cursfx=4;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_6]) {cursfx=5;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_7]) {cursfx=6;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_8]) {cursfx=7;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_Q]) {cursfx=8;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_W]) {cursfx=9;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_E]) {cursfx=10;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_R]) {cursfx=11;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_T]) {cursfx=12;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_Y]) {cursfx=13;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_U]) {cursfx=14;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_I]) {cursfx=15;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_A]) {cursfx=16;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_S]) {cursfx=17;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_D]) {cursfx=18;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_F]) {cursfx=19;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_G]) {cursfx=20;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_H]) {cursfx=21;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_J]) {cursfx=22;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_K]) {cursfx=23;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_Z]) {cursfx=24;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_X]) {cursfx=25;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_C]) {cursfx=26;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_V]) {cursfx=27;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_B]) {cursfx=28;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_N]) {cursfx=29;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_1]) {triggerfx(0);}
+  if (kbpressed[ALLEGRO_KEY_2]) {triggerfx(1);}
+  if (kbpressed[ALLEGRO_KEY_3]) {triggerfx(2);}
+  if (kbpressed[ALLEGRO_KEY_4]) {triggerfx(3);}
+  if (kbpressed[ALLEGRO_KEY_5]) {triggerfx(4);}
+  if (kbpressed[ALLEGRO_KEY_6]) {triggerfx(5);}
+  if (kbpressed[ALLEGRO_KEY_7]) {triggerfx(6);}
+  if (kbpressed[ALLEGRO_KEY_8]) {triggerfx(7);}
+  if (kbpressed[ALLEGRO_KEY_Q]) {triggerfx(8);}
+  if (kbpressed[ALLEGRO_KEY_W]) {triggerfx(9);}
+  if (kbpressed[ALLEGRO_KEY_E]) {triggerfx(10);}
+  if (kbpressed[ALLEGRO_KEY_R]) {triggerfx(11);}
+  if (kbpressed[ALLEGRO_KEY_T]) {triggerfx(12);}
+  if (kbpressed[ALLEGRO_KEY_Y]) {triggerfx(13);}
+  if (kbpressed[ALLEGRO_KEY_U]) {triggerfx(14);}
+  if (kbpressed[ALLEGRO_KEY_I]) {triggerfx(15);}
+  if (kbpressed[ALLEGRO_KEY_A]) {triggerfx(16);}
+  if (kbpressed[ALLEGRO_KEY_S]) {triggerfx(17);}
+  if (kbpressed[ALLEGRO_KEY_D]) {triggerfx(18);}
+  if (kbpressed[ALLEGRO_KEY_F]) {triggerfx(19);}
+  if (kbpressed[ALLEGRO_KEY_G]) {triggerfx(20);}
+  if (kbpressed[ALLEGRO_KEY_H]) {triggerfx(21);}
+  if (kbpressed[ALLEGRO_KEY_J]) {triggerfx(22);}
+  if (kbpressed[ALLEGRO_KEY_K]) {triggerfx(23);}
+  if (kbpressed[ALLEGRO_KEY_Z]) {triggerfx(24);}
+  if (kbpressed[ALLEGRO_KEY_X]) {triggerfx(25);}
+  if (kbpressed[ALLEGRO_KEY_C]) {triggerfx(26);}
+  if (kbpressed[ALLEGRO_KEY_V]) {triggerfx(27);}
+  if (kbpressed[ALLEGRO_KEY_B]) {triggerfx(28);}
+  if (kbpressed[ALLEGRO_KEY_N]) {triggerfx(29);}
   // pausers
-  if (kbpressed[ALLEGRO_KEY_M]) {if (playmode==0) {playmode=1;} else {playmode=0;};cursfx=30;sfxpos=0;}
-  if (kbpressed[ALLEGRO_KEY_COMMA]) {if (playmode==0) {playmode=1;} else {playmode=0;};cursfx=31;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_M]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(30);}
+  if (kbpressed[ALLEGRO_KEY_COMMA]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(31);}
 }
 void KeyboardEvents() {
   // keyboard states
@@ -4837,12 +4838,12 @@ void KeyboardEvents() {
   if (screen==4) {MuteControls();}
   if (kbpressed[ALLEGRO_KEY_PGDN]) {curedpage++; if (curedpage>3) {curedpage=3;
     #ifdef SOUNDS
-    cursfx=1;sfxpos=0;
+    triggerfx(1);
     #endif
   };drawpatterns(true);drawmixerlayer();}
   if (kbpressed[ALLEGRO_KEY_PGUP]) {curedpage--; if (curedpage<0) {
     #ifdef SOUNDS
-    cursfx=1;sfxpos=0;
+    triggerfx(1);
     #endif
     curedpage=0;
   };drawpatterns(true);drawmixerlayer();}
@@ -4850,13 +4851,13 @@ void KeyboardEvents() {
   if (kbpressed[ALLEGRO_KEY_END]) {chanstodisplay++;if (chanstodisplay>maxCTD) {
     chanstodisplay=maxCTD;
     #ifdef SOUNDS
-    cursfx=1;sfxpos=0;
+    triggerfx(1);
     #endif
   };drawpatterns(true);drawmixerlayer();}
   if (kbpressed[ALLEGRO_KEY_HOME]) {chanstodisplay--;if (chanstodisplay<1) {
     chanstodisplay=1;
     #ifdef SOUNDS
-    cursfx=1;sfxpos=0;
+    triggerfx(1);
     #endif
   };drawpatterns(true);drawmixerlayer();}
   if (kbpressed[ALLEGRO_KEY_TAB]) {MuteAllChannels();}
@@ -5085,76 +5086,15 @@ void drawdisp() {
   }
   //al_draw_text(text,getucol(10),56,12,ALLEGRO_ALIGN_LEFT,(string)defspeed);
 }
-int playfx(const unsigned char* fxdata,int fxpos,int achan) {
+int playfx(const char* fxdata,int fxpos,int achan) {
   // returns number if not in the end, otherwise -1
-  int fxoffset=0;
-  if (fxpos==-1) {sfxplaying=false;return -1;}
-  if (fxpos==0) {
-    // save current channel's state
-    if (!sfxplaying) {
-    sfxsduty=cduty[achan];
-    sfxsshape=cshape[achan];
-    sfxspan=cpan[achan];
-    sfxsfmode=cfmode[achan];
-    sfxsoff=coff[achan];
-    sfxsreso=creso[achan];
-    sfxsfreq=cfreq[achan];
-    }
-    // reset channel
-    sfxcvol=0;sfxcpan=0;sfxcfmode=0;sfxcoff=262144;sfxcreso=0;
-    sfxcfreq=1;sfxcmode=0;sfxcrm=0;sfxcshape=0;sfxcduty=63;
-    sfxplaying=true;
+  int toret=fxpos;
+  sfxInst.init(&chip[0]);
+  if (!sfxInst.next(fxdata,toret,strlen(fxdata))) {
+    return -1;
   }
-  if (fxdata[fxpos]==0) {
-    sfxcvol=0;
-    cvol[achan]=0;
-    cduty[achan]=sfxsduty;
-    cshape[achan]=sfxsshape;
-    cpan[achan]=sfxspan;
-    cfmode[achan]=sfxsfmode;
-    coff[achan]=sfxsoff;
-    creso[achan]=sfxsreso;
-    cfreq[achan]=sfxsfreq;
-    sfxplaying=false;
-    return -1;}
-  if (fxdata[fxpos]&1) {
-    sfxcfreq=(fxdata[fxpos+1+fxoffset]*256)+fxdata[fxpos+2+fxoffset];
-    sfxcvol=fxdata[fxpos+3+fxoffset];
-    fxoffset+=3;
-  }
-  if (fxdata[fxpos]&2) {
-    sfxcpan=fxdata[fxpos+1+fxoffset];
-    fxoffset++;
-  }
-  if (fxdata[fxpos]&4) {
-    sfxcduty=fxdata[fxpos+1+fxoffset];
-    sfxcshape=fxdata[fxpos+2+fxoffset];
-    fxoffset+=2;
-  }
-  if (fxdata[fxpos]&8) {
-    fxoffset+=5;
-  }
-  if (fxdata[fxpos]&16) {
-    fxoffset+=9;
-  }
-  if (fxdata[fxpos]&32) {
-    sfxcfmode=fxdata[fxpos+1+fxoffset];
-    sfxcoff=(fxdata[fxpos+2+fxoffset]*65536)+(fxdata[fxpos+2+fxoffset]*256)+fxdata[fxpos+4+fxoffset];
-    sfxcreso=fxdata[fxpos+5+fxoffset];
-    fxoffset+=5;
-  }
-  cvol[achan]=sfxcvol;
-  cfreq[achan]=sfxcfreq;
-  cduty[achan]=sfxcduty;
-  cshape[achan]=sfxcshape;
-  cpan[achan]=sfxcpan;
-  cfmode[achan]=sfxcfmode;
-  coff[achan]=sfxcoff;
-  creso[achan]=sfxcreso;
-  cmode[achan]=0;
-  crm[achan]=0;
-
-  return fxoffset+fxpos+1;
+  
+  return toret;
 }
 
 int main(int argc, char **argv) {
@@ -5392,67 +5332,6 @@ al_set_new_window_title("soundtracker");
      if (playermode) {Play();
      printf("playing: %s\n",name);}
    }
-   // some sound effects
-   const char* examplefxerror="\x01\x01\x70\x7f\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x01\x00\x00\x00\x00";
-   for (int ii=0;ii<27;ii++) {
-     sfxdata[1][ii]=examplefxerror[ii];
-   }
-   // example pauser sound effect
-   int uselesspointer=0;
-   sfxdata[30][uselesspointer+0]=1; sfxdata[30][uselesspointer+1]=0; sfxdata[30][uselesspointer+2]=226; sfxdata[30][uselesspointer+3]=120;
-   sfxdata[30][uselesspointer+4]=1; sfxdata[30][uselesspointer+5]=0; sfxdata[30][uselesspointer+6]=226; sfxdata[30][uselesspointer+7]=112;
-   sfxdata[30][uselesspointer+8]=1; sfxdata[30][uselesspointer+9]=0; sfxdata[30][uselesspointer+10]=226; sfxdata[30][uselesspointer+11]=104;
-   sfxdata[30][uselesspointer+12]=1; sfxdata[30][uselesspointer+13]=0; sfxdata[30][uselesspointer+14]=226; sfxdata[30][uselesspointer+15]=104;
-   sfxdata[30][uselesspointer+16]=1; sfxdata[30][uselesspointer+17]=0; sfxdata[30][uselesspointer+18]=226; sfxdata[30][uselesspointer+19]=96;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=0; sfxdata[30][uselesspointer+22]=226; sfxdata[30][uselesspointer+23]=88;
-   uselesspointer=24;
-   sfxdata[30][uselesspointer+0]=1; sfxdata[30][uselesspointer+1]=1; sfxdata[30][uselesspointer+2]=26; sfxdata[30][uselesspointer+3]=120;
-   sfxdata[30][uselesspointer+4]=1; sfxdata[30][uselesspointer+5]=1; sfxdata[30][uselesspointer+6]=26; sfxdata[30][uselesspointer+7]=112;
-   sfxdata[30][uselesspointer+8]=1; sfxdata[30][uselesspointer+9]=1; sfxdata[30][uselesspointer+10]=26; sfxdata[30][uselesspointer+11]=104;
-   sfxdata[30][uselesspointer+12]=1; sfxdata[30][uselesspointer+13]=1; sfxdata[30][uselesspointer+14]=26; sfxdata[30][uselesspointer+15]=104;
-   sfxdata[30][uselesspointer+16]=1; sfxdata[30][uselesspointer+17]=1; sfxdata[30][uselesspointer+18]=26; sfxdata[30][uselesspointer+19]=96;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=88;
-   uselesspointer=48;
-   sfxdata[30][uselesspointer+0]=1; sfxdata[30][uselesspointer+1]=0; sfxdata[30][uselesspointer+2]=226; sfxdata[30][uselesspointer+3]=120;
-   sfxdata[30][uselesspointer+4]=1; sfxdata[30][uselesspointer+5]=0; sfxdata[30][uselesspointer+6]=226; sfxdata[30][uselesspointer+7]=112;
-   sfxdata[30][uselesspointer+8]=1; sfxdata[30][uselesspointer+9]=0; sfxdata[30][uselesspointer+10]=226; sfxdata[30][uselesspointer+11]=104;
-   sfxdata[30][uselesspointer+12]=1; sfxdata[30][uselesspointer+13]=0; sfxdata[30][uselesspointer+14]=226; sfxdata[30][uselesspointer+15]=104;
-   sfxdata[30][uselesspointer+16]=1; sfxdata[30][uselesspointer+17]=0; sfxdata[30][uselesspointer+18]=226; sfxdata[30][uselesspointer+19]=96;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=0; sfxdata[30][uselesspointer+22]=226; sfxdata[30][uselesspointer+23]=88;
-   uselesspointer=72;
-   sfxdata[30][uselesspointer+0]=1; sfxdata[30][uselesspointer+1]=1; sfxdata[30][uselesspointer+2]=26; sfxdata[30][uselesspointer+3]=120;
-   sfxdata[30][uselesspointer+4]=1; sfxdata[30][uselesspointer+5]=1; sfxdata[30][uselesspointer+6]=26; sfxdata[30][uselesspointer+7]=112;
-   sfxdata[30][uselesspointer+8]=1; sfxdata[30][uselesspointer+9]=1; sfxdata[30][uselesspointer+10]=26; sfxdata[30][uselesspointer+11]=104;
-   sfxdata[30][uselesspointer+12]=1; sfxdata[30][uselesspointer+13]=1; sfxdata[30][uselesspointer+14]=26; sfxdata[30][uselesspointer+15]=104;
-   sfxdata[30][uselesspointer+16]=1; sfxdata[30][uselesspointer+17]=1; sfxdata[30][uselesspointer+18]=26; sfxdata[30][uselesspointer+19]=96;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=88;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=80;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=72;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=72;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=64;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=56;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=48;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=40;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=40;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=32;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=24;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=16;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=8;
-   uselesspointer+=4;
-   sfxdata[30][uselesspointer+20]=1; sfxdata[30][uselesspointer+21]=1; sfxdata[30][uselesspointer+22]=26; sfxdata[30][uselesspointer+23]=8;
-   sfxdata[30][uselesspointer+24]=0;
    printf("run\n");
    // run timer
    al_start_timer(timer);
