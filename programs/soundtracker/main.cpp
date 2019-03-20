@@ -2770,48 +2770,11 @@ void drawcomments() {
   }
   }
 }
+
 void drawsfxpanel() {
   al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,"--- Sound Effects ---");
 }
-void drawsfxeditor() {
-  al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,"--- Sound Effect Editor ---");
-  int sfxframe=0;
-  for (int fxoffset=0;fxoffset<1024;fxoffset++) {
-  al_draw_text(text,getconfigcol(colDEFA),8,72+(sfxframe*12),ALLEGRO_ALIGN_LEFT,"PV|P|S|RM|PCM|F");
-  int fxdata=sfxdata[cursfx][fxoffset];
-  if (fxdata==0) {al_draw_text(text,getconfigcol(colDEFA),136,72+(sfxframe*12),ALLEGRO_ALIGN_LEFT,"--- end of effect ---");break;}
-  if (fxdata&1) {
-    al_draw_textf(text,getconfigcol(colDEFA),136,72+(sfxframe*12),ALLEGRO_ALIGN_LEFT,"%.2x%.2x %.2x",sfxdata[cursfx][fxoffset+1],sfxdata[cursfx][fxoffset+2],sfxdata[cursfx][fxoffset+3]);
-    //cfreq[achan]=(fxdata[fxpos+1+fxoffset]*256)+fxdata[fxpos+2+fxoffset];
-    //cvol[achan]=fxdata[fxpos+3+fxoffset];
-    fxoffset+=3;
-  }
-  if (fxdata&2) {
-    //cpan[achan]=fxdata[fxpos+1+fxoffset];
-    fxoffset++;
-  }
-  if (fxdata&4) {
-    //cduty[achan]=fxdata[fxpos+1+fxoffset];
-    //cshape[achan]=fxdata[fxpos+2+fxoffset];
-    fxoffset+=2;
-  }
-  if (fxdata&8) {
-    fxoffset+=5;
-  }
-  if (fxdata&16) {
-    fxoffset+=9;
-  }
-  if (fxdata&32) {
-    //cfmode[achan]=fxdata[fxpos+1+fxoffset];
-    //coff[achan]=(fxdata[fxpos+2+fxoffset]*65536)+(fxdata[fxpos+2+fxoffset]*256)+fxdata[fxpos+4+fxoffset];
-    //creso[achan]=fxdata[fxpos+5+fxoffset];
-    fxoffset+=5;
-  }
-  sfxframe++;
-  }
-    //al_draw_text(text,getconfigcol(colDEFA),8,72+(sfxframe*12),ALLEGRO_ALIGN_LEFT,"PV|P|S|RM|PCM|F");
-    //al_draw_textf(text,(sfxpos==ii)?(getconfigcol(colCPOS)):(al_map_rgb(255,255,255)),(ii%(scrW/24))*24,84+((ii/(scrW/24))*24),ALLEGRO_ALIGN_LEFT,"%.2x",sfxdata[cursfx][ii]);
-}
+
 void drawpcmeditor() {
   pcmeditseek=mstate.x;
   if (sign(pcmeditscale)>-1) {
