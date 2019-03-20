@@ -411,7 +411,7 @@ bool rightclickprev=false;
 bool skipframe=false;
 int prevZ=0;
 int hover[16]={}; // hover time per button
-int16_t ver=143; // version number
+int16_t ver=144; // version number
 unsigned char chs0[5000];
 char* helptext;
 char* comments;
@@ -838,7 +838,7 @@ void initaudio() {
 }
 
 unsigned short bswapu16(unsigned short x) {
-  return (x&0xff<<8)|(x&0xff00>>8);
+  return ((x&0xff)<<8)|((x&0xff00)>>8);
 }
 
 ALLEGRO_COLOR getucol(unsigned char thecol){
@@ -1366,10 +1366,10 @@ void NextRow() {
                                 //chip[0].pcmmult[loop]=127;
                                 chip[0].chan[loop].flags.pcmloop=instrument[Mins[loop]].pcmMult>>7;
         //chip[0].pcmmult[loop]|=(instrument[Mins[loop]][0x21]&128);
-        chip[0].chan[loop].pcmrst=bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmPos)+bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmLoop);
+        chip[0].chan[loop].pcmrst=*(unsigned short*)instrument[Mins[loop]].pcmPos+*(unsigned short*)instrument[Mins[loop]].pcmLoop;
         // set respective PCM pointers
-        chip[0].chan[loop].pcmpos=bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmPos);
-        chip[0].chan[loop].pcmbnd=bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmPos)+bswapu16(instrument[Mins[loop]].pcmLen);
+        chip[0].chan[loop].pcmpos=*(unsigned short*)instrument[Mins[loop]].pcmPos;
+        chip[0].chan[loop].pcmbnd=*(unsigned short*)instrument[Mins[loop]].pcmPos+instrument[Mins[loop]].pcmLen;
       } else {chip[0].chan[loop].flags.pcm=0;}
       // is ringmod on? (ringmod check)
       if (instrument[Mins[loop]].DFM&16){
@@ -1399,12 +1399,11 @@ void NextRow() {
       EnvelopesRunning[loop][4]=true;}
       else {EnvelopesRunning[loop][4]=false;cshape[loop]=0;}
       // cutoff
-      // HACK: please study behavior
-      if ((instrument[Mins[loop]].activeEnv&2)>>1){
+      if ((instrument[Mins[loop]].activeEnv&2)>>1){ 
       if (nfxid[loop]!=15) {
-      coff[loop]=bytable[1][instrument[Mins[loop]].env[envCutoff]][0]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34])))/65536)));cfmode[loop]=instrument[Mins[loop]].DFM&7;
+      coff[loop]=(bytable[1][instrument[Mins[loop]].env[envCutoff]][0]*(0xffff-instrument[Mins[loop]].filterH))>>7;cfmode[loop]=instrument[Mins[loop]].DFM&7;
       } else {
-      coff[loop]=bytable[1][instrument[Mins[loop]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop]].env[envCutoff]][253]*((float)nfxvl[loop]/256))]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34])))/65536)));
+      coff[loop]=(bytable[1][instrument[Mins[loop]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop]].env[envCutoff]][253]*((float)nfxvl[loop]/256))]*(0xffff-instrument[Mins[loop]].filterH))>>7;
       cfmode[loop]=instrument[Mins[loop]].DFM&7;
       //coff[loop]=bytable[1][instrument[Mins[loop]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop]].env[envCutoff]][253]*((float)nfxvl[loop]/256))]*512;cfmode[loop]=instrument[Mins[loop]].DFM&7;
       }
@@ -1704,8 +1703,8 @@ void NextTick() {
         // set channel mode to PCM
         chip[0].chan[loop2].flags.pcm=1;
         // set respective PCM pointers
-        chip[0].chan[loop2].pcmpos=bswapu16(*(unsigned short*)instrument[Mins[loop2]].pcmPos);
-        chip[0].chan[loop2].pcmbnd=bswapu16(*(unsigned short*)instrument[Mins[loop2]].pcmPos)+bswapu16(instrument[Mins[loop2]].pcmLen);
+        chip[0].chan[loop2].pcmpos=*(unsigned short*)instrument[Mins[loop2]].pcmPos;
+        chip[0].chan[loop2].pcmbnd=*(unsigned short*)instrument[Mins[loop2]].pcmPos+instrument[Mins[loop2]].pcmLen;
       } else {chip[0].chan[loop2].flags.pcm=0;}
       // is oscreset on? (osc reset check)
       if (instrument[Mins[loop2]].flags&1) {crstep[loop2]=0;} // osc reset
@@ -1725,12 +1724,11 @@ void NextTick() {
       EnvelopesRunning[loop2][4]=true;}
       else {EnvelopesRunning[loop2][4]=false;cshape[loop2]=0;}
       // cutoff
-      // HACK: please study behavior
       if ((instrument[Mins[loop2]].activeEnv&2)>>1){
       if (nfxid[loop2]!=15) {
-      coff[loop2]=bytable[1][instrument[Mins[loop2]].env[envCutoff]][0]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34])))/65536)));cfmode[loop2]=instrument[Mins[loop2]].DFM&7;
+      coff[loop2]=(bytable[1][instrument[Mins[loop2]].env[envCutoff]][0]*(0xffff-instrument[Mins[loop2]].filterH))>>7;cfmode[loop2]=instrument[Mins[loop2]].DFM&7;
       } else {
-      coff[loop2]=bytable[1][instrument[Mins[loop2]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop2]].env[envCutoff]][253]*((float)nfxvl[loop2]/256))]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34])))/65536)));
+      coff[loop2]=(bytable[1][instrument[Mins[loop2]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop2]].env[envCutoff]][253]*((float)nfxvl[loop2]/256))]*(0xffff-instrument[Mins[loop2]].filterH))>>7;
       cfmode[loop2]=instrument[Mins[loop2]].DFM&7;
       }
       EnvelopesRunning[loop2][1]=true;}
@@ -1829,8 +1827,7 @@ void NextTick() {
     if(EnvelopesRunning[loop2][1]){
       UpdateEnvelope(loop2,1);
       // output
-      // HACK: please study behavior and fix
-      coff[loop2]=bytable[1][instrument[Mins[loop2]].env[envCutoff]][inspos[loop2][1]]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34])))/65536)));
+      coff[loop2]=(bytable[1][instrument[Mins[loop2]].env[envCutoff]][inspos[loop2][1]]*(0xffff-instrument[Mins[loop2]].filterH))>>7;
     }
     // resonance
     if(EnvelopesRunning[loop2][2]){
@@ -2342,20 +2339,19 @@ void drawinsedit() {
   }
   
   g.tPos((float)(scrW-192)/8.0,15);
-  // HACK: big endian stuff
-  g.printf("%.2x%.2x",instrument[CurrentIns].pcmPos[0],instrument[CurrentIns].pcmPos[1]);
+  g.printf("%.2x%.2x",instrument[CurrentIns].pcmPos[1],instrument[CurrentIns].pcmPos[0]);
   
   g.tPos((float)(scrW-192)/8.0,16);
-  g.printf("%.2x%.2x",instrument[CurrentIns].pcmLoop[0],instrument[CurrentIns].pcmLoop[1]);
+  g.printf("%.2x%.2x",instrument[CurrentIns].pcmLoop[1],instrument[CurrentIns].pcmLoop[0]);
   
   g.tPos((float)(scrW-88)/8.0,15);
-  g.printf("%.4x",bswapu16(instrument[CurrentIns].pcmLen));
+  g.printf("%.4x",instrument[CurrentIns].pcmLen);
   
   g.tPos((float)(scrW-208)/8.0,21);
   g.printf("%.2x",instrument[CurrentIns].LFO);
   
   g.tPos((float)(scrW-208)/8.0,18);
-  g.printf("%.2x%.2x",0xff-(instrument[CurrentIns].filterH&255),0xff-(instrument[CurrentIns].filterH>>8));
+  g.printf("%.4x",0xffff-instrument[CurrentIns].filterH);
   
   g.tPos((float)(scrW-208)/8.0,27);
   g.printf("%.1x",instrument[CurrentIns].flags>>6);
@@ -3118,9 +3114,8 @@ int ImportMOD(const char* rfn){
       instrument[ii+1].name[jj]=memblock[0x14+(ii*30)+jj];
     }
     if (settings::samples) {
-      // HACK: big endian
-      instrument[ii+1].pcmPos[0]=CurrentSampleSeek>>8;
-      instrument[ii+1].pcmPos[1]=CurrentSampleSeek%256;
+      instrument[ii+1].pcmPos[1]=CurrentSampleSeek>>8;
+      instrument[ii+1].pcmPos[0]=CurrentSampleSeek%256;
       instrument[ii+1].DFM|=(CurrentSampleSeek>>16)?(128):(0);
       int tempsize;
       tempsize=(((unsigned char)(memblock[0x14+(ii*30)+0x16])<<8)+(unsigned char)(memblock[0x14+(ii*30)+0x17]))*2;
@@ -3129,9 +3124,9 @@ int ImportMOD(const char* rfn){
       int repeatlen;
       repeatlen=(((unsigned char)(memblock[0x14+(ii*30)+0x1c])<<8)+(unsigned char)(memblock[0x14+(ii*30)+0x1d]))*2;
       printf("sample %d size: %.5x repeat: %.4x replen: %.4x\n",ii,tempsize,repeatpos,repeatlen);
-      instrument[ii+1].pcmLen=bswapu16((repeatpos>0 || repeatlen>2)?(minval(tempsize,repeatpos+repeatlen)):(tempsize));
-      instrument[ii+1].pcmLoop[0]=repeatpos>>8;
-      instrument[ii+1].pcmLoop[1]=repeatpos&0xff;
+      instrument[ii+1].pcmLen=(repeatpos>0 || repeatlen>2)?(minval(tempsize,repeatpos+repeatlen)):(tempsize);
+      instrument[ii+1].pcmLoop[1]=repeatpos>>8;
+      instrument[ii+1].pcmLoop[0]=repeatpos&0xff;
       instrument[ii+1].pcmMult|=(repeatpos>0 || repeatlen>2)?(128):(0);
       CurrentSampleSeek+=tempsize;
       instrument[ii+1].noteOffset=12;
@@ -3667,7 +3662,8 @@ int LoadFile(const char* filename){
     if (TVER<65) {printf("-applying volume column compatibility\n");}
     if (TVER<106) {printf("-applying loop point fix compatibility\n");}
     if (TVER<143) {printf("-applying old sequence format compatibility\n");}
-    if (TVER<144) {printf("-applying legacy instrument compatibility\n");}
+    if (TVER<144) {printf("-applying endianness compatibility\n");}
+    //if (TVER<145) {printf("-applying legacy instrument compatibility\n");}
     //printf("%d ",al_ftell(sfile));
     instruments=al_fgetc(sfile); // instruments
     patterns=al_fgetc(sfile); // patterns
@@ -3729,16 +3725,29 @@ int LoadFile(const char* filename){
       if (insparas[ii]==0){continue;}
       al_fread(sfile,&instrument[ii],64);
       // version<60 filter mode fix
-      if(TVER<60){
+      if (TVER<60) {
         if (instrument[ii].activeEnv&2) {instrument[ii].DFM^=1;}
       }
-      // version<144 force legacy instrument
+      // version<144 endianness
+      if (TVER<144) {
+        instrument[ii].pcmLen=bswapu16(instrument[ii].pcmLen);
+        instrument[ii].pcmPos[0]^=instrument[ii].pcmPos[1];
+        instrument[ii].pcmPos[1]^=instrument[ii].pcmPos[0];
+        instrument[ii].pcmPos[0]^=instrument[ii].pcmPos[1];
+        instrument[ii].pcmLoop[0]^=instrument[ii].pcmLoop[1];
+        instrument[ii].pcmLoop[1]^=instrument[ii].pcmLoop[0];
+        instrument[ii].pcmLoop[0]^=instrument[ii].pcmLoop[1];
+        instrument[ii].filterH=bswapu16(instrument[ii].filterH);
+      }
+      
+      // version<145 force legacy instrument
+      /*
       if (TVER<144) {
         instrument[ii].ver&=~0x8000;
       }
       if (instrument[ii].ver&0x8000) { // new instrument
         
-      }
+      }*/
     }
     //printf("reading sequences...\n");
     if (TVER<143) { // old sequence format
@@ -4231,14 +4240,14 @@ void ClickEvents() {
       if (PIR(488,60,512,72,mstate.x,mstate.y)) {hexmode=!hexmode;}
       // but yes these ones
       if (PIR(scrW-200,180,scrW-193,191,mstate.x,mstate.y)){instrument[CurrentIns].DFM^=128;} 
-      if (PIR(scrW-192,180,scrW-185,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]+=16;}
-      if (PIR(scrW-184,180,scrW-177,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]++;}
-      if (PIR(scrW-176,180,scrW-169,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]+=16;}
-      if (PIR(scrW-168,180,scrW-160,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]++;}
-      if (PIR(scrW-88,180,scrW-81,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=16;}
-      if (PIR(scrW-80,180,scrW-73,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen++;}
-      if (PIR(scrW-72,180,scrW-63,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=4096;}
-      if (PIR(scrW-64,180,scrW-56,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=256;}
+      if (PIR(scrW-192,180,scrW-185,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]+=16;}
+      if (PIR(scrW-184,180,scrW-177,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]++;}
+      if (PIR(scrW-176,180,scrW-169,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]+=16;}
+      if (PIR(scrW-168,180,scrW-160,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]++;}
+      if (PIR(scrW-88,180,scrW-81,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=4096;}
+      if (PIR(scrW-80,180,scrW-73,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=256;}
+      if (PIR(scrW-72,180,scrW-63,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=16;}
+      if (PIR(scrW-64,180,scrW-56,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen++;}
 
       if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=16;}
       if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH--;}
@@ -4253,14 +4262,14 @@ void ClickEvents() {
     }
     if (rightpress) {
       if (PIR(scrW-(800-600),180,scrW-(800-607),191,mstate.x,mstate.y)){instrument[CurrentIns].DFM^=128;}
-      if (PIR(scrW-(800-608),180,scrW-(800-615),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]-=16;}
-      if (PIR(scrW-(800-616),180,scrW-(800-623),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]--;}
-      if (PIR(scrW-(800-624),180,scrW-(800-631),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]-=16;}
-      if (PIR(scrW-(800-632),180,scrW-(800-640),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]--;}
-      if (PIR(scrW-(800-712),180,scrW-(800-719),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=16;}
-      if (PIR(scrW-(800-720),180,scrW-(800-727),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen--;}
-      if (PIR(scrW-(800-728),180,scrW-(800-735),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=4096;}
-      if (PIR(scrW-(800-736),180,scrW-(800-744),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=256;}
+      if (PIR(scrW-(800-608),180,scrW-(800-615),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]-=16;}
+      if (PIR(scrW-(800-616),180,scrW-(800-623),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]--;}
+      if (PIR(scrW-(800-624),180,scrW-(800-631),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]-=16;}
+      if (PIR(scrW-(800-632),180,scrW-(800-640),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]--;}
+      if (PIR(scrW-(800-712),180,scrW-(800-719),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=4096;}
+      if (PIR(scrW-(800-720),180,scrW-(800-727),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=256;}
+      if (PIR(scrW-(800-728),180,scrW-(800-735),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=16;}
+      if (PIR(scrW-(800-736),180,scrW-(800-744),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen--;}
       if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=16;}
       if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH++;}
       if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=4096;}
