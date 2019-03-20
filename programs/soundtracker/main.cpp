@@ -115,7 +115,6 @@ int cvdcycles[32]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 int cvperiod[32]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 bool cvdir[32]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 double cpcmpos[32]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-int cpcmmult[32]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned short crmfreq[32]={100,1,1,1,1,1,1,1,
          1,1,1,1,1,1,1,1,
                1,1,1,1,1,1,1,1,
@@ -4363,7 +4362,7 @@ void ClickEvents() {
     if (PIR(568,60,575,72,mstate.x,mstate.y)) {songlength--;}
     if (PIR(576,60,584,72,mstate.x,mstate.y)) {songlength++;}
     if (PIR(0,300,64,312,mstate.x,mstate.y)) {screen=8;}
-    if (PIR(184,276,248,288,mstate.x,mstate.y)) {playmode=2;curtick=1;cvol[0]=127;cpcmpos[0]=0;cmode[0]=1;cpcmmult[0]=127;cfreq[0]=2300;cbound[0]=131071;cloop[0]=0;}
+    if (PIR(184,276,248,288,mstate.x,mstate.y)) {playmode=2;curtick=1;cvol[0]=127;cpcmpos[0]=0;cmode[0]=1;cfreq[0]=2300;cbound[0]=131071;cloop[0]=0;}
     if (PIR(32,276,64,288,mstate.x,mstate.y)) {screen=11;}
     }
     if (leftclick) {
