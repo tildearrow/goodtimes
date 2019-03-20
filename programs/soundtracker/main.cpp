@@ -156,7 +156,22 @@ unsigned char CurrentEnv=0;
 int pattern=0;
 unsigned char patid[256]={};
 unsigned char* patlength;
-unsigned char instrument[256][64]={}; // instrument[id][position]
+struct Instrument {
+  char name[32];
+  unsigned char id, pcmMult, activeEnv;
+  unsigned char env[8];
+  unsigned char noteOffset;
+  unsigned char FPt, FPR, DFM, LFO;
+  unsigned char vol, pan;
+  unsigned short pcmLen, filterH;
+  unsigned char res;
+  unsigned char pcmPos[2]; // alignment
+  unsigned char pcmLoop[2];
+  unsigned char FTm;
+  unsigned short ver;
+  unsigned char flags, RMf;
+};
+Instrument instrument[256]; // instrument[id][position]
 unsigned char bytable[8][256][256]={}; // bytable[table][indextab][position]
 unsigned char pat[256][256][32][5]={}; // pat[patid][patpos][channel][bytepos]
 int scroll[32][7]={}; // scroll[channel][envelope]
@@ -368,6 +383,17 @@ namespace fakeASC {
   int interval=119000;
   int currentclock=0;
 }
+
+enum envTypes {
+  envVolume=0,
+  envCutoff,
+  envReson,
+  envDuty,
+  envShape,
+  envPitch,
+  envHiPitch,
+  envPan
+};
 
 ALLEGRO_FONT *text=NULL;
 ALLEGRO_AUDIO_STREAM *chan[33]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
@@ -811,6 +837,10 @@ void initaudio() {
   printf("done\n");
 }
 
+unsigned short bswapu16(unsigned short x) {
+  return (x&0xff<<8)|(x&0xff00>>8);
+}
+
 ALLEGRO_COLOR getucol(unsigned char thecol){
   if (thecol<16) {
     if (thecol==8) {return (al_map_rgb(128,128,128));} else {
@@ -1110,7 +1140,7 @@ int mscale(int nval) {
 }
 ALLEGRO_COLOR getmixerposcol(int channel,int envid) {
   if (!EnvelopesRunning[channel][envid]) {return al_map_rgb(128,128,128);}
-  if (inspos[channel][envid]>=bytable[envid][instrument[Mins[channel]][0x23+envid]][254]) {return al_map_rgb(255,255,0);}
+  if (inspos[channel][envid]>=bytable[envid][instrument[Mins[channel]].env[envid]][254]) {return al_map_rgb(255,255,0);}
   if (IRP[channel][envid] && released[channel]) {return al_map_rgb(0,255,0);}
   if (released[channel]) {return al_map_rgb(255,0,0);}
   if (IRP[channel][envid]) {return al_map_rgb(0,0,255);}
@@ -1137,7 +1167,7 @@ int AllocateSequence(int seqid){
   }
   for (int usedindex=0;usedindex<256;usedindex++) {
     // finds what sequences are used
-    nonfree[instrument[usedindex][0x23+seqid]]=true;
+    nonfree[instrument[usedindex].env[seqid]]=true;
   }
   for (int usedindex=0;usedindex<256;usedindex++) {
     // finds what sequences don't have their default values
@@ -1166,17 +1196,17 @@ int AllocateSequence(int seqid){
 }
 int ProcessPitch(int insnumb, float offset){
   // output (pitch logic)
-  if(((instrument[Mins[insnumb]][0x22]&32)>>5)){
-    if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x40) {
-    return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64)+offset,insnumb);
+  if(((instrument[Mins[insnumb]].activeEnv&32)>>5)){
+    if (bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]]<0x40) {
+    return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]].noteOffset)-47)+((float)finepitch[insnumb]/64)+offset,insnumb);
     } else {
-    if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x80) {
-    return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64)+offset,insnumb);
+    if (bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]]<0x80) {
+    return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]].noteOffset)-47)+((float)finepitch[insnumb]/64)+offset,insnumb);
     } else {
-    return mnoteperiod(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-128+((float)finepitch[insnumb]/64)+offset,insnumb);
+    return mnoteperiod(bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]]-128+((float)finepitch[insnumb]/64)+offset,insnumb);
     }}
   }
-  else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)+((float)finepitch[insnumb]/64)+offset,insnumb);}
+  else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]].noteOffset)-47)+((float)finepitch[insnumb]/64)+offset,insnumb);}
 }
 void Zxx(unsigned char value){
   // process Zxx effect
@@ -1257,8 +1287,8 @@ void NextRow() {
     if (curstep!=(getpatlen(patid[curpat])-1)) {
     nnnote=pat[patid[curpat]][curstep+1][loop][0]; // finds out next note past next note
     } else {nnnote=0;}
-    if ((nnnote%16)!=0 && (nnnote%16)!=15 && (nnnote%16)!=14 && (nnnote%16)!=13 && ((instrument[Mins[loop]][0x3e]>>6)!=0)){
-      cutcount[loop]=speed-(instrument[Mins[loop]][0x3e]>>6);
+    if ((nnnote%16)!=0 && (nnnote%16)!=15 && (nnnote%16)!=14 && (nnnote%16)!=13 && ((instrument[Mins[loop]].flags>>6)!=0)){
+      cutcount[loop]=speed-(instrument[Mins[loop]].flags>>6);
     }
     ninst=pat[patid[curpat]][curstep][loop][1]; // finds out next instrument
     nvolu[loop]=pat[patid[curpat]][curstep][loop][2]; // finds out next volume value
@@ -1276,10 +1306,10 @@ void NextRow() {
       // set note volume
       Mvol[loop]=(nvolu[loop]%64)*2;
       // volume envelope enabled?
-      if (instrument[Mins[loop]][0x22]&1){
+      if (instrument[Mins[loop]].activeEnv&1){
       // set current volume to (volume in envelope)*(note volume/127)
       // else set current volume to note volume
-      cvol[loop]=((bytable[0][instrument[Mins[loop]][0x23]][inspos[loop][0]]/2)*(Mvol[loop]))/127;
+      cvol[loop]=((bytable[0][instrument[Mins[loop]].env[envVolume]][inspos[loop][0]]/2)*(Mvol[loop]))/127;
       EnvelopesRunning[loop][0]=true;}
       else {EnvelopesRunning[loop][0]=false;cvol[loop]=Mvol[loop];}
     }
@@ -1330,83 +1360,84 @@ void NextRow() {
       // reset all envelope cursors if effect isn't Gxx/Lxx/gxx
       if (nfxid[loop]!=7 && nfxid[loop]!=12 && !(nvolu[loop]>192 && nvolu[loop]<203)) {
       // is it a pcm instrument? (pcm check)
-      if (instrument[Mins[loop]][0x2e]&8){
+      if (instrument[Mins[loop]].DFM&8){
         // set channel mode to PCM
         chip[0].chan[loop].flags.pcm=1;
                                 //chip[0].pcmmult[loop]=127;
-                                chip[0].chan[loop].flags.pcmloop=instrument[Mins[loop]][0x21]>>7;
+                                chip[0].chan[loop].flags.pcmloop=instrument[Mins[loop]].pcmMult>>7;
         //chip[0].pcmmult[loop]|=(instrument[Mins[loop]][0x21]&128);
-        chip[0].chan[loop].pcmrst=(instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9))+(instrument[Mins[loop]][0x3a]+(instrument[Mins[loop]][0x39]<<8));
+        chip[0].chan[loop].pcmrst=bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmPos)+bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmLoop);
         // set respective PCM pointers
-        chip[0].chan[loop].pcmpos=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9);
-        chip[0].chan[loop].pcmbnd=instrument[Mins[loop]][0x38]+(instrument[Mins[loop]][0x37]<<8)+((instrument[Mins[loop]][0x2e]&128)<<9)+(instrument[Mins[loop]][0x33]+(instrument[Mins[loop]][0x32]<<8));
+        chip[0].chan[loop].pcmpos=bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmPos);
+        chip[0].chan[loop].pcmbnd=bswapu16(*(unsigned short*)instrument[Mins[loop]].pcmPos)+bswapu16(instrument[Mins[loop]].pcmLen);
       } else {chip[0].chan[loop].flags.pcm=0;}
       // is ringmod on? (ringmod check)
-      if (instrument[Mins[loop]][0x2e]&16){
+      if (instrument[Mins[loop]].DFM&16){
         // set ring modulation to on
         crm[loop]=1;
         crmduty[loop]=63;
-        crmfreq[loop]=msnoteperiod(SEMINOTE+((instrument[Mins[loop]][0x2f]<0x40)?(instrument[Mins[loop]][0x2f]):(64-instrument[Mins[loop]][0x2f])),loop);
+        crmfreq[loop]=msnoteperiod(SEMINOTE+((instrument[Mins[loop]].LFO<0x40)?(instrument[Mins[loop]].LFO):(64-instrument[Mins[loop]].LFO)),loop);
         crrmstep[loop]=0;
         // is sync on?
-        if (instrument[Mins[loop]][0x3e]&32) {crm[loop]=2;}
+        if (instrument[Mins[loop]].flags&32) {crm[loop]=2;}
       } else {crm[loop]=0;}
       // is oscreset on? (osc reset check)
-      if (instrument[Mins[loop]][0x3e]&1) {crstep[loop]=0;} // osc reset
+      if (instrument[Mins[loop]].flags&1) {crstep[loop]=0;} // osc reset
       // volume (if turned on and effect isn't S77, or effect is S78)
-      if (((instrument[Mins[loop]][0x22]&1) || ((nfxid[loop]==19) && (nfxvl[loop]==0x78))) && !((nfxid[loop]==19) && (nfxvl[loop]==0x77))){
-      cvol[loop]=((bytable[0][instrument[Mins[loop]][0x23]][0]/2)*(Mvol[loop]))/127;
+      if (((instrument[Mins[loop]].activeEnv&1) || ((nfxid[loop]==19) && (nfxvl[loop]==0x78))) && !((nfxid[loop]==19) && (nfxvl[loop]==0x77))){
+      cvol[loop]=((bytable[0][instrument[Mins[loop]].env[envVolume]][0]/2)*(Mvol[loop]))/127;
       EnvelopesRunning[loop][0]=true;}
       else {EnvelopesRunning[loop][0]=false;cvol[loop]=Mvol[loop];}
       // duty
-      if ((instrument[Mins[loop]][0x22]&8)>>3){
-      cduty[loop]=bytable[3][instrument[Mins[loop]][0x26]][0]/2;
+      if ((instrument[Mins[loop]].activeEnv&8)>>3){
+      cduty[loop]=bytable[3][instrument[Mins[loop]].env[envDuty]][0]/2;
       EnvelopesRunning[loop][3]=true;}
       else {EnvelopesRunning[loop][3]=false;cduty[loop]=63;}
       // shape
-      if ((instrument[Mins[loop]][0x22]&16)>>4){
-      cshape[loop]=bytable[4][instrument[Mins[loop]][0x27]][0]/32;
+      if ((instrument[Mins[loop]].activeEnv&16)>>4){
+      cshape[loop]=bytable[4][instrument[Mins[loop]].env[envShape]][0]/32;
       EnvelopesRunning[loop][4]=true;}
       else {EnvelopesRunning[loop][4]=false;cshape[loop]=0;}
       // cutoff
-      if ((instrument[Mins[loop]][0x22]&2)>>1){
+      // HACK: please study behavior
+      if ((instrument[Mins[loop]].activeEnv&2)>>1){
       if (nfxid[loop]!=15) {
-      coff[loop]=bytable[1][instrument[Mins[loop]][0x24]][0]*((int)(512*((((255-((float)instrument[Mins[loop]][0x34]))*256)+(255-((float)instrument[Mins[loop]][0x34])))/65536)));cfmode[loop]=instrument[Mins[loop]][0x2e]&7;
+      coff[loop]=bytable[1][instrument[Mins[loop]].env[envCutoff]][0]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34])))/65536)));cfmode[loop]=instrument[Mins[loop]].DFM&7;
       } else {
-      coff[loop]=bytable[1][instrument[Mins[loop]][0x24]][(int)((float)bytable[1][instrument[Mins[loop]][0x24]][253]*((float)nfxvl[loop]/256))]*((int)(512*((((255-((float)instrument[Mins[loop]][0x34]))*256)+(255-((float)instrument[Mins[loop]][0x34])))/65536)));
-      cfmode[loop]=instrument[Mins[loop]][0x2e]&7;
-      //coff[loop]=bytable[1][instrument[Mins[loop]][0x24]][(int)((float)bytable[1][instrument[Mins[loop]][0x24]][253]*((float)nfxvl[loop]/256))]*512;cfmode[loop]=instrument[Mins[loop]][0x2e]&7;
+      coff[loop]=bytable[1][instrument[Mins[loop]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop]].env[envCutoff]][253]*((float)nfxvl[loop]/256))]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop]])[0x34])))/65536)));
+      cfmode[loop]=instrument[Mins[loop]].DFM&7;
+      //coff[loop]=bytable[1][instrument[Mins[loop]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop]].env[envCutoff]][253]*((float)nfxvl[loop]/256))]*512;cfmode[loop]=instrument[Mins[loop]].DFM&7;
       }
       EnvelopesRunning[loop][1]=true;}
       else {EnvelopesRunning[loop][1]=false;coff[loop]=262144;cfmode[loop]=fNone;}
       // resonance
-      if ((instrument[Mins[loop]][0x22]&4)>>2){
-      creso[loop]=bytable[2][instrument[Mins[loop]][0x25]][0];
+      if ((instrument[Mins[loop]].activeEnv&4)>>2){
+      creso[loop]=bytable[2][instrument[Mins[loop]].env[envReson]][0];
       EnvelopesRunning[loop][2]=true;}
       else {EnvelopesRunning[loop][2]=false;creso[loop]=48;finepitch[loop]=0;}
       // panning
-      if ((instrument[Mins[loop]][0x22]&128)>>7){
-      cpan[loop]=bytable[7][instrument[Mins[loop]][0x2a]][0]-128;
+      if ((instrument[Mins[loop]].activeEnv&128)>>7){
+      cpan[loop]=bytable[7][instrument[Mins[loop]].env[envPan]][0]-128;
       EnvelopesRunning[loop][7]=true;}
       else {EnvelopesRunning[loop][7]=false;
         cpan[loop]=chanpan[loop];
       }
       // finepitch
-      if ((instrument[Mins[loop]][0x22]&64)>>6){
-      finepitch[loop]=(char)bytable[6][instrument[Mins[loop]][0x29]][0];
+      if ((instrument[Mins[loop]].activeEnv&64)>>6){
+      finepitch[loop]=(char)bytable[6][instrument[Mins[loop]].env[envHiPitch]][0];
       cfreq[loop]=ProcessPitch(loop,0);
       EnvelopesRunning[loop][6]=true;}
       else {EnvelopesRunning[loop][6]=false;finepitch[loop]=0;}
       // pitch
-      if ((instrument[Mins[loop]][0x22]&32)>>5){
+      if ((instrument[Mins[loop]].activeEnv&32)>>5){
       // output (pitch logic)
-      if (bytable[5][instrument[Mins[loop]][0x28]][0]<0x40) {
-      cfreq[loop]=mnoteperiod(curnote[loop]+(bytable[5][instrument[Mins[loop]][0x28]][0])+(((unsigned char)instrument[Mins[loop]][0x2b])-47),loop);
+      if (bytable[5][instrument[Mins[loop]].env[envPitch]][0]<0x40) {
+      cfreq[loop]=mnoteperiod(curnote[loop]+(bytable[5][instrument[Mins[loop]].env[envPitch]][0])+(((unsigned char)instrument[Mins[loop]].noteOffset)-47),loop);
       } else {
-      if (bytable[5][instrument[Mins[loop]][0x28]][0]<0x80) {
-      cfreq[loop]=mnoteperiod(curnote[loop]-((bytable[5][instrument[Mins[loop]][0x28]][0]-64))+(((unsigned char)instrument[Mins[loop]][0x2b])-47),loop);
+      if (bytable[5][instrument[Mins[loop]].env[envPitch]][0]<0x80) {
+      cfreq[loop]=mnoteperiod(curnote[loop]-((bytable[5][instrument[Mins[loop]].env[envPitch]][0]-64))+(((unsigned char)instrument[Mins[loop]].noteOffset)-47),loop);
       } else {
-      cfreq[loop]=mnoteperiod(bytable[5][instrument[Mins[loop]][0x28]][0]-128,loop);
+      cfreq[loop]=mnoteperiod(bytable[5][instrument[Mins[loop]].env[envPitch]][0]-128,loop);
       }}
       EnvelopesRunning[loop][5]=true;}
       else {EnvelopesRunning[loop][5]=false;}
@@ -1415,8 +1446,8 @@ void NextRow() {
       if ((nnote%16)==15) {Mvol[loop]=0;} else 
       {
         // set note frequency if effect isn't Gxx/Lxx/gxx and pitch/finepitch envelopes are disabled
-      if (nfxid[loop]!=7 && nfxid[loop]!=12 && !(nvolu[loop]>192 && nvolu[loop]<203) && !((instrument[Mins[loop]][0x22]&32)>>5) && !((instrument[Mins[loop]][0x22]&64)>>6)) {
-      SEMINOTE=((nnote%16)+((nnote>>4)*12))+(((unsigned char)instrument[Mins[loop]][0x2b])-48);
+      if (nfxid[loop]!=7 && nfxid[loop]!=12 && !(nvolu[loop]>192 && nvolu[loop]<203) && !((instrument[Mins[loop]].activeEnv&32)>>5) && !((instrument[Mins[loop]].activeEnv&64)>>6)) {
+      SEMINOTE=((nnote%16)+((nnote>>4)*12))+(((unsigned char)instrument[Mins[loop]].noteOffset)-48);
       cfreq[loop]=mnoteperiod(SEMINOTE,loop); // sets the frequency to match the current note and applies instrument transposition
       oldperiod[loop]=newperiod[loop];
       newperiod[loop]=cfreq[loop];
@@ -1436,7 +1467,7 @@ void NextRow() {
       inspos[loop][7]=0; // sets the instrument position to 0
       } else { // Oxx
       inspos[loop][0]=nfxvl[loop]; // sets the instrument position to 0
-      inspos[loop][1]=(int)((float)bytable[1][instrument[Mins[loop]][0x24]][253]*((float)nfxvl[loop]/256)); // sets the instrument position to 0
+      inspos[loop][1]=(int)((float)bytable[1][instrument[Mins[loop]].env[envCutoff]][253]*((float)nfxvl[loop]/256)); // sets the instrument position to 0
       inspos[loop][2]=nfxvl[loop]; // sets the instrument position to 0
       inspos[loop][3]=nfxvl[loop]; // sets the instrument position to 0
       inspos[loop][4]=0; // sets the instrument position to 0
@@ -1496,13 +1527,13 @@ void NextRow() {
   if (nfxid[looper]==5)
     {if (nfxvl[looper]>0xef) {curnote[looper]-=((float)(nfxvl[looper]%16)/16);
       if(!EnvelopesRunning[looper][5]){
-            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }} else {
       if (nfxvl[looper]>0xdf) {curnote[looper]-=((float)(nfxvl[looper]%16)/64);
           if(!EnvelopesRunning[looper][5]){
-            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }}
@@ -1511,13 +1542,13 @@ void NextRow() {
   if (nfxid[looper]==6)
     {if (nfxvl[looper]>0xef) {curnote[looper]+=((float)(nfxvl[looper]%16)/16);
       if(!EnvelopesRunning[looper][5]){
-            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }} else {
       if (nfxvl[looper]>0xdf) {curnote[looper]+=((float)(nfxvl[looper]%16)/64);
           if(!EnvelopesRunning[looper][5]){
-            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }}
@@ -1590,67 +1621,42 @@ void SkipPattern(int chanval){
     AlreadySkipped=true;curpat++;curstep=nfxvl[chanval]-1;NextRow();
   }
 }
-void UpdateEnvelope_oldlogic(int channel, int envid) {
-  if (!IRP[channel][envid] || released[channel]){
-  inspos[channel][envid]++;
-  if (inspos[channel][envid]==bytable[envid][instrument[Mins[channel]][0x23+envid]][255]) {IRP[channel][envid]=true;}
-  }
-  if(inspos[channel][envid]>minval(252,bytable[envid][instrument[Mins[channel]][0x23+envid]][253])) // if envelope exceeds 252, or the 
-    {if (bytable[envid][instrument[Mins[channel]][0x23+envid]][254]<252) { // if loop is defined
-      inspos[channel][envid]=bytable[envid][instrument[Mins[channel]][0x23+envid]][254];
-  } else {
-      inspos[channel][envid]=minval(252,bytable[envid][instrument[Mins[channel]][0x23+envid]][253]);
-      EnvelopesRunning[channel][envid]=false;}
-  }
-}
+
 void UpdateEnvelope(int channel, int envid) {
   if (!IRP[channel][envid] || released[channel] ||
-    (bytable[envid][instrument[Mins[channel]][0x23+envid]][254])<(bytable[envid][instrument[Mins[channel]][0x23+envid]][255])){
+    (bytable[envid][instrument[Mins[channel]].env[envid]][254])<(bytable[envid][instrument[Mins[channel]].env[envid]][255])){
   inspos[channel][envid]++;
-  if (inspos[channel][envid]==bytable[envid][instrument[Mins[channel]][0x23+envid]][255]) {IRP[channel][envid]=true;}
+  if (inspos[channel][envid]==bytable[envid][instrument[Mins[channel]].env[envid]][255]) {IRP[channel][envid]=true;}
   }
   if(inspos[channel][envid]>
-    ((IRP[channel][envid] && !released[channel])?(minval(252,bytable[envid][instrument[Mins[channel]][0x23+envid]][255])):(minval(252,bytable[envid][instrument[Mins[channel]][0x23+envid]][253]))
+    ((IRP[channel][envid] && !released[channel])?(minval(252,bytable[envid][instrument[Mins[channel]].env[envid]][255])):(minval(252,bytable[envid][instrument[Mins[channel]].env[envid]][253]))
     )) // if envelope exceeds 252, or the length
-    {if ((bytable[envid][instrument[Mins[channel]][0x23+envid]][254]<252) &&
+    {if ((bytable[envid][instrument[Mins[channel]].env[envid]][254]<252) &&
     (!released[channel])
     ) { // if loop is defined
-      inspos[channel][envid]=bytable[envid][instrument[Mins[channel]][0x23+envid]][254];
+      inspos[channel][envid]=bytable[envid][instrument[Mins[channel]].env[envid]][254];
   } else {
-    if (!((bytable[envid][instrument[Mins[channel]][0x23+envid]][254]<252) &&
-      (bytable[envid][instrument[Mins[channel]][0x23+envid]][254])>(bytable[envid][instrument[Mins[channel]][0x23+envid]][255])
+    if (!((bytable[envid][instrument[Mins[channel]].env[envid]][254]<252) &&
+      (bytable[envid][instrument[Mins[channel]].env[envid]][254])>(bytable[envid][instrument[Mins[channel]].env[envid]][255])
       ) && 
-      (bytable[envid][instrument[Mins[channel]][0x23+envid]][255]<252)
+      (bytable[envid][instrument[Mins[channel]].env[envid]][255]<252)
       ) {
     // end of envelope
-    inspos[channel][envid]=minval(252,bytable[envid][instrument[Mins[channel]][0x23+envid]][253]);
+    inspos[channel][envid]=minval(252,bytable[envid][instrument[Mins[channel]].env[envid]][253]);
     EnvelopesRunning[channel][envid]=false;
     } else {
-      if ((bytable[envid][instrument[Mins[channel]][0x23+envid]][254]>252)) {
+      if ((bytable[envid][instrument[Mins[channel]].env[envid]][254]>252)) {
       // end of envelope
-      inspos[channel][envid]=minval(252,bytable[envid][instrument[Mins[channel]][0x23+envid]][253]);
+      inspos[channel][envid]=minval(252,bytable[envid][instrument[Mins[channel]].env[envid]][253]);
       EnvelopesRunning[channel][envid]=false;
       } else {
-      inspos[channel][envid]=bytable[envid][instrument[Mins[channel]][0x23+envid]][254];
+      inspos[channel][envid]=bytable[envid][instrument[Mins[channel]].env[envid]][254];
       }
     }
   }
   }
 }
-int ProcessPitch1(int insnumb){
-  // output (pitch logic)
-  if(EnvelopesRunning[insnumb][5]){
-    if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x40) {
-    return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);
-    } else {
-    if (bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]<0x80) {
-    return mnoteperiod(curnote[insnumb]-((bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-64))+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);
-    } else {
-    return mnoteperiod(bytable[5][instrument[Mins[insnumb]][0x28]][inspos[insnumb][5]]-128,insnumb);
-    }}
-  }
-  else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]][0x2b])-47)-1,insnumb);}
-}
+
 void NextTick() {
   // process the next tick
   curtick--;
@@ -1694,75 +1700,75 @@ void NextTick() {
       Mins[loop2]=pat[patid[curpat]][curstep][loop2][1];
       }
       // is it a pcm instrument? (pcm check)
-      if (instrument[Mins[loop2]][0x2e]&8){
+      if (instrument[Mins[loop2]].DFM&8){
         // set channel mode to PCM
         chip[0].chan[loop2].flags.pcm=1;
         // set respective PCM pointers
-        chip[0].chan[loop2].pcmpos=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9);
-        chip[0].chan[loop2].pcmbnd=instrument[Mins[loop2]][0x38]+(instrument[Mins[loop2]][0x37]<<8)+((instrument[Mins[loop2]][0x2e]&128)<<9)+(instrument[Mins[loop2]][0x33]+(instrument[Mins[loop2]][0x32]<<8));
+        chip[0].chan[loop2].pcmpos=bswapu16(*(unsigned short*)instrument[Mins[loop2]].pcmPos);
+        chip[0].chan[loop2].pcmbnd=bswapu16(*(unsigned short*)instrument[Mins[loop2]].pcmPos)+bswapu16(instrument[Mins[loop2]].pcmLen);
       } else {chip[0].chan[loop2].flags.pcm=0;}
       // is oscreset on? (osc reset check)
-      if (instrument[Mins[loop2]][0x3e]&1) {crstep[loop2]=0;} // osc reset
+      if (instrument[Mins[loop2]].flags&1) {crstep[loop2]=0;} // osc reset
       // volume (if turned on and effect isn't S77, or effect is S78)
-      if (((instrument[Mins[loop2]][0x22]&1) || ((nfxid[loop2]==19) && (nfxvl[loop2]==0x78))) && !((nfxid[loop2]==19) && (nfxvl[loop2]==0x77))){
-      cvol[loop2]=((bytable[0][instrument[Mins[loop2]][0x23]][0]/2)*(Mvol[loop2]))/127;
+      if (((instrument[Mins[loop2]].activeEnv&1) || ((nfxid[loop2]==19) && (nfxvl[loop2]==0x78))) && !((nfxid[loop2]==19) && (nfxvl[loop2]==0x77))){
+      cvol[loop2]=((bytable[0][instrument[Mins[loop2]].env[envVolume]][0]/2)*(Mvol[loop2]))/127;
       EnvelopesRunning[loop2][0]=true;}
       else {EnvelopesRunning[loop2][0]=false;cvol[loop2]=Mvol[loop2];}
       // duty
-      if ((instrument[Mins[loop2]][0x22]&8)>>3){
-      cduty[loop2]=bytable[3][instrument[Mins[loop2]][0x26]][0]/2;
+      if ((instrument[Mins[loop2]].activeEnv&8)>>3){
+      cduty[loop2]=bytable[3][instrument[Mins[loop2]].env[envDuty]][0]/2;
       EnvelopesRunning[loop2][3]=true;}
       else {EnvelopesRunning[loop2][3]=false;cduty[loop2]=63;}
       // shape
-      if ((instrument[Mins[loop2]][0x22]&16)>>4){
-      cshape[loop2]=bytable[4][instrument[Mins[loop2]][0x27]][0]/32;
+      if ((instrument[Mins[loop2]].activeEnv&16)>>4){
+      cshape[loop2]=bytable[4][instrument[Mins[loop2]].env[envShape]][0]/32;
       EnvelopesRunning[loop2][4]=true;}
       else {EnvelopesRunning[loop2][4]=false;cshape[loop2]=0;}
       // cutoff
-      if ((instrument[Mins[loop2]][0x22]&2)>>1){
+      // HACK: please study behavior
+      if ((instrument[Mins[loop2]].activeEnv&2)>>1){
       if (nfxid[loop2]!=15) {
-      coff[loop2]=bytable[1][instrument[Mins[loop2]][0x24]][0]*((int)(512*((((255-((float)instrument[Mins[loop2]][0x34]))*256)+(255-((float)instrument[Mins[loop2]][0x34])))/65536)));cfmode[loop2]=instrument[Mins[loop2]][0x2e]&7;
+      coff[loop2]=bytable[1][instrument[Mins[loop2]].env[envCutoff]][0]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34])))/65536)));cfmode[loop2]=instrument[Mins[loop2]].DFM&7;
       } else {
-      coff[loop2]=bytable[1][instrument[Mins[loop2]][0x24]][(int)((float)bytable[1][instrument[Mins[loop2]][0x24]][253]*((float)nfxvl[loop2]/256))]*((int)(512*((((255-((float)instrument[Mins[loop2]][0x34]))*256)+(255-((float)instrument[Mins[loop2]][0x34])))/65536)));
-      cfmode[loop2]=instrument[Mins[loop2]][0x2e]&7;
-      //coff[loop2]=bytable[1][instrument[Mins[loop2]][0x24]][(int)((float)bytable[1][instrument[Mins[loop2]][0x24]][253]*((float)nfxvl[loop2]/256))]*512;cfmode[loop2]=instrument[Mins[loop2]][0x2e]&7;
+      coff[loop2]=bytable[1][instrument[Mins[loop2]].env[envCutoff]][(int)((float)bytable[1][instrument[Mins[loop2]].env[envCutoff]][253]*((float)nfxvl[loop2]/256))]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34])))/65536)));
+      cfmode[loop2]=instrument[Mins[loop2]].DFM&7;
       }
       EnvelopesRunning[loop2][1]=true;}
       else {EnvelopesRunning[loop2][1]=false;coff[loop2]=262144;cfmode[loop2]=fNone;}
       // resonance
-      if ((instrument[Mins[loop2]][0x22]&4)>>2){
-      creso[loop2]=bytable[2][instrument[Mins[loop2]][0x25]][0];
+      if ((instrument[Mins[loop2]].activeEnv&4)>>2){
+      creso[loop2]=bytable[2][instrument[Mins[loop2]].env[envReson]][0];
       EnvelopesRunning[loop2][2]=true;}
       else {EnvelopesRunning[loop2][2]=false;creso[loop2]=48;finepitch[loop2]=0;}
       // panning
-      if ((instrument[Mins[loop2]][0x22]&128)>>7){
-      cpan[loop2]=bytable[7][instrument[Mins[loop2]][0x2a]][0]-128;
+      if ((instrument[Mins[loop2]].activeEnv&128)>>7){
+      cpan[loop2]=bytable[7][instrument[Mins[loop2]].env[envPan]][0]-128;
       EnvelopesRunning[loop2][7]=true;}
       else {EnvelopesRunning[loop2][7]=false;
         cpan[loop2]=chanpan[loop2];
       }
       // finepitch
-      if ((instrument[Mins[loop2]][0x22]&64)>>6){
-      finepitch[loop2]=(char)bytable[6][instrument[Mins[loop2]][0x29]][0];
+      if ((instrument[Mins[loop2]].activeEnv&64)>>6){
+      finepitch[loop2]=(char)bytable[6][instrument[Mins[loop2]].env[envHiPitch]][0];
       cfreq[loop2]=ProcessPitch(loop2,0);
       EnvelopesRunning[loop2][6]=true;}
       else {EnvelopesRunning[loop2][6]=false;finepitch[loop2]=0;}
       // pitch
-      if ((instrument[Mins[loop2]][0x22]&32)>>5){
+      if ((instrument[Mins[loop2]].activeEnv&32)>>5){
       // output (pitch logic)
-      if (bytable[5][instrument[Mins[loop2]][0x28]][0]<0x40) {
-      cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]][0x28]][0])+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
+      if (bytable[5][instrument[Mins[loop2]].env[envPitch]][0]<0x40) {
+      cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]].env[envPitch]][0])+(((unsigned char)instrument[Mins[loop2]].noteOffset)-47),loop2);
       } else {
-      if (bytable[5][instrument[Mins[loop2]][0x28]][0]<0x80) {
-      cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]][0x28]][0]-64))+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
+      if (bytable[5][instrument[Mins[loop2]].env[envPitch]][0]<0x80) {
+      cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]].env[envPitch]][0]-64))+(((unsigned char)instrument[Mins[loop2]].noteOffset)-47),loop2);
       } else {
-      cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]][0x28]][0]-128,loop2);
+      cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]].env[envPitch]][0]-128,loop2);
       }}
       EnvelopesRunning[loop2][5]=true;}
       else {EnvelopesRunning[loop2][5]=false;}
       }
-      if (nfxid[loop2]!=7 && nfxid[loop2]!=12 && !(nvolu[loop2]>192 && nvolu[loop2]<203) && !((instrument[Mins[loop2]][0x22]&32)>>5) && !((instrument[Mins[loop2]][0x22]&64)>>6)) {
-      cfreq[loop2]=mnoteperiod(((hscale(curnote[loop2])%16)+((hscale(curnote[loop2])>>4)*12))+(((unsigned char)instrument[Mins[loop2]][0x2b])-48),loop2);
+      if (nfxid[loop2]!=7 && nfxid[loop2]!=12 && !(nvolu[loop2]>192 && nvolu[loop2]<203) && !((instrument[Mins[loop2]].activeEnv&32)>>5) && !((instrument[Mins[loop2]].activeEnv&64)>>6)) {
+      cfreq[loop2]=mnoteperiod(((hscale(curnote[loop2])%16)+((hscale(curnote[loop2])>>4)*12))+(((unsigned char)instrument[Mins[loop2]].noteOffset)-48),loop2);
       }
       // only reset envelope positions if effect isn't Gxx/Lxx/gxx
       if (nfxid[loop2]!=7 && nfxid[loop2]!=12 && !(nvolu[loop2]>192 && nvolu[loop2]<203)) {
@@ -1778,7 +1784,7 @@ void NextTick() {
       inspos[loop2][7]=0; // sets the instrument position to 0
       } else { // Oxx
       inspos[loop2][0]=nfxvl[loop2]; // sets the instrument position to 0
-      inspos[loop2][1]=(int)((float)bytable[1][instrument[Mins[loop2]][0x24]][253]*((float)nfxvl[loop2]/256)); // sets the instrument position to 0
+      inspos[loop2][1]=(int)((float)bytable[1][instrument[Mins[loop2]].env[envCutoff]][253]*((float)nfxvl[loop2]/256)); // sets the instrument position to 0
       inspos[loop2][2]=nfxvl[loop2]; // sets the instrument position to 0
       inspos[loop2][3]=nfxvl[loop2]; // sets the instrument position to 0
       inspos[loop2][4]=0; // sets the instrument position to 0
@@ -1805,49 +1811,50 @@ void NextTick() {
     // volume
     if(EnvelopesRunning[loop2][0]){
       UpdateEnvelope(loop2,0);
-      cvol[loop2]=((bytable[0][instrument[Mins[loop2]][0x23]][inspos[loop2][0]]/2)*(Mvol[loop2]))/127;
+      cvol[loop2]=((bytable[0][instrument[Mins[loop2]].env[envVolume]][inspos[loop2][0]]/2)*(Mvol[loop2]))/127;
     }
     // duty
     if(EnvelopesRunning[loop2][3]){
       UpdateEnvelope(loop2,3);
       // output
-      cduty[loop2]=bytable[3][instrument[Mins[loop2]][0x26]][inspos[loop2][3]]/2;
+      cduty[loop2]=bytable[3][instrument[Mins[loop2]].env[envDuty]][inspos[loop2][3]]/2;
     }
     // shape
     if(EnvelopesRunning[loop2][4]){
       UpdateEnvelope(loop2,4);
       // output
-      cshape[loop2]=bytable[4][instrument[Mins[loop2]][0x27]][inspos[loop2][4]]/32;
+      cshape[loop2]=bytable[4][instrument[Mins[loop2]].env[envShape]][inspos[loop2][4]]/32;
     }
     // cutoff
     if(EnvelopesRunning[loop2][1]){
       UpdateEnvelope(loop2,1);
       // output
-      coff[loop2]=bytable[1][instrument[Mins[loop2]][0x24]][inspos[loop2][1]]*((int)(512*((((255-((float)instrument[Mins[loop2]][0x34]))*256)+(255-((float)instrument[Mins[loop2]][0x34])))/65536)));
+      // HACK: please study behavior and fix
+      coff[loop2]=bytable[1][instrument[Mins[loop2]].env[envCutoff]][inspos[loop2][1]]*((int)(512*((((255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34]))*256)+(255-((float)((unsigned char*)&instrument[Mins[loop2]])[0x34])))/65536)));
     }
     // resonance
     if(EnvelopesRunning[loop2][2]){
       UpdateEnvelope(loop2,2);
       // output
-      creso[loop2]=bytable[2][instrument[Mins[loop2]][0x25]][inspos[loop2][2]];
+      creso[loop2]=bytable[2][instrument[Mins[loop2]].env[envReson]][inspos[loop2][2]];
     }
     // panning
     if(EnvelopesRunning[loop2][7]){
       UpdateEnvelope(loop2,7);
       // output
-      cpan[loop2]=bytable[7][instrument[Mins[loop2]][0x2a]][inspos[loop2][7]]-128;
+      cpan[loop2]=bytable[7][instrument[Mins[loop2]].env[envPan]][inspos[loop2][7]]-128;
     }
     // pitch
     if(EnvelopesRunning[loop2][5]){
       UpdateEnvelope(loop2,5);
       // output (pitch logic)
-      if (bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]<0x40) {
-      cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]])+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
+      if (bytable[5][instrument[Mins[loop2]].env[envPitch]][inspos[loop2][5]]<0x40) {
+      cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]].env[envPitch]][inspos[loop2][5]])+(((unsigned char)instrument[Mins[loop2]].noteOffset)-47),loop2);
       } else {
-      if (bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]<0x80) {
-      cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]-64))+(((unsigned char)instrument[Mins[loop2]][0x2b])-47),loop2);
+      if (bytable[5][instrument[Mins[loop2]].env[envPitch]][inspos[loop2][5]]<0x80) {
+      cfreq[loop2]=mnoteperiod(curnote[loop2]-((bytable[5][instrument[Mins[loop2]].env[envPitch]][inspos[loop2][5]]-64))+(((unsigned char)instrument[Mins[loop2]].noteOffset)-47),loop2);
       } else {
-      cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]][0x28]][inspos[loop2][5]]-128,loop2);
+      cfreq[loop2]=mnoteperiod(bytable[5][instrument[Mins[loop2]].env[envPitch]][inspos[loop2][5]]-128,loop2);
       }}
     }
     // finepitch
@@ -1855,7 +1862,7 @@ void NextTick() {
       UpdateEnvelope(loop2,6);
       // output
       if(EnvelopesRunning[loop2][6]){
-      finepitch[loop2]+=(char)bytable[6][instrument[Mins[loop2]][0x29]][inspos[loop2][6]];
+      finepitch[loop2]+=(char)bytable[6][instrument[Mins[loop2]].env[envHiPitch]][inspos[loop2][6]];
       cfreq[loop2]=ProcessPitch(loop2,0);
       }
     }
@@ -1886,7 +1893,7 @@ void NextTick() {
       if (!linearslides) {cfreq[looper]+=nfxvl[looper];}
       else {curnote[looper]-=((float)nfxvl[looper]/16);
           if(!EnvelopesRunning[looper][5]){
-            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }}}}
@@ -1897,7 +1904,7 @@ void NextTick() {
       else {curnote[looper]+=((float)nfxvl[looper]/16);
           cfreq[looper]=mnoteperiod(curnote[looper]+1,looper);
           if(!EnvelopesRunning[looper][5]){
-            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+            cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }}}}
@@ -1954,9 +1961,9 @@ void NextTick() {
   if (nfxid[looper]==10) {
     // cycle between the 3 frequencies
     switch ((speed-curtick)%3) {
-      case 0: cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper); break;
-      case 1: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]/16)+(((unsigned char)instrument[Mins[looper]][0x2b])-47),looper); break;
-      case 2: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]%16)+(((unsigned char)instrument[Mins[looper]][0x2b])-47),looper); break;
+      case 0: cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper); break;
+      case 1: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]/16)+(((unsigned char)instrument[Mins[looper]].noteOffset)-47),looper); break;
+      case 2: cfreq[looper]=mnoteperiod(curnote[looper]+(nfxvl[looper]%16)+(((unsigned char)instrument[Mins[looper]].noteOffset)-47),looper); break;
     }
   }
   // Kxx
@@ -1969,7 +1976,7 @@ void NextTick() {
     if (cvol[looper]<0) {cvol[looper]=0;}} else {cvol[looper]+=((nfxvl[looper]>>4)*2);if (cvol[looper]>127) {cvol[looper]=127;}}}
     curvibpos[looper]++;
     if(!EnvelopesRunning[looper][5]){
-    cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
+    cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
     } else {
     cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
     }
@@ -1990,7 +1997,7 @@ void NextTick() {
     if ((nfxvl[looper]%16)!=0) {curvibdepth[looper]=nfxvl[looper]%16;}
     if ((nfxvl[looper]/16)!=0) {curvibspeed[looper]=nfxvl[looper]/16;}
     curvibpos[looper]++;
-    cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]][0x2b])-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/64));
+    cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/64));
   }
   // Yxx
   if (nfxid[looper]==25) {
@@ -2061,7 +2068,7 @@ void CleanupPatterns() {
   // cleans up all instruments
   memset(instrument,0,256*64);
   for (int jj=0;jj<256;jj++){
-    instrument[jj][0x2b]=48;
+    instrument[jj].noteOffset=48;
   }
 }
 
@@ -2160,8 +2167,8 @@ void drawinsedit() {
   if (!hexmode) {
   for (int ii=scrollpos;ii<minval(253,(516/valuewidth)+scrollpos+((scrW-800)/valuewidth));ii++) {
   if (CurrentEnv==5) { // pitch
-    if (bytable[5][instrument[CurrentIns][0x23+CurrentEnv]][ii]!=0) {
-    if (bytable[5][instrument[CurrentIns][0x23+CurrentEnv]][ii]<0x40) {
+    if (bytable[5][instrument[CurrentIns].env[CurrentEnv]][ii]!=0) {
+    if (bytable[5][instrument[CurrentIns].env[CurrentEnv]][ii]<0x40) {
       // up
       al_draw_pixel((ii-scrollpos)*valuewidth,145,al_map_rgb(128,255,128));
       al_draw_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(128,255,128));
@@ -2175,7 +2182,7 @@ void drawinsedit() {
       al_draw_pixel(2+((ii-scrollpos)*valuewidth),146,al_map_rgb(128,255,128));
       al_draw_pixel(2+((ii-scrollpos)*valuewidth),145,al_map_rgb(128,255,128));
       } else {
-      if (bytable[5][instrument[CurrentIns][0x23+CurrentEnv]][ii]<0x80) {
+      if (bytable[5][instrument[CurrentIns].env[CurrentEnv]][ii]<0x80) {
       // down
       al_draw_pixel((ii-scrollpos)*valuewidth,145,al_map_rgb(255,128,128));
       al_draw_pixel((ii-scrollpos)*valuewidth,146,al_map_rgb(255,128,128));
@@ -2203,45 +2210,45 @@ void drawinsedit() {
     }}
   }
   al_draw_filled_rectangle((ii-scrollpos)*valuewidth,
-    (CurrentEnv==7)?402-bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]:
+    (CurrentEnv==7)?402-bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]:
     (CurrentEnv==6)?interpolate(94,scrH-42,0.5):(scrH-42),
     ((ii-scrollpos)*valuewidth)+valuewidth,
-    (CurrentEnv==6)?interpolate(94,scrH-42,0.5)-(char)bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]:
-    (scrH-43)-(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]*((scrH-128)/256)),
-    (ii>bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253])?al_map_rgb(63,63,63): // out of range
-    (ii>bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255])?al_map_rgb(192,0,192): // release
-    (ii>=bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254])?al_map_rgb(0,192,192): // loop
+    (CurrentEnv==6)?interpolate(94,scrH-42,0.5)-(char)bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]:
+    (scrH-43)-(bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]*((scrH-128)/256)),
+    (ii>bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253])?al_map_rgb(63,63,63): // out of range
+    (ii>bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255])?al_map_rgb(192,0,192): // release
+    (ii>=bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254])?al_map_rgb(0,192,192): // loop
     al_map_rgb(255,255,255));
   }
   for (int jj=0;jj<32;jj++) {
   if (EnvelopesRunning[jj][CurrentEnv] && Mins[jj]==CurrentIns) {
     al_draw_filled_rectangle((inspos[jj][CurrentEnv]-scrollpos)*valuewidth,
-      (CurrentEnv==7)?402-bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][inspos[jj][CurrentEnv]]:
+      (CurrentEnv==7)?402-bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][inspos[jj][CurrentEnv]]:
     (CurrentEnv==6)?interpolate(94,scrH-42,0.5):(scrH-42),
     ((inspos[jj][CurrentEnv]-scrollpos)*valuewidth)+valuewidth,
-    (CurrentEnv==6)?interpolate(94,scrH-42,0.5)-(char)bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][inspos[jj][CurrentEnv]]:
-    (scrH-43)-(bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][inspos[jj][CurrentEnv]]*((scrH-128)/256)),
+    (CurrentEnv==6)?interpolate(94,scrH-42,0.5)-(char)bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][inspos[jj][CurrentEnv]]:
+    (scrH-43)-(bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][inspos[jj][CurrentEnv]]*((scrH-128)/256)),
     al_map_rgb(0,255,0)); continue;
   }
   }
   } else {
   for (int ii=0;ii<253;ii++) {
-    g.tColor((ii>bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253])?240:15);
+    g.tColor((ii>bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253])?240:15);
     g.tPos(1+(ii%21)*3,8.5+(ii/21)*2);
-    g.printf("%.2x",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]);
+    g.printf("%.2x",bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]);
   }
   }
   // draws some GUI stuff
   g.tPos((float)(scrW-272)/8.0,11);
   g.tColor((inputwhere==2)?11:15);
-  g.printf("%s",instrument[CurrentIns]);
+  g.printf("%s",instrument[CurrentIns].name);
   if (inputwhere==2) {
     al_draw_line((scrW-272)+(inputcurpos*8),133,(scrW-272)+(inputcurpos*8),145,getconfigcol(colSEL2),1);
   }
   
   g.tPos(55,6);
   g.tColor(10);
-  g.printf("%.2X",instrument[CurrentIns][0x23+CurrentEnv]);
+  g.printf("%.2X",instrument[CurrentIns].env[CurrentEnv]);
   
   g.tPos(22,5);
   g.printf("%.2X",CurrentIns);
@@ -2249,17 +2256,17 @@ void drawinsedit() {
   // the right pane
   g.tColor(11);
   g.tPos((float)(scrW-208)/8.0,7);
-  g.printf("%s%s\n",getnotetransp(instrument[CurrentIns][0x2b]),getoctavetransp(instrument[CurrentIns][0x2b]));
+  g.printf("%s%s\n",getnotetransp(instrument[CurrentIns].noteOffset),getoctavetransp(instrument[CurrentIns].noteOffset));
   // the thing at the bottom
   g.tPos(7,(float)(scrH-18)/12.0);
-  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]);
+  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]);
   g.tPos(22,(float)(scrH-18)/12.0);
-  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]);
+  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255]);
   g.tPos(36,(float)(scrH-18)/12.0);
-  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]);
+  g.printf("%.2X\n",bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253]);
   
   g.tPos(0,6);
-  if (((instrument[CurrentIns][0x22])>>CurrentEnv)&1) {
+  if (((instrument[CurrentIns].activeEnv)>>CurrentEnv)&1) {
     g.tColor(10);
     g.printf("ON");
   } else {
@@ -2305,52 +2312,53 @@ void drawinsedit() {
   // the right pane is back
   
   g.tColor(11);
-  if (instrument[CurrentIns][0x2e]&1) {
+  if (instrument[CurrentIns].DFM&1) {
     g.tPos((float)(scrW-216)/8.0,13);
     g.printf("low");
   }
-  if (instrument[CurrentIns][0x2e]&2) {
+  if (instrument[CurrentIns].DFM&2) {
     g.tPos((float)(scrW-184)/8.0,13);
     g.printf("high");
   }
-  if (instrument[CurrentIns][0x2e]&4) {
+  if (instrument[CurrentIns].DFM&4) {
     g.tPos((float)(scrW-144)/8.0,13);
     g.printf("band");
   }
-  if (instrument[CurrentIns][0x2e]&8) {
+  if (instrument[CurrentIns].DFM&8) {
     g.tPos((float)(scrW-272)/8.0,15);
     g.printf("PCM");
   }
-  if (instrument[CurrentIns][0x2e]&16) {
+  if (instrument[CurrentIns].DFM&16) {
     g.tPos((float)(scrW-272)/8.0,21);
     g.printf("RM");
   }
-  if (instrument[CurrentIns][0x3e]&32) {
+  if (instrument[CurrentIns].flags&32) {
     g.tPos((float)(scrW-272)/8.0,22);
     g.printf("Sy");
   }
-  if (instrument[CurrentIns][0x3e]&1) {
+  if (instrument[CurrentIns].flags&1) {
     g.tPos((float)(scrW-272)/8.0,24);
     g.printf("ResetOsc");
   }
   
   g.tPos((float)(scrW-192)/8.0,15);
-  g.printf("%.2x%.2x",instrument[CurrentIns][0x37],instrument[CurrentIns][0x38]);
+  // HACK: big endian stuff
+  g.printf("%.2x%.2x",instrument[CurrentIns].pcmPos[0],instrument[CurrentIns].pcmPos[1]);
   
   g.tPos((float)(scrW-192)/8.0,16);
-  g.printf("%.2x%.2x",instrument[CurrentIns][0x39],instrument[CurrentIns][0x3a]);
+  g.printf("%.2x%.2x",instrument[CurrentIns].pcmLoop[0],instrument[CurrentIns].pcmLoop[1]);
   
   g.tPos((float)(scrW-88)/8.0,15);
-  g.printf("%.2x%.2x",instrument[CurrentIns][0x32],instrument[CurrentIns][0x33]);
+  g.printf("%.4x",bswapu16(instrument[CurrentIns].pcmLen));
   
   g.tPos((float)(scrW-208)/8.0,21);
-  g.printf("%.2x",instrument[CurrentIns][0x2f]);
+  g.printf("%.2x",instrument[CurrentIns].LFO);
   
   g.tPos((float)(scrW-208)/8.0,18);
-  g.printf("%.2x%.2x",0xff-instrument[CurrentIns][0x34],0xff-instrument[CurrentIns][0x35]);
+  g.printf("%.2x%.2x",0xff-(instrument[CurrentIns].filterH&255),0xff-(instrument[CurrentIns].filterH>>8));
   
   g.tPos((float)(scrW-208)/8.0,27);
-  g.printf("%.1x",instrument[CurrentIns][0x3e]>>6);
+  g.printf("%.1x",instrument[CurrentIns].flags>>6);
   
   if (hexmode) {
     g.tPos(61,5);
@@ -3102,17 +3110,18 @@ int ImportMOD(const char* rfn){
     printf("success, now importing file\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
     patlength[nonsense]=64;
-    //instrument[nonsense][0x2a]=48;
+    //instrument[nonsense].env[envPan]=48;
   }
 #ifndef PRESERVE_INS
   for (int ii=0;ii<31;ii++) {
     for (int jj=0;jj<22;jj++) {
-      instrument[ii+1][jj]=memblock[0x14+(ii*30)+jj];
+      instrument[ii+1].name[jj]=memblock[0x14+(ii*30)+jj];
     }
     if (settings::samples) {
-      instrument[ii+1][0x37]=CurrentSampleSeek>>8;
-      instrument[ii+1][0x38]=CurrentSampleSeek%256;
-      instrument[ii+1][0x2e]|=(CurrentSampleSeek>>16)?(128):(0);
+      // HACK: big endian
+      instrument[ii+1].pcmPos[0]=CurrentSampleSeek>>8;
+      instrument[ii+1].pcmPos[1]=CurrentSampleSeek%256;
+      instrument[ii+1].DFM|=(CurrentSampleSeek>>16)?(128):(0);
       int tempsize;
       tempsize=(((unsigned char)(memblock[0x14+(ii*30)+0x16])<<8)+(unsigned char)(memblock[0x14+(ii*30)+0x17]))*2;
       int repeatpos;
@@ -3120,18 +3129,17 @@ int ImportMOD(const char* rfn){
       int repeatlen;
       repeatlen=(((unsigned char)(memblock[0x14+(ii*30)+0x1c])<<8)+(unsigned char)(memblock[0x14+(ii*30)+0x1d]))*2;
       printf("sample %d size: %.5x repeat: %.4x replen: %.4x\n",ii,tempsize,repeatpos,repeatlen);
-      instrument[ii+1][0x32]=((repeatpos>0 || repeatlen>2)?(minval(tempsize,repeatpos+repeatlen)):(tempsize))>>8;
-      instrument[ii+1][0x33]=((repeatpos>0 || repeatlen>2)?(minval(tempsize,repeatpos+repeatlen)):(tempsize))&0xff;
-      instrument[ii+1][0x39]=repeatpos>>8;
-      instrument[ii+1][0x3a]=repeatpos&0xff;
-      instrument[ii+1][0x21]|=(repeatpos>0 || repeatlen>2)?(128):(0);
+      instrument[ii+1].pcmLen=bswapu16((repeatpos>0 || repeatlen>2)?(minval(tempsize,repeatpos+repeatlen)):(tempsize));
+      instrument[ii+1].pcmLoop[0]=repeatpos>>8;
+      instrument[ii+1].pcmLoop[1]=repeatpos&0xff;
+      instrument[ii+1].pcmMult|=(repeatpos>0 || repeatlen>2)?(128):(0);
       CurrentSampleSeek+=tempsize;
-      instrument[ii+1][0x2b]=12;
-      instrument[ii+1][0x2e]|=8;
+      instrument[ii+1].noteOffset=12;
+      instrument[ii+1].DFM|=8;
                         /*
-    instrument[ii+1][0x37]=CurrentSampleSeek>>8;
-    instrument[ii+1][0x38]=CurrentSampleSeek%256;
-    instrument[ii+1][0x2e]|=(CurrentSampleSeek>>16)<<7;
+    instrument[ii+1].pcmPos[0]=CurrentSampleSeek>>8;
+    instrument[ii+1].pcmPos[1]=CurrentSampleSeek%256;
+    instrument[ii+1].DFM|=(CurrentSampleSeek>>16)<<7;
     CurrentSampleSeek+=(((memblock[0x14+(ii*30)+22]<<8)+memblock[0x14+(ii*30)+23])*2);
     if ((((((memblock[0x14+(ii*30)+22]<<8)+memblock[0x14+(ii*30)+23])*2)>>4)%8)>3) {CurrentSampleSeek+=256;}
     instrument[ii+1][0x33]=(((memblock[0x14+(ii*30)+23]<<8)+memblock[0x14+(ii*30)+22])*2)>>8;
@@ -3333,7 +3341,7 @@ int ImportS3M() {
     printf("success, now importing file\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
     patlength[nonsense]=64;
-    //instrument[nonsense][0x2a]=48;
+    //instrument[nonsense].env[envPan]=48;
   }
   // module name
   printf("module name is ");
@@ -3480,18 +3488,16 @@ int SaveFile() {
       // check if the instrument is blank
       for (int ii1=0; ii1<64; ii1++){
         if (ii1==0x2b) {
-          if (instrument[ii][ii1]!=48) {IS_INS_BLANK[ii]=false;break;}
+          if (instrument[ii].noteOffset!=48) {IS_INS_BLANK[ii]=false;break;}
         } else {
-          if (instrument[ii][ii1]!=0) {IS_INS_BLANK[ii]=false;break;}
+          if (((unsigned char*)&instrument[ii])[ii1]!=0) {IS_INS_BLANK[ii]=false;break;}
         }
       }
       if (IS_INS_BLANK[ii]) {
         insparas[ii]=0;continue;
       }
       insparas[ii]=al_ftell(sfile);
-      for (int jj=0; jj<64; jj++){
-        al_fputc(sfile,instrument[ii][jj]); // instrument
-      }
+      al_fwrite(sfile,&instrument[ii],64);
     }
     printf("writing sequences...\n");
     //sk=0x4d80;
@@ -3721,18 +3727,16 @@ int LoadFile(const char* filename){
       al_fseek(sfile,insparas[ii],ALLEGRO_SEEK_SET);
       // is it blank?
       if (insparas[ii]==0){continue;}
-      for (int jj=0; jj<64; jj++){
-        instrument[ii][jj]=al_fgetc(sfile); // instrument
-      }
+      al_fread(sfile,&instrument[ii],64);
       // version<60 filter mode fix
       if(TVER<60){
-        if (instrument[ii][0x22]&2) {instrument[ii][0x2e]^=1;}
+        if (instrument[ii].activeEnv&2) {instrument[ii].DFM^=1;}
       }
       // version<144 force legacy instrument
       if (TVER<144) {
-        instrument[ii][0x3d]&=~0x80;
+        instrument[ii].ver&=~0x8000;
       }
-      if (instrument[ii][0x3d]&0x80) { // new instrument
+      if (instrument[ii].ver&0x8000) { // new instrument
         
       }
     }
@@ -3857,13 +3861,11 @@ void SaveInstrument() {
     printf("writing header...\n");
     printf("%d ",al_ftell(sfile));
     al_fputs(sfile,"TRACKINS"); // magic number
-    for (int ii=0; ii<64; ii++){
-      al_fputc(sfile,instrument[CurrentIns][ii]); // instrument
-    }
+    al_fwrite(sfile,&instrument[CurrentIns],64);
     printf("writing envelopes...\n");
     for (int jj=0; jj<8; jj++){
       for (int kk=0; kk<256; kk++){
-        al_fputc(sfile,bytable[jj][instrument[CurrentIns][0x23+jj]][kk]); // seqtable
+        al_fputc(sfile,bytable[jj][instrument[CurrentIns].env[jj]][kk]); // seqtable
       }
     }
     al_fclose(sfile);
@@ -3881,13 +3883,11 @@ void LoadInstrument() {
   if (sfile!=NULL){ // read the file
     al_fseek(sfile,8,ALLEGRO_SEEK_SET); // seek to 8
     printf("reading header...\n");
-    for (int ii=0; ii<64; ii++){
-      instrument[CurrentIns][ii]=al_fgetc(sfile); // instrument
-    }
+    al_fread(sfile,&instrument[CurrentIns],64);
     printf("reading envelopes...\n");
     for (int jj=0; jj<8; jj++){
       NextFree=AllocateSequence(jj);
-      instrument[CurrentIns][0x23+jj]=NextFree;
+      instrument[CurrentIns].env[jj]=NextFree;
       for (int kk=0; kk<256; kk++){
         bytable[jj][NextFree][kk]=al_fgetc(sfile); // seqtable
       }
@@ -4156,8 +4156,8 @@ void ClickEvents() {
     // set the envelope ONLY in normal mode
     if (!hexmode) {
     if (mstate.buttons&1 && PIR(0,90,scrW-285,scrH-30,mstate.x,mstate.y)){
-      if (CurrentEnv==6) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][minval(minval(252,(512/valuewidth)+(scrollpos)+scrW-285),((scrollpos*valuewidth)+mstate.x)/valuewidth)]=maxval(minval(127,interpolate(94,scrH-42,0.5)-mstate.y),-128);}
-      else {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][minval(minval(252,(512/valuewidth)+(scrollpos)+scrW-285),((scrollpos*valuewidth)+mstate.x)/valuewidth)]=maxval(minval(255,((scrH-43)-mstate.y)/((scrH-128)/256)),0);}
+      if (CurrentEnv==6) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][minval(minval(252,(512/valuewidth)+(scrollpos)+scrW-285),((scrollpos*valuewidth)+mstate.x)/valuewidth)]=maxval(minval(127,interpolate(94,scrH-42,0.5)-mstate.y),-128);}
+      else {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][minval(minval(252,(512/valuewidth)+(scrollpos)+scrW-285),((scrollpos*valuewidth)+mstate.x)/valuewidth)]=maxval(minval(255,((scrH-43)-mstate.y)/((scrH-128)/256)),0);}
     }
     // line draw tool
     if (PIR(0,90,scrW-285,scrH-30,mstate.x,mstate.y)){
@@ -4168,7 +4168,7 @@ void ClickEvents() {
     if (rightclick) {
       // make line
       for (int ii=(linex1/valuewidth)+scrollpos;ii<minval(253,(mstate.x/valuewidth)+scrollpos);ii++) {
-        bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]=interpolate(maxval(minval(255,(scrH-42)-liney1),0),
+        bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]=interpolate(maxval(minval(255,(scrH-42)-liney1),0),
         maxval(minval(255,(scrH-42)-mstate.y),0),
         ((float)ii-((float)linex1/valuewidth)-(float)scrollpos)/(minval(253,(mstate.x/valuewidth)+scrollpos)-(linex1/valuewidth)-scrollpos));
       }
@@ -4177,16 +4177,16 @@ void ClickEvents() {
     } else {
     for (int ii=0;ii<253;ii++) {
       if (PIR(8+((ii%21)*24),102+((ii/21)*24),15+((ii%21)*24),114+((ii/21)*24),mstate.x,mstate.y)){
-        if (leftpress) bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]+=16;
-        if (rightpress) bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]-=16;}
+        if (leftpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]+=16;
+        if (rightpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]-=16;}
       if (PIR(16+((ii%21)*24),102+((ii/21)*24),32+((ii%21)*24),114+((ii/21)*24),mstate.x,mstate.y)){
-        if (leftpress) bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]+=1;
-        if (rightpress) bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]-=1;}
+        if (leftpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]+=1;
+        if (rightpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]-=1;}
     }
     }
     // change envelopes
     if (leftpress) {
-      if (PIR(528,132,784,144,mstate.x,mstate.y)) {inputvar=(char *)&instrument[CurrentIns][0];inputcurpos=minval((mstate.x-524)/8,strlen(inputvar));maxinputsize=32;inputwhere=2;}
+      if (PIR(528,132,784,144,mstate.x,mstate.y)) {inputvar=instrument[CurrentIns].name;inputcurpos=minval((mstate.x-524)/8,strlen(inputvar));maxinputsize=32;inputwhere=2;}
       if (PIR(24,72,72,84,mstate.x,mstate.y)) {CurrentEnv=0;}
       if (PIR(80,72,128,84,mstate.x,mstate.y)) {CurrentEnv=1;}
       if (PIR(136,72,176,84,mstate.x,mstate.y)) {CurrentEnv=2;}
@@ -4195,92 +4195,92 @@ void ClickEvents() {
       if (PIR(272,72,312,84,mstate.x,mstate.y)) {CurrentEnv=5;}
       if (PIR(320,72,376,84,mstate.x,mstate.y)) {CurrentEnv=6;}
       if (PIR(384,72,408,84,mstate.x,mstate.y)) {CurrentEnv=7;}
-      if (PIR(456,72,463,84,mstate.x,mstate.y)) {instrument[CurrentIns][0x23+CurrentEnv]++;}
-      if (PIR(464,72,471,84,mstate.x,mstate.y)) {instrument[CurrentIns][0x23+CurrentEnv]--;}
-      if (PIR(480,72,496,84,mstate.x,mstate.y)) {instrument[CurrentIns][0x23+CurrentEnv]=AllocateSequence(CurrentEnv);}
+      if (PIR(456,72,463,84,mstate.x,mstate.y)) {instrument[CurrentIns].env[CurrentEnv]++;}
+      if (PIR(464,72,471,84,mstate.x,mstate.y)) {instrument[CurrentIns].env[CurrentEnv]--;}
+      if (PIR(480,72,496,84,mstate.x,mstate.y)) {instrument[CurrentIns].env[CurrentEnv]=AllocateSequence(CurrentEnv);}
       if (PIR(504,72,512,84,mstate.x,mstate.y)) {
         for (int ii=0;ii<254;ii++){
-          bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][ii]=0;
+          bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]=0;
         }
-        bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]=255;
-        bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]=255;}
+        bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]=255;
+        bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255]=255;}
       if (PIR(192,60,199,72,mstate.x,mstate.y)) {CurrentIns++;}
       if (PIR(200,60,207,72,mstate.x,mstate.y)) {CurrentIns--;}
       // the right pane buttons
-      if (PIR(scrW-184,84,scrW-177,96,mstate.x,mstate.y)) {instrument[CurrentIns][0x2b]++;}
-      if (PIR(scrW-176,84,scrW-169,96,mstate.x,mstate.y)) {instrument[CurrentIns][0x2b]--;}
-      if (PIR(scrW-168,84,scrW-161,96,mstate.x,mstate.y)) {instrument[CurrentIns][0x2b]+=12;}
-      if (PIR(scrW-160,84,scrW-153,96,mstate.x,mstate.y)) {instrument[CurrentIns][0x2b]-=12;}
-      if (PIR(0,72,16,84,mstate.x,mstate.y)) {instrument[CurrentIns][0x22]=(instrument[CurrentIns][0x22])^(1<<CurrentEnv);}
+      if (PIR(scrW-184,84,scrW-177,96,mstate.x,mstate.y)) {instrument[CurrentIns].noteOffset++;}
+      if (PIR(scrW-176,84,scrW-169,96,mstate.x,mstate.y)) {instrument[CurrentIns].noteOffset--;}
+      if (PIR(scrW-168,84,scrW-161,96,mstate.x,mstate.y)) {instrument[CurrentIns].noteOffset+=12;}
+      if (PIR(scrW-160,84,scrW-153,96,mstate.x,mstate.y)) {instrument[CurrentIns].noteOffset-=12;}
+      if (PIR(0,72,16,84,mstate.x,mstate.y)) {instrument[CurrentIns].activeEnv=(instrument[CurrentIns].activeEnv)^(1<<CurrentEnv);}
       // bottom thing
-      if (PIR(88,scrH-18,95,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]++;}
-      if (PIR(96,scrH-18,104,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]--;}
-      if (PIR(208,scrH-18,215,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]++;}
-      if (PIR(216,scrH-18,224,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]--;}
-      if (PIR(320,scrH-18,327,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]++;}
-      if (PIR(328,scrH-18,336,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]--;}
+      if (PIR(88,scrH-18,95,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]++;}
+      if (PIR(96,scrH-18,104,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]--;}
+      if (PIR(208,scrH-18,215,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255]++;}
+      if (PIR(216,scrH-18,224,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255]--;}
+      if (PIR(320,scrH-18,327,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253]++;}
+      if (PIR(328,scrH-18,336,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253]--;}
       // the right pane buttons
-      if (PIR(scrW-216,156,scrW-192,168,mstate.x,mstate.y)) {instrument[CurrentIns][0x2e]^=1;} // LOW
-      if (PIR(scrW-184,156,scrW-152,168,mstate.x,mstate.y)) {instrument[CurrentIns][0x2e]^=2;} // HIGH
-      if (PIR(scrW-144,156,scrW-112,168,mstate.x,mstate.y)) {instrument[CurrentIns][0x2e]^=4;} // BAND
-      if (PIR(scrW-272,180,scrW-248,192,mstate.x,mstate.y)) {instrument[CurrentIns][0x2e]^=8;} // pcm flag
-      if (PIR(scrW-272,252,scrW-256,264,mstate.x,mstate.y)) {instrument[CurrentIns][0x2e]^=16;} // rm flag
-      if (PIR(scrW-272,264,scrW-256,276,mstate.x,mstate.y)) {instrument[CurrentIns][0x3e]^=32;} // sync flag
-      if (PIR(scrW-272,288,scrW-208,300,mstate.x,mstate.y)) {instrument[CurrentIns][0x3e]^=1;} // reset osc flag
+      if (PIR(scrW-216,156,scrW-192,168,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=1;} // LOW
+      if (PIR(scrW-184,156,scrW-152,168,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=2;} // HIGH
+      if (PIR(scrW-144,156,scrW-112,168,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=4;} // BAND
+      if (PIR(scrW-272,180,scrW-248,192,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=8;} // pcm flag
+      if (PIR(scrW-272,252,scrW-256,264,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=16;} // rm flag
+      if (PIR(scrW-272,264,scrW-256,276,mstate.x,mstate.y)) {instrument[CurrentIns].flags^=32;} // sync flag
+      if (PIR(scrW-272,288,scrW-208,300,mstate.x,mstate.y)) {instrument[CurrentIns].flags^=1;} // reset osc flag
       // not this one
       if (PIR(488,60,512,72,mstate.x,mstate.y)) {hexmode=!hexmode;}
       // but yes these ones
-      if (PIR(scrW-200,180,scrW-193,191,mstate.x,mstate.y)){instrument[CurrentIns][0x2e]^=128;} 
-      if (PIR(scrW-192,180,scrW-185,191,mstate.x,mstate.y)){instrument[CurrentIns][0x37]+=16;}
-      if (PIR(scrW-184,180,scrW-177,191,mstate.x,mstate.y)){instrument[CurrentIns][0x37]++;}
-      if (PIR(scrW-176,180,scrW-169,191,mstate.x,mstate.y)){instrument[CurrentIns][0x38]+=16;}
-      if (PIR(scrW-168,180,scrW-160,191,mstate.x,mstate.y)){instrument[CurrentIns][0x38]++;}
-      if (PIR(scrW-88,180,scrW-81,191,mstate.x,mstate.y)){instrument[CurrentIns][0x32]+=16;}
-      if (PIR(scrW-80,180,scrW-73,191,mstate.x,mstate.y)){instrument[CurrentIns][0x32]++;}
-      if (PIR(scrW-72,180,scrW-63,191,mstate.x,mstate.y)){instrument[CurrentIns][0x33]+=16;}
-      if (PIR(scrW-64,180,scrW-56,191,mstate.x,mstate.y)){instrument[CurrentIns][0x33]++;}
+      if (PIR(scrW-200,180,scrW-193,191,mstate.x,mstate.y)){instrument[CurrentIns].DFM^=128;} 
+      if (PIR(scrW-192,180,scrW-185,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]+=16;}
+      if (PIR(scrW-184,180,scrW-177,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]++;}
+      if (PIR(scrW-176,180,scrW-169,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]+=16;}
+      if (PIR(scrW-168,180,scrW-160,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]++;}
+      if (PIR(scrW-88,180,scrW-81,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=16;}
+      if (PIR(scrW-80,180,scrW-73,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen++;}
+      if (PIR(scrW-72,180,scrW-63,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=4096;}
+      if (PIR(scrW-64,180,scrW-56,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=256;}
 
-      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns][0x34]-=16;}
-      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns][0x34]--;}
-      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns][0x35]-=16;}
-      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)){instrument[CurrentIns][0x35]--;}
+      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=16;}
+      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH--;}
+      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=4096;}
+      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=256;}
 
-      if (PIR(scrW-(800-624),252,scrW-(800-631),264,mstate.x,mstate.y)){instrument[CurrentIns][0x2f]++;}
-      if (PIR(scrW-(800-632),252,scrW-(800-640),264,mstate.x,mstate.y)){instrument[CurrentIns][0x2f]--;}
+      if (PIR(scrW-(800-624),252,scrW-(800-631),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO++;}
+      if (PIR(scrW-(800-632),252,scrW-(800-640),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO--;}
 
-      if (PIR(scrW-(800-600),324,scrW-(800-607),336,mstate.x,mstate.y)){instrument[CurrentIns][0x3e]+=64;}
-      if (PIR(scrW-(800-608),324,scrW-(800-616),336,mstate.x,mstate.y)){instrument[CurrentIns][0x3e]-=64;}
+      if (PIR(scrW-(800-600),324,scrW-(800-607),336,mstate.x,mstate.y)){instrument[CurrentIns].flags+=64;}
+      if (PIR(scrW-(800-608),324,scrW-(800-616),336,mstate.x,mstate.y)){instrument[CurrentIns].flags-=64;}
     }
     if (rightpress) {
-      if (PIR(scrW-(800-600),180,scrW-(800-607),191,mstate.x,mstate.y)){instrument[CurrentIns][0x2e]^=128;}
-      if (PIR(scrW-(800-608),180,scrW-(800-615),191,mstate.x,mstate.y)){instrument[CurrentIns][0x37]-=16;}
-      if (PIR(scrW-(800-616),180,scrW-(800-623),191,mstate.x,mstate.y)){instrument[CurrentIns][0x37]--;}
-      if (PIR(scrW-(800-624),180,scrW-(800-631),191,mstate.x,mstate.y)){instrument[CurrentIns][0x38]-=16;}
-      if (PIR(scrW-(800-632),180,scrW-(800-640),191,mstate.x,mstate.y)){instrument[CurrentIns][0x38]--;}
-      if (PIR(scrW-(800-712),180,scrW-(800-719),191,mstate.x,mstate.y)){instrument[CurrentIns][0x32]-=16;}
-      if (PIR(scrW-(800-720),180,scrW-(800-727),191,mstate.x,mstate.y)){instrument[CurrentIns][0x32]--;}
-      if (PIR(scrW-(800-728),180,scrW-(800-735),191,mstate.x,mstate.y)){instrument[CurrentIns][0x33]-=16;}
-      if (PIR(scrW-(800-736),180,scrW-(800-744),191,mstate.x,mstate.y)){instrument[CurrentIns][0x33]--;}
-      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns][0x34]+=16;}
-      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns][0x34]++;}
-      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns][0x35]+=16;}
-      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)){instrument[CurrentIns][0x35]++;}
+      if (PIR(scrW-(800-600),180,scrW-(800-607),191,mstate.x,mstate.y)){instrument[CurrentIns].DFM^=128;}
+      if (PIR(scrW-(800-608),180,scrW-(800-615),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]-=16;}
+      if (PIR(scrW-(800-616),180,scrW-(800-623),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]--;}
+      if (PIR(scrW-(800-624),180,scrW-(800-631),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]-=16;}
+      if (PIR(scrW-(800-632),180,scrW-(800-640),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]--;}
+      if (PIR(scrW-(800-712),180,scrW-(800-719),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=16;}
+      if (PIR(scrW-(800-720),180,scrW-(800-727),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen--;}
+      if (PIR(scrW-(800-728),180,scrW-(800-735),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=4096;}
+      if (PIR(scrW-(800-736),180,scrW-(800-744),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=256;}
+      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=16;}
+      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH++;}
+      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=4096;}
+      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=256;}
     }
     if (leftclick) {
       if (PIR(0,scrH-18,8,scrH-6,mstate.x,mstate.y)) {scrollpos--; if(scrollpos<0){scrollpos=0;};}
       if (PIR(500,scrH-18,512,scrH-6,mstate.x,mstate.y)) {scrollpos++; if(scrollpos>124){scrollpos=124;};}
       // bottom thing
-      if (PIR(72,scrH-18,79,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]++;}
-      if (PIR(80,scrH-18,87,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][254]--;}
-      if (PIR(192,scrH-18,199,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]++;}
-      if (PIR(200,scrH-18,207,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][255]--;}
-      if (PIR(304,scrH-18,311,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]++;}
-      if (PIR(312,scrH-18,319,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns][0x23+CurrentEnv]][253]--;}
+      if (PIR(72,scrH-18,79,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]++;}
+      if (PIR(80,scrH-18,87,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]--;}
+      if (PIR(192,scrH-18,199,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255]++;}
+      if (PIR(200,scrH-18,207,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][255]--;}
+      if (PIR(304,scrH-18,311,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253]++;}
+      if (PIR(312,scrH-18,319,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][253]--;}
       // other stuff
       if (PIR(240,60,272,71,mstate.x,mstate.y)) {SaveInstrument();}
       if (PIR(280,60,312,71,mstate.x,mstate.y)) {LoadInstrument();}
-      if (PIR(scrW-(800-608),252,scrW-(800-615),264,mstate.x,mstate.y)){instrument[CurrentIns][0x2f]++;}
-      if (PIR(scrW-(800-616),252,scrW-(800-623),264,mstate.x,mstate.y)){instrument[CurrentIns][0x2f]--;}
+      if (PIR(scrW-(800-608),252,scrW-(800-615),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO++;}
+      if (PIR(scrW-(800-616),252,scrW-(800-623),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO--;}
     }
 
   }
@@ -4652,113 +4652,9 @@ void FastTracker() {
   if(kbpressed[ALLEGRO_KEY_F]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+15;drawpatterns(true);}
   }
 }
-void InstrumentTest(int testnote,int testchan){
-  Mvol[testchan]=127;
-  curnote[testchan]=mscale(testnote);
-  Mins[testchan]=CurrentIns;
-      // is it a pcm instrument? (pcm check)
-      if (instrument[Mins[testchan]][0x2e]&8){
-        // set channel mode to PCM
-        cmode[testchan]=1;
-        // set respective PCM pointers
-        cpcmpos[testchan]=instrument[Mins[testchan]][0x38]+(instrument[Mins[testchan]][0x37]<<8)+((instrument[Mins[testchan]][0x2e]&128)<<9);
-        cbound[testchan]=instrument[Mins[testchan]][0x38]+(instrument[Mins[testchan]][0x37]<<8)+((instrument[Mins[testchan]][0x2e]&128)<<9)+(instrument[Mins[testchan]][0x33]+(instrument[Mins[testchan]][0x32]<<8));
-        cpcmmult[testchan]=127;
-      } else {cmode[testchan]=0;}
-      // is ringmod on? (ringmod check)
-      if (instrument[Mins[testchan]][0x2e]&16){
-        // set ring modulation to on
-        crm[testchan]=1;
-        crmduty[testchan]=63;
-        crmfreq[testchan]=mnoteperiod(mscale(testnote)+1+((instrument[Mins[testchan]][0x2f]<0x40)?(instrument[Mins[testchan]][0x2f]):(64-instrument[Mins[testchan]][0x2f])),testchan);
-        crrmstep[testchan]=0;
-        // is sync on?
-        if (instrument[Mins[testchan]][0x3e]&32) {crm[testchan]=2;}
-      } else {crm[testchan]=0;}
-      // is oscreset on? (osc reset check)
-      if (instrument[Mins[testchan]][0x3e]&1) {crstep[testchan]=0;} // osc reset
-      // volume (if turned on and effect isn't S77, or effect is S78)
-      if (((instrument[Mins[testchan]][0x22]&1) || ((nfxid[testchan]==19) && (nfxvl[testchan]==0x78))) && !((nfxid[testchan]==19) && (nfxvl[testchan]==0x77))){
-      cvol[testchan]=((bytable[0][instrument[Mins[testchan]][0x23]][0]/2)*(Mvol[testchan]))/127;
-      EnvelopesRunning[testchan][0]=true;}
-      else {EnvelopesRunning[testchan][0]=false;cvol[testchan]=Mvol[testchan];}
-      // duty
-      if ((instrument[Mins[testchan]][0x22]&8)>>3){
-      cduty[testchan]=bytable[3][instrument[Mins[testchan]][0x26]][0]/2;
-      EnvelopesRunning[testchan][3]=true;}
-      else {EnvelopesRunning[testchan][3]=false;cduty[testchan]=63;}
-      // shape
-      if ((instrument[Mins[testchan]][0x22]&16)>>4){
-      cshape[testchan]=bytable[4][instrument[Mins[testchan]][0x27]][0]/32;
-      EnvelopesRunning[testchan][4]=true;}
-      else {EnvelopesRunning[testchan][4]=false;cshape[testchan]=0;}
-      // cutoff
-      if ((instrument[Mins[testchan]][0x22]&2)>>1){
-      if (nfxid[testchan]!=15) {
-      coff[testchan]=bytable[1][instrument[Mins[testchan]][0x24]][0]*((int)(512*((((255-((float)instrument[Mins[testchan]][0x34]))*256)+(255-((float)instrument[Mins[testchan]][0x34])))/65536)));cfmode[testchan]=instrument[Mins[testchan]][0x2e]&7;
-      } else {
-      coff[testchan]=bytable[1][instrument[Mins[testchan]][0x24]][(int)((float)bytable[1][instrument[Mins[testchan]][0x24]][253]*((float)nfxvl[testchan]/256))]*((int)(512*((((255-((float)instrument[Mins[testchan]][0x34]))*256)+(255-((float)instrument[Mins[testchan]][0x34])))/65536)));
-      cfmode[testchan]=instrument[Mins[testchan]][0x2e]&7;
-      //coff[testchan]=bytable[1][instrument[Mins[testchan]][0x24]][(int)((float)bytable[1][instrument[Mins[testchan]][0x24]][253]*((float)nfxvl[testchan]/256))]*512;cfmode[testchan]=instrument[Mins[testchan]][0x2e]&7;
-      }
-      EnvelopesRunning[testchan][1]=true;}
-      else {EnvelopesRunning[testchan][1]=false;coff[testchan]=262144;cfmode[testchan]=fNone;}
-      // resonance
-      if ((instrument[Mins[testchan]][0x22]&4)>>2){
-      creso[testchan]=bytable[2][instrument[Mins[testchan]][0x25]][0];
-      EnvelopesRunning[testchan][2]=true;}
-      else {EnvelopesRunning[testchan][2]=false;creso[testchan]=48;finepitch[testchan]=0;}
-      // panning
-      if ((instrument[Mins[testchan]][0x22]&128)>>7){
-      cpan[testchan]=bytable[7][instrument[Mins[testchan]][0x2a]][0]-128;
-      EnvelopesRunning[testchan][7]=true;}
-      else {EnvelopesRunning[testchan][7]=false;
-        cpan[testchan]=chanpan[testchan];
-      }
-      // finepitch
-      if ((instrument[Mins[testchan]][0x22]&64)>>6){
-      finepitch[testchan]=(char)bytable[6][instrument[Mins[testchan]][0x29]][0];
-      cfreq[testchan]=ProcessPitch(testchan,0);
-      EnvelopesRunning[testchan][6]=true;}
-      else {EnvelopesRunning[testchan][6]=false;finepitch[testchan]=0;}
-      // pitch
-      if ((instrument[Mins[testchan]][0x22]&32)>>5){
-      // output (pitch logic)
-      if (bytable[5][instrument[Mins[testchan]][0x28]][0]<0x40) {
-      cfreq[testchan]=mnoteperiod(testnote+(bytable[5][instrument[Mins[testchan]][0x28]][0])+(((unsigned char)instrument[Mins[testchan]][0x2b])-47),testchan);
-      } else {
-      if (bytable[5][instrument[Mins[testchan]][0x28]][0]<0x80) {
-      cfreq[testchan]=mnoteperiod(testnote-((bytable[5][instrument[Mins[testchan]][0x28]][0]-64))+(((unsigned char)instrument[Mins[testchan]][0x2b])-47),testchan);
-      } else {
-      cfreq[testchan]=mnoteperiod(bytable[5][instrument[Mins[testchan]][0x28]][0]-128,testchan);
-      }}
-      EnvelopesRunning[testchan][5]=true;}
-      else {EnvelopesRunning[testchan][5]=false;}
-      inspos[testchan][0]=-1; // sets the instrument position to 0
-      inspos[testchan][1]=-1; // sets the instrument position to 0
-      inspos[testchan][2]=-1; // sets the instrument position to 0
-      inspos[testchan][3]=-1; // sets the instrument position to 0
-      inspos[testchan][4]=-1; // sets the instrument position to 0
-      inspos[testchan][5]=-1; // sets the instrument position to 0
-      inspos[testchan][6]=-1; // sets the instrument position to 0
-      inspos[testchan][7]=-1; // sets the instrument position to 0
-      // set In-Release-Point (IRP) flags to false
-      IRP[testchan][0]=0;
-      IRP[testchan][1]=0;
-      IRP[testchan][2]=0;
-      IRP[testchan][3]=0;
-      IRP[testchan][4]=0;
-      IRP[testchan][5]=0;
-      IRP[testchan][6]=0;
-      IRP[testchan][7]=0;
-      // note is not released yet
-      released[testchan]=false;
-      // reset vibrato position
-      curvibpos[testchan]=0;
-      // set current note
-      if (!((instrument[Mins[testchan]][0x22]&32)>>5) && !((instrument[Mins[testchan]][0x22]&64)>>6)) {
-      cfreq[testchan]=mnoteperiod(((testnote%16)+((testnote>>4)*12))+(((unsigned char)instrument[Mins[testchan]][0x2b])-48),testchan); // sets the frequency to match the current note and applies instrument transposition
-      }
+void InstrumentTest(int testnote, int testchan) {
+  // code scrapped.
+  // this will be fixed soon.
 }
 void ModPlug() {
   // ModPlug Tracker-OpenMPT-like pattern editor
@@ -5415,10 +5311,10 @@ al_set_new_window_title("soundtracker");
   printf("cleaning up stuff\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
     patlength[nonsense]=64;
-    instrument[nonsense][0x2b]=48;
+    instrument[nonsense].noteOffset=48;
   }
   for (int nonsense2=0;nonsense2<256;nonsense2++) {
-    instrument[nonsense2][0x2b]=48;
+    instrument[nonsense2].noteOffset=48;
   }
    // init colors
    ALLEGRO_COLOR colors[256]={};

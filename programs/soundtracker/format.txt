@@ -51,7 +51,7 @@ FuncSize is a 32-bit size value.
 
 NOTE: Version must have MSB set. otherwise treated as legacy instrument.
 
-3. Instruments, legacy (pre-git) format, Ins*64
+3. Instruments, legacy (pre-r144) format, Ins*64
 ---- -0- -1- -2- -3- -4- -5- -6- -7- -8- -9- -A- -B- -C- -D- -E- -F-
     ┌───────────────────────────────────────────────────────────────┐
   00│ instrument name, 32 bytes, padded with 0x00s                  │
