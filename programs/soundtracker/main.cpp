@@ -498,7 +498,7 @@ enum colorindexes {
   colSEL1, colSEL2, colSEL3, colPEAK, colDEFA, colDARK, colLOOP, colRELE, colCPOS, colUPPP, colDOWN, colABSO,
   colCRHL, colSELE, colNOVL
 };
-ALLEGRO_COLOR getconfigcol(int colid){
+ALLEGRO_COLOR getconfigcol(int colid) {
   return al_map_rgb(settings::colorR[colid],settings::colorG[colid],settings::colorB[colid]);
 }
 void Playback();
@@ -578,11 +578,11 @@ bool midion[32]={0,0,0,0,0,0,0,0,
        0,0,0,0,0,0,0,0,
        0,0,0,0,0,0,0,0};
        #ifdef JACK
-int nothing (jack_nframes_t nframes, void *arg){
+int nothing (jack_nframes_t nframes, void *arg) {
 #else
   static void nothing(void*  userdata,
   Uint8* stream,
-  int    len){
+  int    len) {
 #endif
   rt1=al_get_time();
 #ifdef JACK
@@ -609,13 +609,13 @@ int nothing (jack_nframes_t nframes, void *arg){
       if (kb[ALLEGRO_KEY_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {ASC::interval=16384;}
       fakeASC::interval=ASC::interval;
       memset(abuf,0,totalrender*2*sizeof(float));
-      for(cycle=0;cycle<(int)totalrender;cycle++){
-        for(cycle1=0;cycle1<20;cycle1++){
+      for (cycle=0;cycle<(int)totalrender;cycle++) {
+        for (cycle1=0;cycle1<20;cycle1++) {
 #ifndef VBLANK    
                             ASC::currentclock--;
-                            if(ASC::currentclock<1) {
+                            if (ASC::currentclock<1) {
 #else
-                             if(doframe) {
+                             if (doframe) {
 #endif
           
                                     doframe=0;
@@ -630,13 +630,13 @@ int nothing (jack_nframes_t nframes, void *arg){
           }
             double partialtime=al_get_time();
             ASC::currentclock=ASC::interval;
-            for(int ii=0;ii<32;ii++) {
+            for (int ii=0;ii<32;ii++) {
               cshapeprev[ii]=cshape[ii];
             }
-            if(playmode>0){
+            if (playmode>0) {
               Playback();
 #ifdef JACK
-              for (int iiiii=0;iiiii<32;iiiii++){
+              for (int iiiii=0;iiiii<32;iiiii++) {
               if (reservedevent[iiiii] && midion[iiiii]) {
                 reservedevent[iiiii]=0;
                 midibuffer = jack_midi_event_reserve(port_buf, 0, 3);
@@ -656,8 +656,8 @@ int nothing (jack_nframes_t nframes, void *arg){
               MuteAllChannels();
             }
             sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
-            for(int updateindex1=0;updateindex1<32;updateindex1++) {
-              if(muted[updateindex1]) { cvol[updateindex1]=0;
+            for (int updateindex1=0;updateindex1<32;updateindex1++) {
+              if (muted[updateindex1]) { cvol[updateindex1]=0;
                                                     if (updateindex1<(8*soundchips)) {
                                                       chip[updateindex1>>3].chan[updateindex1&7].vol=0;
                                                     }
@@ -671,11 +671,11 @@ int nothing (jack_nframes_t nframes, void *arg){
             LastUsedChannel[2]=LastUsedChannel[1];
             LastUsedChannel[1]=LastUsedChannel[0];
             LastUsedChannel[0]=0;
-            for(int updateindex2=32;updateindex2>0;updateindex2--) {
-              if(cvol[updateindex2-1]!=0) { LastUsedChannel[0]=updateindex2; break; }
+            for (int updateindex2=32;updateindex2>0;updateindex2--) {
+              if (cvol[updateindex2-1]!=0) { LastUsedChannel[0]=updateindex2; break; }
             }
             LastUsedChannelMax=0;
-            for(int ii=0;ii<8;ii++) {
+            for (int ii=0;ii<8;ii++) {
               LastUsedChannelMax=(LastUsedChannelMax<LastUsedChannel[ii])?(LastUsedChannel[ii]):(LastUsedChannelMax);
             }
             if (ntsc) {
@@ -711,12 +711,12 @@ int nothing (jack_nframes_t nframes, void *arg){
        }
       }
       audioframecounter++;
-      for(int ii=0;ii<nframes;ii++){
+      for (int ii=0;ii<nframes;ii++) {
       oscbuf[ii*128/nframes]=abuf[ii*2];
       oscbuf2[ii*128/nframes]=abuf[(ii*2)+1];
       }
 #define dointerpolate
-  for (int iii=0; iii<nframes; iii++){
+  for (int iii=0; iii<nframes; iii++) {
 #ifdef dointerpolate
   outl[
 #ifdef JACK
@@ -841,7 +841,7 @@ unsigned short bswapu16(unsigned short x) {
   return ((x&0xff)<<8)|((x&0xff00)>>8);
 }
 
-ALLEGRO_COLOR getucol(unsigned char thecol){
+ALLEGRO_COLOR getucol(unsigned char thecol) {
   if (thecol<16) {
     if (thecol==8) {return (al_map_rgb(128,128,128));} else {
       if (thecol<8) {al_map_rgb((thecol&1)*192,((thecol&2)>>1)*192,((thecol&3)>>2)*192);}
@@ -856,8 +856,8 @@ ALLEGRO_COLOR getucol(unsigned char thecol){
   }}
   return al_map_rgb(255,255,255);
 }
-ALLEGRO_COLOR GetFXColor(unsigned char fxval){
-  switch (fxval){
+ALLEGRO_COLOR GetFXColor(unsigned char fxval) {
+  switch (fxval) {
   case 1: case 20: return getconfigcol(colFXTM); break; // speed control
   case 2: case 3: case 22: case 23: return getconfigcol(colFXSN); break; // song control
   case 4: case 13: case 14: case 18: return getconfigcol(colFXVL); break; // volume control
@@ -868,22 +868,22 @@ ALLEGRO_COLOR GetFXColor(unsigned char fxval){
   default: return getconfigcol(colFXUK); break; // unknown commands
   }
 }
-int getpatlen(int thelen){
+int getpatlen(int thelen) {
   if (patlength[thelen]==0) {return 256;}
   return patlength[thelen];
 }
 
-float interpolate(float p1, float p2, float amt){
+float interpolate(float p1, float p2, float amt) {
   return p1+((p2-p1)*amt);
 }
-float lengthdir_x(float len,float dir){
+float lengthdir_x(float len,float dir) {
   return len*cos(dir*(ALLEGRO_PI/180));
 }
-float lengthdir_y(float len,float dir){
+float lengthdir_y(float len,float dir) {
   return len*sin(dir*(ALLEGRO_PI/180));
 }
 const char* gethnibble(int nval) {
-  switch(nval>>4){
+  switch(nval>>4) {
     case 0: return "0"; break;
     case 1: return "1"; break;
     case 2: return "2"; break;
@@ -904,7 +904,7 @@ const char* gethnibble(int nval) {
   return "?";
 }
 const char* getlnibble(int nval) {
-  switch(nval%16){
+  switch(nval%16) {
     case 0: return "0"; break;
     case 1: return "1"; break;
     case 2: return "2"; break;
@@ -924,8 +924,8 @@ const char* getlnibble(int nval) {
   }
   return "?";
 }
-const char* getnote(int nval){
-  switch(nval%16){
+const char* getnote(int nval) {
+  switch(nval%16) {
     case 0: return ".."; break;
     case 1: return "C-"; break;
     case 2: return "C#"; break;
@@ -945,8 +945,8 @@ const char* getnote(int nval){
   }
   return "?";
 }
-const char* getnotetransp(int nval){
-  switch(nval%12){
+const char* getnotetransp(int nval) {
+  switch(nval%12) {
     case 0: return "C-"; break;
     case 1: return "C#"; break;
     case 2: return "D-"; break;
@@ -962,8 +962,8 @@ const char* getnotetransp(int nval){
   }
   return "?-";
 }
-const char* getoctavetransp(int nval){
-  switch(nval/12){
+const char* getoctavetransp(int nval) {
+  switch(nval/12) {
     case 0: return "0"; break;
     case 1: return "1"; break;
     case 2: return "2"; break;
@@ -983,16 +983,16 @@ const char* getoctavetransp(int nval){
   }
   return "?";
 }
-const char* getoctave(int nval){
-  if((nval%16)==0){return ".";}
-  if(nval>12){
-    switch(nval%16){
+const char* getoctave(int nval) {
+  if ((nval%16)==0) {return ".";}
+  if (nval>12) {
+    switch(nval%16) {
       case 13: return "="; break;
       case 14: return "~"; break;
       case 15: return "^"; break;
     }
   }
-  switch(nval/16){
+  switch(nval/16) {
     case 0: return "0"; break;
     case 1: return "1"; break;
     case 2: return "2"; break;
@@ -1012,19 +1012,19 @@ const char* getoctave(int nval){
   }
   return "?";
 }
-const char* getinsL(int nval){
-  if(nval==0){return ".";}
+const char* getinsL(int nval) {
+  if (nval==0) {return ".";}
   else{return getlnibble(nval);}
 }
-const char* getinsH(int nval){
-  if(nval==0){return ".";}
+const char* getinsH(int nval) {
+  if (nval==0) {return ".";}
   else{return gethnibble(nval);}
 }
-const char* getVFX(int fxval){
-  if(fxval==0){return ".";} // 0
-  if(fxval<128 && fxval>63){return "v";} // 64-127
-  if(fxval<193 && fxval>127){return "p";} // 128-192
-  switch((fxval-1)/10){
+const char* getVFX(int fxval) {
+  if (fxval==0) {return ".";} // 0
+  if (fxval<128 && fxval>63) {return "v";} // 64-127
+  if (fxval<193 && fxval>127) {return "p";} // 128-192
+  switch((fxval-1)/10) {
   case 0: return "a"; break; // 1-10
   case 1: return "b"; break; // 11-20
   case 2: return "c"; break; // 21-30
@@ -1032,18 +1032,18 @@ const char* getVFX(int fxval){
   case 4: return "e"; break; // 41-50
   case 5: return "f"; break; // 51-60
   }
-  switch((fxval-193)/10){
+  switch((fxval-193)/10) {
   case 0: return "g"; break; // 193-202
   case 1: return "h"; break; // 203-212
   case 2: return "o"; break; // 213-222
   }
   return "?";
 }
-unsigned char getVFXval(int nval){
-  if(nval==0){return 255;} // 0
-  if(nval<128 && nval>63){return nval-64;} // 64-127
-  if(nval<193 && nval>127){return nval-128;} // 128-192
-  switch((nval-1)/10){
+unsigned char getVFXval(int nval) {
+  if (nval==0) {return 255;} // 0
+  if (nval<128 && nval>63) {return nval-64;} // 64-127
+  if (nval<193 && nval>127) {return nval-128;} // 128-192
+  switch((nval-1)/10) {
   case 0: return nval-1; break; // 1-10
   case 1: return nval-11; break; // 11-20
   case 2: return nval-21; break; // 21-30
@@ -1051,23 +1051,23 @@ unsigned char getVFXval(int nval){
   case 4: return nval-41; break; // 41-50
   case 5: return nval-51; break; // 51-60
   }
-  switch((nval-193)/10){
+  switch((nval-193)/10) {
   case 0: return nval-193; break; // 193-202
   case 1: return nval-203; break; // 203-212
   case 2: return nval-213; break; // 213-222
   }
   return 254;
 }
-const char* getVFXL(int nval){
-  if(nval==0){return ".";}
+const char* getVFXL(int nval) {
+  if (nval==0) {return ".";}
   else{return getlnibble(nval&0x3f);}
 }
-const char* getVFXH(int nval){
-  if(nval==0){return ".";}
+const char* getVFXH(int nval) {
+  if (nval==0) {return ".";}
   else{return gethnibble(nval&0x3f);}
 }
-const char* getFX(int fxval){
-  switch(fxval){
+const char* getFX(int fxval) {
+  switch(fxval) {
   case 0: return "."; break;
   case 1: return "A"; break;
   case 2: return "B"; break;
@@ -1098,8 +1098,8 @@ const char* getFX(int fxval){
   }
   return "?";
 }
-const char* getFX_PT(int fxval){
-  switch(fxval){
+const char* getFX_PT(int fxval) {
+  switch(fxval) {
   case 0: return "."; break;
   case 1: return "F"; break;
   case 2: return "B"; break;
@@ -1159,7 +1159,7 @@ int msnoteperiod(float note, int chan) {
   return ((297500+(songdf*100))/(440*(pow(2.0f,(float)(((float)note-58)/12)))));
 }
 
-int AllocateSequence(int seqid){
+int AllocateSequence(int seqid) {
   bool nonfree[256];
   // finds the next free sequence for seqid
   for (int usedindex=0;usedindex<256;usedindex++) {
@@ -1186,7 +1186,7 @@ int AllocateSequence(int seqid){
   }
   for (int usedindex=0;usedindex<256;usedindex++) {
     // using the previous variables, find the first free envelope
-    if(!nonfree[usedindex]) {return usedindex;}
+    if (!nonfree[usedindex]) {return usedindex;}
   }
   printf("could not allocate sequence! %d\n",seqid); 
   #ifdef SOUNDS
@@ -1194,9 +1194,9 @@ int AllocateSequence(int seqid){
   #endif
   return 0;
 }
-int ProcessPitch(int insnumb, float offset){
+int ProcessPitch(int insnumb, float offset) {
   // output (pitch logic)
-  if(((instrument[Mins[insnumb]].activeEnv&32)>>5)){
+  if (((instrument[Mins[insnumb]].activeEnv&32)>>5)) {
     if (bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]]<0x40) {
     return mnoteperiod(curnote[insnumb]+(bytable[5][instrument[Mins[insnumb]].env[envPitch]][inspos[insnumb][5]])+(((unsigned char)instrument[Mins[insnumb]].noteOffset)-47)+((float)finepitch[insnumb]/64)+offset,insnumb);
     } else {
@@ -1208,10 +1208,10 @@ int ProcessPitch(int insnumb, float offset){
   }
   else {return mnoteperiod(curnote[insnumb]+(((unsigned char)instrument[Mins[insnumb]].noteOffset)-47)+((float)finepitch[insnumb]/64)+offset,insnumb);}
 }
-void Zxx(unsigned char value){
+void Zxx(unsigned char value) {
   // process Zxx effect
-  if (value>0x7f){
-  switch(value){
+  if (value>0x7f) {
+  switch(value) {
     //case 
   }
   }
@@ -1221,12 +1221,12 @@ int FreeChannel() {
   // routine is similar to IT's next free channel routine
   // 1. find first inactive channel
   // failed? 2. find first channel with zero volume
-  for (int ii=0;ii<32;ii++){
+  for (int ii=0;ii<32;ii++) {
     if (cvol[ii]==0) {return ii;}
   }
   // failed? 3. find channel with lowest volume
   int candidate=0;
-  for (int ii=1;ii<32;ii++){
+  for (int ii=1;ii<32;ii++) {
     if (cvol[candidate]>cvol[ii]) {candidate=ii;}
   }
   return candidate;
@@ -1238,12 +1238,12 @@ void NextRow() {
   // increase step counter
   curstep++;
   // did we reach end of pattern?
-  if(curstep>(getpatlen(patid[curpat])-1)){
+  if (curstep>(getpatlen(patid[curpat])-1)) {
        // set current step to 0 and go to next pattern
        curstep=0; 
        curpat++;
        // reset pattern loop stuff
-       for (int ii=0;ii<32;ii++){
+       for (int ii=0;ii<32;ii++) {
          plcount[ii]=0;
          plpos[ii]=0;
        }
@@ -1261,7 +1261,7 @@ void NextRow() {
         curstep=getpatlen(patid[curpat-1])-1; 
         curpat--;
         // reset pattern loop stuff
-        for (int ii=0;ii<32;ii++){
+        for (int ii=0;ii<32;ii++) {
           plcount[ii]=0;
           plpos[ii]=0;
         }
@@ -1281,32 +1281,32 @@ void NextRow() {
   unsigned char SEMINOTE;
   finedelay=0; // S6x value
   // run playback routine over 32 channels
-  for(int loop=0;loop<32;loop++) {
+  for (int loop=0;loop<32;loop++) {
     // get next row variables
     nnote=pat[patid[curpat]][curstep][loop][0]; // finds out next note
     if (curstep!=(getpatlen(patid[curpat])-1)) {
     nnnote=pat[patid[curpat]][curstep+1][loop][0]; // finds out next note past next note
     } else {nnnote=0;}
-    if ((nnnote%16)!=0 && (nnnote%16)!=15 && (nnnote%16)!=14 && (nnnote%16)!=13 && ((instrument[Mins[loop]].flags>>6)!=0)){
+    if ((nnnote%16)!=0 && (nnnote%16)!=15 && (nnnote%16)!=14 && (nnnote%16)!=13 && ((instrument[Mins[loop]].flags>>6)!=0)) {
       cutcount[loop]=speed-(instrument[Mins[loop]].flags>>6);
     }
     ninst=pat[patid[curpat]][curstep][loop][1]; // finds out next instrument
     nvolu[loop]=pat[patid[curpat]][curstep][loop][2]; // finds out next volume value
     // is there a note and instrument, but no volume value? assume v3f
-    if ((nnote%16)!=0 && (nnote%16)!=15 && (nnote%16)!=14 && (nnote%16)!=13 && nvolu[loop]==0 && ninst!=0){nvolu[loop]=0x7f;}
+    if ((nnote%16)!=0 && (nnote%16)!=15 && (nnote%16)!=14 && (nnote%16)!=13 && nvolu[loop]==0 && ninst!=0) {nvolu[loop]=0x7f;}
     nfxid[loop]=pat[patid[curpat]][curstep][loop][3]; // finds out next effect
     nfxvl[loop]=pat[patid[curpat]][curstep][loop][4]; // finds out next effect value
     // Txx
-    if(nfxid[loop]==20)
+    if (nfxid[loop]==20)
     {if (nfxvl[loop]!=0)
     {if (!tempolock) {tempo=maxval(31,nfxvl[loop]);FPS=(double)tempo/2.5;}
     }}
     // volume value set?
-    if(nvolu[loop]!=0 && nvolu[loop]>63 && nvolu[loop]<128 && !(nfxid[loop]==19 && (nfxvl[loop]>>4)==0x0d)){
+    if (nvolu[loop]!=0 && nvolu[loop]>63 && nvolu[loop]<128 && !(nfxid[loop]==19 && (nfxvl[loop]>>4)==0x0d)) {
       // set note volume
       Mvol[loop]=(nvolu[loop]%64)*2;
       // volume envelope enabled?
-      if (instrument[Mins[loop]].activeEnv&1){
+      if (instrument[Mins[loop]].activeEnv&1) {
       // set current volume to (volume in envelope)*(note volume/127)
       // else set current volume to note volume
       cvol[loop]=((bytable[0][instrument[Mins[loop]].env[envVolume]][inspos[loop][0]]/2)*(Mvol[loop]))/127;
@@ -1314,11 +1314,11 @@ void NextRow() {
       else {EnvelopesRunning[loop][0]=false;cvol[loop]=Mvol[loop];}
     }
     // is there a new instrument? if yes then reset volume
-    if(ninst!=0 && (nnote%16)!=15 && (nnote%16)!=14 && (nnote%16)!=13){
-      if(nvolu[loop]==0){
-        if (EnvelopesRunning[loop][0]){Mvol[loop]=126;} else {cvol[loop]=126;}}
+    if (ninst!=0 && (nnote%16)!=15 && (nnote%16)!=14 && (nnote%16)!=13) {
+      if (nvolu[loop]==0) {
+        if (EnvelopesRunning[loop][0]) {Mvol[loop]=126;} else {cvol[loop]=126;}}
     }
-    if(ninst!=0){
+    if (ninst!=0) {
       Mins[loop]=ninst;
     }
     if ((nnote%16)==15) {
@@ -1333,7 +1333,7 @@ void NextRow() {
     }
     // is there SDx? if yes then don't trigger note
     // is there a new note?
-    if((nnote%16)!=0 && !(nfxid[loop]==19 && (nfxvl[loop]>>4)==0x0d)){
+    if ((nnote%16)!=0 && !(nfxid[loop]==19 && (nfxvl[loop]>>4)==0x0d)) {
       // is new note a release note? set released flag to true and exit if yes
       if ((nnote%16)==13) {released[loop]=true; reservedevent[loop]=1; offinstead[loop]=1; continue;}
       // is new note a NOTE, and effect isn't Gxx/Lxx/gxx?
@@ -1345,11 +1345,11 @@ void NextRow() {
       // this won't happen if note is a release note
       released[loop]=0;
       // is there a new instrument value, along with the new note? if yes then change instrument
-      if(ninst!=0){
+      if (ninst!=0) {
       Mins[loop]=ninst;
       }
       // is there a new volume value, along with the new note?
-      if(nvolu[loop]!=0 && nvolu[loop]>63 && nvolu[loop]<128){
+      if (nvolu[loop]!=0 && nvolu[loop]>63 && nvolu[loop]<128) {
       // set note volume
       Mvol[loop]=(nvolu[loop]%64)*2;
       } else {if ((nnote%16)!=15 && ninst!=0) {Mvol[loop]=126;}} // no volume, assuming v3f if not a note release
@@ -1360,7 +1360,7 @@ void NextRow() {
       // reset all envelope cursors if effect isn't Gxx/Lxx/gxx
       if (nfxid[loop]!=7 && nfxid[loop]!=12 && !(nvolu[loop]>192 && nvolu[loop]<203)) {
       // is it a pcm instrument? (pcm check)
-      if (instrument[Mins[loop]].DFM&8){
+      if (instrument[Mins[loop]].DFM&8) {
         // set channel mode to PCM
         chip[0].chan[loop].flags.pcm=1;
                                 //chip[0].pcmmult[loop]=127;
@@ -1372,7 +1372,7 @@ void NextRow() {
         chip[0].chan[loop].pcmbnd=*(unsigned short*)instrument[Mins[loop]].pcmPos+instrument[Mins[loop]].pcmLen;
       } else {chip[0].chan[loop].flags.pcm=0;}
       // is ringmod on? (ringmod check)
-      if (instrument[Mins[loop]].DFM&16){
+      if (instrument[Mins[loop]].DFM&16) {
         // set ring modulation to on
         crm[loop]=1;
         crmduty[loop]=63;
@@ -1384,22 +1384,22 @@ void NextRow() {
       // is oscreset on? (osc reset check)
       if (instrument[Mins[loop]].flags&1) {crstep[loop]=0;} // osc reset
       // volume (if turned on and effect isn't S77, or effect is S78)
-      if (((instrument[Mins[loop]].activeEnv&1) || ((nfxid[loop]==19) && (nfxvl[loop]==0x78))) && !((nfxid[loop]==19) && (nfxvl[loop]==0x77))){
+      if (((instrument[Mins[loop]].activeEnv&1) || ((nfxid[loop]==19) && (nfxvl[loop]==0x78))) && !((nfxid[loop]==19) && (nfxvl[loop]==0x77))) {
       cvol[loop]=((bytable[0][instrument[Mins[loop]].env[envVolume]][0]/2)*(Mvol[loop]))/127;
       EnvelopesRunning[loop][0]=true;}
       else {EnvelopesRunning[loop][0]=false;cvol[loop]=Mvol[loop];}
       // duty
-      if ((instrument[Mins[loop]].activeEnv&8)>>3){
+      if ((instrument[Mins[loop]].activeEnv&8)>>3) {
       cduty[loop]=bytable[3][instrument[Mins[loop]].env[envDuty]][0]/2;
       EnvelopesRunning[loop][3]=true;}
       else {EnvelopesRunning[loop][3]=false;cduty[loop]=63;}
       // shape
-      if ((instrument[Mins[loop]].activeEnv&16)>>4){
+      if ((instrument[Mins[loop]].activeEnv&16)>>4) {
       cshape[loop]=bytable[4][instrument[Mins[loop]].env[envShape]][0]/32;
       EnvelopesRunning[loop][4]=true;}
       else {EnvelopesRunning[loop][4]=false;cshape[loop]=0;}
       // cutoff
-      if ((instrument[Mins[loop]].activeEnv&2)>>1){ 
+      if ((instrument[Mins[loop]].activeEnv&2)>>1) { 
       if (nfxid[loop]!=15) {
       coff[loop]=(bytable[1][instrument[Mins[loop]].env[envCutoff]][0]*(0xffff-instrument[Mins[loop]].filterH))>>7;cfmode[loop]=instrument[Mins[loop]].DFM&7;
       } else {
@@ -1410,25 +1410,25 @@ void NextRow() {
       EnvelopesRunning[loop][1]=true;}
       else {EnvelopesRunning[loop][1]=false;coff[loop]=262144;cfmode[loop]=fNone;}
       // resonance
-      if ((instrument[Mins[loop]].activeEnv&4)>>2){
+      if ((instrument[Mins[loop]].activeEnv&4)>>2) {
       creso[loop]=bytable[2][instrument[Mins[loop]].env[envReson]][0];
       EnvelopesRunning[loop][2]=true;}
       else {EnvelopesRunning[loop][2]=false;creso[loop]=48;finepitch[loop]=0;}
       // panning
-      if ((instrument[Mins[loop]].activeEnv&128)>>7){
+      if ((instrument[Mins[loop]].activeEnv&128)>>7) {
       cpan[loop]=bytable[7][instrument[Mins[loop]].env[envPan]][0]-128;
       EnvelopesRunning[loop][7]=true;}
       else {EnvelopesRunning[loop][7]=false;
         cpan[loop]=chanpan[loop];
       }
       // finepitch
-      if ((instrument[Mins[loop]].activeEnv&64)>>6){
+      if ((instrument[Mins[loop]].activeEnv&64)>>6) {
       finepitch[loop]=(char)bytable[6][instrument[Mins[loop]].env[envHiPitch]][0];
       cfreq[loop]=ProcessPitch(loop,0);
       EnvelopesRunning[loop][6]=true;}
       else {EnvelopesRunning[loop][6]=false;finepitch[loop]=0;}
       // pitch
-      if ((instrument[Mins[loop]].activeEnv&32)>>5){
+      if ((instrument[Mins[loop]].activeEnv&32)>>5) {
       // output (pitch logic)
       if (bytable[5][instrument[Mins[loop]].env[envPitch]][0]<0x40) {
       cfreq[loop]=mnoteperiod(curnote[loop]+(bytable[5][instrument[Mins[loop]].env[envPitch]][0])+(((unsigned char)instrument[Mins[loop]].noteOffset)-47),loop);
@@ -1501,13 +1501,13 @@ void NextRow() {
     }
   }
   // effect checks
-  for (int looper=0;looper<32;looper++){
+  for (int looper=0;looper<32;looper++) {
   // Axx
-  if(nfxid[looper]==1)
+  if (nfxid[looper]==1)
     {if (nfxvl[looper]!=0 && !speedlock)
     {speed=nfxvl[looper];}}
   // Dfx - Dxf - Kfx - Kxf - Lfx - Lxf
-  if(nfxid[looper]==4 || nfxid[looper]==11 || nfxid[looper]==12)
+  if (nfxid[looper]==4 || nfxid[looper]==11 || nfxid[looper]==12)
     {if (nfxvl[looper]!=0) {slidememory[looper]=nfxvl[looper];}
     if (EnvelopesRunning[looper][0]) {
     if (slidememory[looper]>0xf0) {Mvol[looper]-=((slidememory[looper]%16)*2);
@@ -1517,7 +1517,7 @@ void NextRow() {
     if (cvol[looper]<0) {cvol[looper]=0;}} else {if (slidememory[looper]%16==0x0f && slidememory[looper]!=0x0f) {cvol[looper]+=((slidememory[looper]>>4)*2);if (cvol[looper]>127) {cvol[looper]=127;}}}}
     }
   // Nfx - Nxf
-  if(nfxid[looper]==14)
+  if (nfxid[looper]==14)
     {if (nfxvl[looper]!=0) {chanslidememory[looper]=nfxvl[looper];}
     if (chanslidememory[looper]>0xf0) {chanvol[looper]-=((chanslidememory[looper]%16)*2);
     if (chanvol[looper]<0) {chanvol[looper]=0;}} else {if (chanslidememory[looper]%16==0x0f && chanslidememory[looper]!=0x0f) {chanvol[looper]+=((chanslidememory[looper]>>4)*2);if (chanvol[looper]>127) {chanvol[looper]=127;}}}
@@ -1525,13 +1525,13 @@ void NextRow() {
   // Efx - Eex
   if (nfxid[looper]==5)
     {if (nfxvl[looper]>0xef) {curnote[looper]-=((float)(nfxvl[looper]%16)/16);
-      if(!EnvelopesRunning[looper][5]){
+      if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }} else {
       if (nfxvl[looper]>0xdf) {curnote[looper]-=((float)(nfxvl[looper]%16)/64);
-          if(!EnvelopesRunning[looper][5]){
+          if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
@@ -1540,13 +1540,13 @@ void NextRow() {
   // Ffx - Fex
   if (nfxid[looper]==6)
     {if (nfxvl[looper]>0xef) {curnote[looper]+=((float)(nfxvl[looper]%16)/16);
-      if(!EnvelopesRunning[looper][5]){
+      if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             }} else {
       if (nfxvl[looper]>0xdf) {curnote[looper]+=((float)(nfxvl[looper]%16)/64);
-          if(!EnvelopesRunning[looper][5]){
+          if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
@@ -1569,7 +1569,7 @@ void NextRow() {
   if (nfxid[looper]==19)
     {
     // S3x
-    if ((nfxvl[looper]>>4)==0x03){
+    if ((nfxvl[looper]>>4)==0x03) {
       curvibshape[looper]=nfxvl[looper]%4;
     }
     // S8x
@@ -1595,7 +1595,7 @@ void NextRow() {
         } else {plcount[looper]=0;}
       }}}
   // Xxx
-  if(nfxid[looper]==24)
+  if (nfxid[looper]==24)
     {cpan[looper]=nfxvl[looper]-128;
      chanpan[looper]=nfxvl[looper]-128;}
   // Zxx
@@ -1605,29 +1605,29 @@ void NextRow() {
   curtick=speed+finedelay; // sets the current tick to the song speed
   //curstep++; // increases the step counter
   // did we reach end of pattern?
-  /*if(curstep>(getpatlen(patid[curpat])-1)){ // yes
+  /*if (curstep>(getpatlen(patid[curpat])-1)) { // yes
        curstep=0; // set current step to 0
        curpat++; // increases current pattern
-       for (int ii=0;ii<32;ii++){
+       for (int ii=0;ii<32;ii++) {
          plcount[ii]=0;
          plpos[ii]=0;
        }
        if (curpat>songlength) {curpat=0;}
   }*/
 }
-void SkipPattern(int chanval){
-  if (!AlreadySkipped){
+void SkipPattern(int chanval) {
+  if (!AlreadySkipped) {
     AlreadySkipped=true;curpat++;curstep=nfxvl[chanval]-1;NextRow();
   }
 }
 
 void UpdateEnvelope(int channel, int envid) {
   if (!IRP[channel][envid] || released[channel] ||
-    (bytable[envid][instrument[Mins[channel]].env[envid]][254])<(bytable[envid][instrument[Mins[channel]].env[envid]][255])){
+    (bytable[envid][instrument[Mins[channel]].env[envid]][254])<(bytable[envid][instrument[Mins[channel]].env[envid]][255])) {
   inspos[channel][envid]++;
   if (inspos[channel][envid]==bytable[envid][instrument[Mins[channel]].env[envid]][255]) {IRP[channel][envid]=true;}
   }
-  if(inspos[channel][envid]>
+  if (inspos[channel][envid]>
     ((IRP[channel][envid] && !released[channel])?(minval(252,bytable[envid][instrument[Mins[channel]].env[envid]][255])):(minval(252,bytable[envid][instrument[Mins[channel]].env[envid]][253]))
     )) // if envelope exceeds 252, or the length
     {if ((bytable[envid][instrument[Mins[channel]].env[envid]][254]<252) &&
@@ -1660,7 +1660,7 @@ void NextTick() {
   // process the next tick
   curtick--;
   // run envelopes
-  for(int loop2=0;loop2<32;loop2++){
+  for (int loop2=0;loop2<32;loop2++) {
         //crstep[loop2]=0; // no
   // Qxx
   if (doretrigger[loop2])
@@ -1668,7 +1668,7 @@ void NextTick() {
      if (retrig[loop2]==0) {retrig[loop2]=retrigger[loop2]%16;
      doretrigger[loop2]=false;
      if (nfxid[loop2]==17) {doretrigger[loop2]=true;} else {
-      if(nvolu[loop2]!=0 && nvolu[loop2]>63 && nvolu[loop2]<128){
+      if (nvolu[loop2]!=0 && nvolu[loop2]>63 && nvolu[loop2]<128) {
       // set note volume
       Mvol[loop2]=(nvolu[loop2]%64)*2;
     }
@@ -1695,11 +1695,11 @@ void NextTick() {
       // reset all envelope cursors if effect isn't Gxx/Lxx/gxx
       if (nfxid[loop2]!=7 && nfxid[loop2]!=12 && !(nvolu[loop2]>192 && nvolu[loop2]<203)) {
       // is there a new instrument value, along with the new note? if yes then change instrument
-      if(pat[patid[curpat]][curstep][loop2][1]!=0){
+      if (pat[patid[curpat]][curstep][loop2][1]!=0) {
       Mins[loop2]=pat[patid[curpat]][curstep][loop2][1];
       }
       // is it a pcm instrument? (pcm check)
-      if (instrument[Mins[loop2]].DFM&8){
+      if (instrument[Mins[loop2]].DFM&8) {
         // set channel mode to PCM
         chip[0].chan[loop2].flags.pcm=1;
         // set respective PCM pointers
@@ -1709,22 +1709,22 @@ void NextTick() {
       // is oscreset on? (osc reset check)
       if (instrument[Mins[loop2]].flags&1) {crstep[loop2]=0;} // osc reset
       // volume (if turned on and effect isn't S77, or effect is S78)
-      if (((instrument[Mins[loop2]].activeEnv&1) || ((nfxid[loop2]==19) && (nfxvl[loop2]==0x78))) && !((nfxid[loop2]==19) && (nfxvl[loop2]==0x77))){
+      if (((instrument[Mins[loop2]].activeEnv&1) || ((nfxid[loop2]==19) && (nfxvl[loop2]==0x78))) && !((nfxid[loop2]==19) && (nfxvl[loop2]==0x77))) {
       cvol[loop2]=((bytable[0][instrument[Mins[loop2]].env[envVolume]][0]/2)*(Mvol[loop2]))/127;
       EnvelopesRunning[loop2][0]=true;}
       else {EnvelopesRunning[loop2][0]=false;cvol[loop2]=Mvol[loop2];}
       // duty
-      if ((instrument[Mins[loop2]].activeEnv&8)>>3){
+      if ((instrument[Mins[loop2]].activeEnv&8)>>3) {
       cduty[loop2]=bytable[3][instrument[Mins[loop2]].env[envDuty]][0]/2;
       EnvelopesRunning[loop2][3]=true;}
       else {EnvelopesRunning[loop2][3]=false;cduty[loop2]=63;}
       // shape
-      if ((instrument[Mins[loop2]].activeEnv&16)>>4){
+      if ((instrument[Mins[loop2]].activeEnv&16)>>4) {
       cshape[loop2]=bytable[4][instrument[Mins[loop2]].env[envShape]][0]/32;
       EnvelopesRunning[loop2][4]=true;}
       else {EnvelopesRunning[loop2][4]=false;cshape[loop2]=0;}
       // cutoff
-      if ((instrument[Mins[loop2]].activeEnv&2)>>1){
+      if ((instrument[Mins[loop2]].activeEnv&2)>>1) {
       if (nfxid[loop2]!=15) {
       coff[loop2]=(bytable[1][instrument[Mins[loop2]].env[envCutoff]][0]*(0xffff-instrument[Mins[loop2]].filterH))>>7;cfmode[loop2]=instrument[Mins[loop2]].DFM&7;
       } else {
@@ -1734,25 +1734,25 @@ void NextTick() {
       EnvelopesRunning[loop2][1]=true;}
       else {EnvelopesRunning[loop2][1]=false;coff[loop2]=262144;cfmode[loop2]=fNone;}
       // resonance
-      if ((instrument[Mins[loop2]].activeEnv&4)>>2){
+      if ((instrument[Mins[loop2]].activeEnv&4)>>2) {
       creso[loop2]=bytable[2][instrument[Mins[loop2]].env[envReson]][0];
       EnvelopesRunning[loop2][2]=true;}
       else {EnvelopesRunning[loop2][2]=false;creso[loop2]=48;finepitch[loop2]=0;}
       // panning
-      if ((instrument[Mins[loop2]].activeEnv&128)>>7){
+      if ((instrument[Mins[loop2]].activeEnv&128)>>7) {
       cpan[loop2]=bytable[7][instrument[Mins[loop2]].env[envPan]][0]-128;
       EnvelopesRunning[loop2][7]=true;}
       else {EnvelopesRunning[loop2][7]=false;
         cpan[loop2]=chanpan[loop2];
       }
       // finepitch
-      if ((instrument[Mins[loop2]].activeEnv&64)>>6){
+      if ((instrument[Mins[loop2]].activeEnv&64)>>6) {
       finepitch[loop2]=(char)bytable[6][instrument[Mins[loop2]].env[envHiPitch]][0];
       cfreq[loop2]=ProcessPitch(loop2,0);
       EnvelopesRunning[loop2][6]=true;}
       else {EnvelopesRunning[loop2][6]=false;finepitch[loop2]=0;}
       // pitch
-      if ((instrument[Mins[loop2]].activeEnv&32)>>5){
+      if ((instrument[Mins[loop2]].activeEnv&32)>>5) {
       // output (pitch logic)
       if (bytable[5][instrument[Mins[loop2]].env[envPitch]][0]<0x40) {
       cfreq[loop2]=mnoteperiod(curnote[loop2]+(bytable[5][instrument[Mins[loop2]].env[envPitch]][0])+(((unsigned char)instrument[Mins[loop2]].noteOffset)-47),loop2);
@@ -1807,42 +1807,42 @@ void NextTick() {
       continue;
      }}
     // volume
-    if(EnvelopesRunning[loop2][0]){
+    if (EnvelopesRunning[loop2][0]) {
       UpdateEnvelope(loop2,0);
       cvol[loop2]=((bytable[0][instrument[Mins[loop2]].env[envVolume]][inspos[loop2][0]]/2)*(Mvol[loop2]))/127;
     }
     // duty
-    if(EnvelopesRunning[loop2][3]){
+    if (EnvelopesRunning[loop2][3]) {
       UpdateEnvelope(loop2,3);
       // output
       cduty[loop2]=bytable[3][instrument[Mins[loop2]].env[envDuty]][inspos[loop2][3]]/2;
     }
     // shape
-    if(EnvelopesRunning[loop2][4]){
+    if (EnvelopesRunning[loop2][4]) {
       UpdateEnvelope(loop2,4);
       // output
       cshape[loop2]=bytable[4][instrument[Mins[loop2]].env[envShape]][inspos[loop2][4]]/32;
     }
     // cutoff
-    if(EnvelopesRunning[loop2][1]){
+    if (EnvelopesRunning[loop2][1]) {
       UpdateEnvelope(loop2,1);
       // output
       coff[loop2]=(bytable[1][instrument[Mins[loop2]].env[envCutoff]][inspos[loop2][1]]*(0xffff-instrument[Mins[loop2]].filterH))>>7;
     }
     // resonance
-    if(EnvelopesRunning[loop2][2]){
+    if (EnvelopesRunning[loop2][2]) {
       UpdateEnvelope(loop2,2);
       // output
       creso[loop2]=bytable[2][instrument[Mins[loop2]].env[envReson]][inspos[loop2][2]];
     }
     // panning
-    if(EnvelopesRunning[loop2][7]){
+    if (EnvelopesRunning[loop2][7]) {
       UpdateEnvelope(loop2,7);
       // output
       cpan[loop2]=bytable[7][instrument[Mins[loop2]].env[envPan]][inspos[loop2][7]]-128;
     }
     // pitch
-    if(EnvelopesRunning[loop2][5]){
+    if (EnvelopesRunning[loop2][5]) {
       UpdateEnvelope(loop2,5);
       // output (pitch logic)
       if (bytable[5][instrument[Mins[loop2]].env[envPitch]][inspos[loop2][5]]<0x40) {
@@ -1855,25 +1855,25 @@ void NextTick() {
       }}
     }
     // finepitch
-    if(EnvelopesRunning[loop2][6]){
+    if (EnvelopesRunning[loop2][6]) {
       UpdateEnvelope(loop2,6);
       // output
-      if(EnvelopesRunning[loop2][6]){
+      if (EnvelopesRunning[loop2][6]) {
       finepitch[loop2]+=(char)bytable[6][instrument[Mins[loop2]].env[envHiPitch]][inspos[loop2][6]];
       cfreq[loop2]=ProcessPitch(loop2,0);
       }
     }
   }
   // run effects
-  for (int looper=0;looper<32;looper++){
+  for (int looper=0;looper<32;looper++) {
   // Bxx
-  if(nfxid[looper]==2)
+  if (nfxid[looper]==2)
     {if (curtick==0) {curpat=nfxvl[looper];curstep=-1;NextRow();}}
   // Cxx
-  if(nfxid[looper]==3)
+  if (nfxid[looper]==3)
     {if (curtick==0) {SkipPattern(looper);}}
   // Dxx
-  if(nfxid[looper]==4 || nfxid[looper]==11 || nfxid[looper]==12)
+  if (nfxid[looper]==4 || nfxid[looper]==11 || nfxid[looper]==12)
     {if (EnvelopesRunning[looper][0]) {
     if (slidememory[looper]<0x10) {Mvol[looper]-=(slidememory[looper]*2);
     if (Mvol[looper]<0) {Mvol[looper]=0;}} else {if ((slidememory[looper]%16)!=0x0f && slidememory[looper]<0xf1) {Mvol[looper]+=((slidememory[looper]>>4)*2);if (Mvol[looper]>127) {Mvol[looper]=127;}}}}
@@ -1881,7 +1881,7 @@ void NextTick() {
     if (slidememory[looper]<0x10) {cvol[looper]-=(slidememory[looper]*2);
     if (cvol[looper]<0) {cvol[looper]=0;}} else {if ((slidememory[looper]%16)!=0x0f && slidememory[looper]<0xf1) {cvol[looper]+=((slidememory[looper]>>4)*2);if (cvol[looper]>127) {cvol[looper]=127;}}}}}
   // Nxx
-  if(nfxid[looper]==14)
+  if (nfxid[looper]==14)
     {if (chanslidememory[looper]<0x10) {chanvol[looper]-=(chanslidememory[looper]*2);
     if (chanvol[looper]<0) {chanvol[looper]=0;}} else {if ((chanslidememory[looper]%16)!=0x0f && chanslidememory[looper]<0xf1) {chanvol[looper]+=((chanslidememory[looper]>>4)*2);if (chanvol[looper]>127) {chanvol[looper]=127;}}}}
   // Exx
@@ -1889,7 +1889,7 @@ void NextTick() {
     {if (nfxvl[looper]<0xe0) {
       if (!linearslides) {cfreq[looper]+=nfxvl[looper];}
       else {curnote[looper]-=((float)nfxvl[looper]/16);
-          if(!EnvelopesRunning[looper][5]){
+          if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
@@ -1900,7 +1900,7 @@ void NextTick() {
       if (!linearslides) {cfreq[looper]-=nfxvl[looper];}
       else {curnote[looper]+=((float)nfxvl[looper]/16);
           cfreq[looper]=mnoteperiod(curnote[looper]+1,looper);
-          if(!EnvelopesRunning[looper][5]){
+          if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
             cfreq[looper]=ProcessPitch(looper,0)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
@@ -1944,7 +1944,7 @@ void NextTick() {
     if ((nfxvl[looper]/16)!=0) {curvibspeed[looper]=nfxvl[looper]/16;}
     }
     curvibpos[looper]++;
-    switch (curvibshape[looper]){
+    switch (curvibshape[looper]) {
     case 0: cfreq[looper]=ProcessPitch(looper,-(float)(sin(((float)curvibpos[looper]*(float)curvibspeed[looper]*4/256)*2*ALLEGRO_PI))*((float)curvibdepth[looper]/8)); break; // sine
     case 1: cfreq[looper]=ProcessPitch(looper,0)+
     (int)((float)((((curvibpos[looper]*curvibspeed[looper]*4)%256)/2)-64)*((float)curvibdepth[looper]/16)); break; // saw
@@ -1972,7 +1972,7 @@ void NextTick() {
     if (nfxvl[looper]<0x10) {cvol[looper]-=(nfxvl[looper]*2);
     if (cvol[looper]<0) {cvol[looper]=0;}} else {cvol[looper]+=((nfxvl[looper]>>4)*2);if (cvol[looper]>127) {cvol[looper]=127;}}}
     curvibpos[looper]++;
-    if(!EnvelopesRunning[looper][5]){
+    if (!EnvelopesRunning[looper][5]) {
     cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
     } else {
     cfreq[looper]=ProcessPitch(looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
@@ -1980,13 +1980,13 @@ void NextTick() {
   }*/
   // SCx
   cutcount[looper]--;
-  if (cutcount[looper]==0){
+  if (cutcount[looper]==0) {
     if (EnvelopesRunning[looper][0]) {Mvol[looper]=0;} else {cvol[looper]=0;}
   }
-  if (cutcount[looper]<-1){cutcount[looper]=-1;}
+  if (cutcount[looper]<-1) {cutcount[looper]=-1;}
   /*if (nfxid[looper]==19)
     {if ((nfxvl[looper]>>4)==0x0c) {cutcount[looper]--;
-      if (cutcount[looper]==0){
+      if (cutcount[looper]==0) {
         if (EnvelopesRunning[looper][0]) {Mvol[looper]=0;} else {cvol[looper]=0;}
       }}}*/
   // Uxx
@@ -2005,7 +2005,7 @@ void NextTick() {
   }
   }
   AlreadySkipped=false;
-  if(curtick==0){ // is tick counter 0?
+  if (curtick==0) { // is tick counter 0?
     if (playmode==1 || playmode==4) {NextRow();} else {curtick=1;}
   }
 }
@@ -2031,10 +2031,10 @@ void Playback() {
 }
 void JustSkip() {
   // skipping
-  if (playmode==0){
+  if (playmode==0) {
        curtick=1;
        curstep++;
-       if(curstep>(getpatlen(patid[curpat])-1)){
+       if (curstep>(getpatlen(patid[curpat])-1)) {
          curstep=0;
          curpat++;
        }
@@ -2042,10 +2042,10 @@ void JustSkip() {
 }
 void GoBack() {
   // go back
-  if (playmode==0){
+  if (playmode==0) {
        curtick=1;
        curstep--;
-       if(curstep<0){
+       if (curstep<0) {
          curstep=0;
        }
      }
@@ -2056,20 +2056,20 @@ void CleanupPatterns() {
   memset(pat,0,256*256*32*5);
   // cleans up all envelopes
   memset(bytable,0,8*256*256);
-  for (int kk=0;kk<8;kk++){
-    for (int jj=0;jj<256;jj++){
+  for (int kk=0;kk<8;kk++) {
+    for (int jj=0;jj<256;jj++) {
       bytable[kk][jj][254]=255;
       bytable[kk][jj][255]=255;
     }
   }
   // cleans up all instruments
   memset(instrument,0,256*64);
-  for (int jj=0;jj<256;jj++){
+  for (int jj=0;jj<256;jj++) {
     instrument[jj].noteOffset=48;
   }
 }
 
-ALLEGRO_COLOR mapHSV(float hue,float saturation,float value){
+ALLEGRO_COLOR mapHSV(float hue,float saturation,float value) {
   float c=value*saturation;
   float x=c*(1-fabs(fmod(hue/60,2)-1));
   float m=value-c;
@@ -2095,14 +2095,14 @@ void drawpatterns(bool force) {
   al_set_target_bitmap(patternbitmap);
   al_clear_to_color(al_map_rgb(0,0,0));
   al_draw_filled_rectangle(0,60,scrW,scrH,al_map_rgb(0,0,0));
-  for (int i=0;i<getpatlen(patid[curpat]);i++){
-  //if(i>curpatrow+15+((scrH-450)/12)){continue;}
-  //if(i<curpatrow-16){continue;}
+  for (int i=0;i<getpatlen(patid[curpat]);i++) {
+  //if (i>curpatrow+15+((scrH-450)/12)) {continue;}
+  //if (i<curpatrow-16) {continue;}
   al_draw_textf(text,al_map_rgb(128,128,128),0,((i)*12),ALLEGRO_ALIGN_LEFT,"%.2X",i); //pattern pos, optimized
   al_draw_text(text,getconfigcol(colDEFA),16,((i)*12),ALLEGRO_ALIGN_LEFT,"|");
   al_draw_text(text,getconfigcol(colDEFA),((scrW/2)-400)+16+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"|");
   // channel drawing routine, replicated 8 times
-  for (int j=0;j<chanstodisplay;j++){
+  for (int j=0;j<chanstodisplay;j++) {
   al_draw_text(text,getconfigcol(colDEFA),((scrW/2)-400)+112+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"|");
   if (pat[patid[curpat]][i][j+(curedpage*8)][0]==0 && pat[patid[curpat]][i][j+(curedpage*8)][1]==0
     && pat[patid[curpat]][i][j+(curedpage*8)][2]==0 && pat[patid[curpat]][i][j+(curedpage*8)][3]==0
@@ -2370,18 +2370,18 @@ void drawinsedit() {
 
 void EditSkip() {
   // autovolume
-  /*if(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]!=0 && (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]%16)<13 && pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]==0){
+  /*if (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]!=0 && (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]%16)<13 && pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]==0) {
     pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=0x7f;
   } // no more autovolume because of the "no-value" switch*/
   // autoinstrument
-  if(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]!=0 && (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]%16)<13) {
+  if (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]!=0 && (pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]%16)<13) {
     pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=curins;
   }
   // skipping
-  if (playmode==0){
+  if (playmode==0) {
     curtick=1;
     curstep++;
-    if (curstep>(getpatlen(patid[curpat])-1)){
+    if (curstep>(getpatlen(patid[curpat])-1)) {
       curstep=0;
       curpat++;
     }
@@ -2517,7 +2517,7 @@ void drawdiskop() {
   g.printf("<..>                                                                                               ^");
   al_draw_text(text,getconfigcol(colDEFA),0,432,ALLEGRO_ALIGN_LEFT,"                                                                                                   v");
   al_draw_text(text,al_map_rgb(255,255,255),72,84,ALLEGRO_ALIGN_LEFT,curdir);
-  if (selectedfileindex>(diskopscrollpos)){
+  if (selectedfileindex>(diskopscrollpos)) {
   al_draw_filled_rectangle(0,111+((selectedfileindex-diskopscrollpos)*12),scrW,123+((selectedfileindex-diskopscrollpos)*12),getconfigcol(colSELE));
   }
   for (int i=diskopscrollpos; i<minval(diskopscrollpos+27,filecount); i++) {
@@ -2687,7 +2687,7 @@ void drawpiano() {
   al_draw_bitmap(pianoroll_temp,0,0,0);
   al_set_target_bitmap(al_get_backbuffer(display));
   //printf("--------------\n");
-  for(int ii=0;ii<32;ii++){
+  for (int ii=0;ii<32;ii++) {
     if (muted[ii] || cvol[ii]==0) continue;
     prefreq=((log(((4.53948974609375*(double)cfreq[ii])/440.0)/64)/log(2.0))*12.0)+57.5;
     if (prefreq<0 || prefreq>120) continue;
@@ -2749,7 +2749,7 @@ void drawpiano() {
     al_set_target_bitmap(al_get_backbuffer(display));
   }
   al_draw_scaled_bitmap(pianoroll,0,0,700,128,(scrW/2)-((((scrW)/700)*700)/2),scrH-(((scrH-(60+((((scrW)/700)*60))))/128)*128)-(((scrW)/700)*60),((scrW)/700)*700,((scrH-(60+((((scrW)/700)*60))))/128)*128,0);
-  for(int ii=0;ii<32;ii++){
+  for (int ii=0;ii<32;ii++) {
     if (muted[ii] || cvol[ii]==0) continue;
     prefreq=((log(((4.53948974609375*(double)cfreq[ii])/440.0)/64)/log(2.0))*12.0)+57.5;
     if (prefreq<0 || prefreq>120) continue;
@@ -2760,7 +2760,7 @@ void drawpiano() {
 void drawcomments() {
   int DRAWCUR_X=0;
   int DRAWCUR_Y=0;
-  for (int ii=0;ii<strlen(comments);ii++){
+  for (int ii=0;ii<strlen(comments);ii++) {
   if (comments[ii]==13) {DRAWCUR_X=0;DRAWCUR_Y++;continue;}
   al_draw_textf(text,al_map_rgb(255,255,255),DRAWCUR_X*8,60+DRAWCUR_Y*12,ALLEGRO_ALIGN_LEFT,"%c",comments[ii]);
   DRAWCUR_X++;
@@ -2823,10 +2823,10 @@ void drawpcmeditor() {
   al_draw_textf(text,getconfigcol(colDEFA),0,72,ALLEGRO_ALIGN_LEFT,"position: %.5x",(int)((float)pcmeditseek*pow(2.0f,-pcmeditscale)));
   al_draw_line((int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)-128,
     (int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)+128,getconfigcol(colSEL2),1);
-  for (float ii=0;ii<(scrW*pow(2.0f,-pcmeditscale));ii+=pow(2.0f,-pcmeditscale)){
+  for (float ii=0;ii<(scrW*pow(2.0f,-pcmeditscale));ii+=pow(2.0f,-pcmeditscale)) {
     al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+chip[0].pcm[(int)ii+pcmeditoffset],(pcmeditenable)?getconfigcol(colSEL2):getconfigcol(colDEFA));
   }
-  for (int ii=0;ii<32;ii++){
+  for (int ii=0;ii<32;ii++) {
     if (cmode[ii]==1 && cvol[ii]>0) {
       al_draw_line(((float)cpcmpos[ii]*pow(2.0f,pcmeditscale)),(scrH/2)-140,
     ((float)cpcmpos[ii]*pow(2.0f,pcmeditscale)),(scrH/2)-129,getconfigcol(colSEL1),1);
@@ -2854,8 +2854,8 @@ void Play() {
   tempo=125;
   }
   }
-  for (int ii=0;ii<32;ii++){
-    if(pat[patid[curpat]][0][ii][3]==20)
+  for (int ii=0;ii<32;ii++) {
+    if (pat[patid[curpat]][0][ii][3]==20)
     {if (pat[patid[curpat]][0][ii][4]!=0 && !tempolock)
     {tempo=maxval(31,pat[patid[curpat]][0][ii][4]);FPS=(double)tempo/2.5;
     }}
@@ -2866,7 +2866,7 @@ void Play() {
   curtick=2;curstep=-1;playmode=1;
   tickstart=true;
   // reset channels
-  for (int su=0;su<32;su++){
+  for (int su=0;su<32;su++) {
   cvol[su]=0;
   cfreq[su]=1;
   cduty[su]=63;
@@ -2909,10 +2909,10 @@ void Play() {
   // process next row
   NextTick();
 }
-unsigned char ITVolumeConverter(unsigned char itvol){
-  if(itvol<65){return minval(itvol+64,127);} // 64-127
-  if(itvol<193 && itvol>127){return itvol;} // 128-192
-  switch((itvol-65)/10){
+unsigned char ITVolumeConverter(unsigned char itvol) {
+  if (itvol<65) {return minval(itvol+64,127);} // 64-127
+  if (itvol<193 && itvol>127) {return itvol;} // 128-192
+  switch((itvol-65)/10) {
   case 0: return itvol-65; break; // 1-10
   case 1: return itvol-65; break; // 11-20
   case 2: return itvol-65; break; // 21-30
@@ -2945,14 +2945,14 @@ int ImportIT() {
   filechooser=al_create_native_file_dialog(".","load IT module",NULL,0);
   al_show_native_file_dialog(display,filechooser);
   char rfn[256];
-  if (al_get_native_file_dialog_path(filechooser,0)!=NULL){
+  if (al_get_native_file_dialog_path(filechooser,0)!=NULL) {
   strcpy(rfn,al_get_native_file_dialog_path(filechooser,0));} else {printf("no file given\n");}
   al_destroy_native_file_dialog(filechooser);
   //int insparas[256];
   int patparas[256];
   //gets(rfn);
   it=al_fopen(rfn,"rb");
-  if (it!=NULL){ // read the file
+  if (it!=NULL) { // read the file
   printf("loading IT file, ");
     size=al_fsize(it);
   printf("%d bytes\n",size);
@@ -2960,11 +2960,11 @@ int ImportIT() {
     al_fseek(it,0,ALLEGRO_SEEK_SET);
     al_fread(it,memblock,size);
     al_fclose(it);
-  if(memblock[0]=='I' && memblock[1]=='M' && memblock[2]=='P' && memblock[3]=='M') {
+  if (memblock[0]=='I' && memblock[1]=='M' && memblock[2]=='P' && memblock[3]=='M') {
     printf("IT module detected\n");
     // name
     printf("module name is ");
-    for (sk=4;sk<30;sk++){
+    for (sk=4;sk<30;sk++) {
       name[sk-4]=memblock[sk];
       if (sk==4) {printf(&memblock[sk]);}
     }
@@ -2978,21 +2978,21 @@ int ImportIT() {
     //cout << "speeds: " << (int)memblock[0x32] << ":" << (int)(unsigned char)memblock[0x33] << "\n";
     defspeed=memblock[0x32];
     printf("---pans---\n");
-    for (sk=0x40;sk<0x60;sk++){
+    for (sk=0x40;sk<0x60;sk++) {
       defchanpan[sk-64]=memblock[sk];
       printf("%d ",(int)memblock[sk]);
     }
     printf("\n");
     printf("---volumes---\n");
-    for (sk=0x80;sk<0xa0;sk++){
+    for (sk=0x80;sk<0xa0;sk++) {
       defchanvol[sk-128]=memblock[sk]*2;
       printf("%d ",(int)memblock[sk]);
     }
     printf("\n");
     printf("---ORDER LIST---\n");
-    for (sk=0xc0;sk<(0xc0+orders);sk++){
+    for (sk=0xc0;sk<(0xc0+orders);sk++) {
       patid[sk-0xc0]=memblock[sk];
-      switch(memblock[sk]){
+      switch(memblock[sk]) {
       case -2: printf("+++ "); break;
       case -1: printf("--- "); break;
       default: printf("%d ",(int)(unsigned char)memblock[sk]); break;
@@ -3035,7 +3035,7 @@ int ImportIT() {
       switch (LastNote[NextChannel]) {
         case 255: pat[pointer][CurrentRow][NextChannel][0]=13; break;
         case 254: pat[pointer][CurrentRow][NextChannel][0]=15; break;
-        default: if(LastNote[NextChannel]<120) {pat[pointer][CurrentRow][NextChannel][0]=((LastNote[NextChannel]/12)*16)+(LastNote[NextChannel]%12)+1;/*pat[pointer][CurrentRow][NextChannel][2]=0x7f;*/} else {pat[pointer][CurrentRow][NextChannel][0]=14;}; break;
+        default: if (LastNote[NextChannel]<120) {pat[pointer][CurrentRow][NextChannel][0]=((LastNote[NextChannel]/12)*16)+(LastNote[NextChannel]%12)+1;/*pat[pointer][CurrentRow][NextChannel][2]=0x7f;*/} else {pat[pointer][CurrentRow][NextChannel][0]=14;}; break;
       }
     }
     if (NextMask[NextChannel]&2) {
@@ -3060,7 +3060,7 @@ int ImportIT() {
       switch (LastNote[NextChannel]) {
         case 255: pat[pointer][CurrentRow][NextChannel][0]=13; break;
         case 254: pat[pointer][CurrentRow][NextChannel][0]=15; break;
-        default: if(LastNote[NextChannel]<120) {pat[pointer][CurrentRow][NextChannel][0]=((LastNote[NextChannel]/12)*16)+(LastNote[NextChannel]%12)+1;/*pat[pointer][CurrentRow][NextChannel][2]=0x7f;*/} else {pat[pointer][CurrentRow][NextChannel][0]=14;}; break;
+        default: if (LastNote[NextChannel]<120) {pat[pointer][CurrentRow][NextChannel][0]=((LastNote[NextChannel]/12)*16)+(LastNote[NextChannel]%12)+1;/*pat[pointer][CurrentRow][NextChannel][2]=0x7f;*/} else {pat[pointer][CurrentRow][NextChannel][0]=14;}; break;
       }
     }
     if (NextMask[NextChannel]&32) {
@@ -3082,7 +3082,7 @@ int ImportIT() {
   else {printf("error while importing file! file doesn't exist\n"); return 1;}
   return 0;
 }
-int ImportMOD(const char* rfn){
+int ImportMOD(const char* rfn) {
   // import MOD file
   // check out http://www.fileformat.info/format/mod/corion.htm for specs in MOD format
     int64_t size;
@@ -3095,7 +3095,7 @@ int ImportMOD(const char* rfn){
   int CurrentSampleSeek=0;
   printf("\nplease write filename? ");
   mod=al_fopen(rfn,"rb");
-  if (mod!=NULL){ // read the file
+  if (mod!=NULL) { // read the file
   printf("loading MOD file, ");
     size=al_fsize(mod);
   printf("%d bytes\n",size);
@@ -3142,10 +3142,10 @@ int ImportMOD(const char* rfn){
     }
   }
 #endif
-  if((memblock[1080]=='M' && memblock[1081]=='.' && memblock[1082]=='K' && memblock[1083]=='.')||
+  if ((memblock[1080]=='M' && memblock[1081]=='.' && memblock[1082]=='K' && memblock[1083]=='.')||
      (memblock[1081]=='C' && memblock[1082]=='H' && memblock[1083]=='N')||
-     (memblock[1082]=='C' && memblock[1083]=='H')){
-       switch(memblock[1080]){
+     (memblock[1082]=='C' && memblock[1083]=='H')) {
+       switch(memblock[1080]) {
       case 'M': printf("4-channel original MOD module detected\n"); chans=4; break;
       default: printf("multi-channel MOD module detected\n"); break;
        }
@@ -3153,15 +3153,15 @@ int ImportMOD(const char* rfn){
        if (memblock[1081]=='C' && memblock[1082]=='H' && memblock[1083]=='N') {chans=NumberLetter(memblock[1080]);}
     // name
     printf("module name is ");
-    for (sk=0;sk<20;sk++){
+    for (sk=0;sk<20;sk++) {
       name[sk]=memblock[sk];
       if (sk==0) {printf(&memblock[sk]);}
     }
     printf("\n");
     printf("---ORDER LIST---\n");
-    for (sk=952;sk<1080;sk++){
+    for (sk=952;sk<1080;sk++) {
       patid[sk-952]=memblock[sk];
-      switch(memblock[sk]){
+      switch(memblock[sk]) {
       case -2: printf("+++ "); break;
       case -1: printf("--- "); break;
       default: printf("%d ",(int)(unsigned char)memblock[sk]); break;
@@ -3169,8 +3169,8 @@ int ImportMOD(const char* rfn){
     }
     printf("\nretrieving pattern count\n");
     patterns=0;
-    for (sk=0;sk<128;sk++){
-      if(patid[sk]>patterns){patterns=patid[sk];}
+    for (sk=0;sk<128;sk++) {
+      if (patid[sk]>patterns) {patterns=patid[sk];}
     }
     printf("%d patterns\n",patterns);
     if (settings::samples) {
@@ -3179,19 +3179,19 @@ int ImportMOD(const char* rfn){
     memcpy(chip[0].pcm,memblock+1084+((patterns+1)*chans*64*4),minval(65280,size-1084-((patterns+1)*chans*64*4)));
     }
     printf("---PATTERNS---\n");
-    for (int importid=0;importid<patterns+1;importid++){
+    for (int importid=0;importid<patterns+1;importid++) {
     printf("-PATTERN %d-\n",importid);
     /*if (verbose) {cout << "-Channel1- -Channel2- -Channel3- -Channel4- ";
-    if (chans==6){cout << "-Channel5- -Channel6-\n";} else {
-      if (chans==8){cout << "-Channel5- -Channel6- -Channel7- -Channel8-\n";} else {cout << "\n";}
+    if (chans==6) {cout << "-Channel5- -Channel6-\n";} else {
+      if (chans==8) {cout << "-Channel5- -Channel6- -Channel7- -Channel8-\n";} else {cout << "\n";}
     }}*/
     sk=1084; // import position
-    for (int indxr=0;indxr<64;indxr++){
+    for (int indxr=0;indxr<64;indxr++) {
       int NPERIOD;
       int NINS;
       int NFX;
       int NFXVAL;
-      for(int ichan=0;ichan<chans;ichan++){
+      for (int ichan=0;ichan<chans;ichan++) {
         // import pattern row
         NPERIOD=(((unsigned char)memblock[sk+(importid*(chans*256))+(indxr*(chans*4))+(ichan*4)])%16*256)+((unsigned char)memblock[sk+(importid*(chans*256))+(indxr*(chans*4))+(ichan*4)+1]);
         NINS=(((unsigned char)memblock[sk+(importid*(chans*256))+(indxr*(chans*4))+(ichan*4)]>>4)*16)+((unsigned char)memblock[sk+(importid*(chans*256))+(indxr*(chans*4))+(ichan*4)+2]>>4);
@@ -3199,7 +3199,7 @@ int ImportMOD(const char* rfn){
         NFXVAL=(unsigned char)memblock[sk+(importid*(chans*256))+(indxr*(chans*4))+(ichan*4)+3];
         // conversion stuff
         istherenote=true;
-        switch(NPERIOD){
+        switch(NPERIOD) {
           case 56: if (verbose) printf("B-7 "); pat[importid][indxr][ichan][0]=0x7c; break;
           case 60: if (verbose) printf("A#7 "); pat[importid][indxr][ichan][0]=0x7b; break;
           case 63: if (verbose) printf("A-7 "); pat[importid][indxr][ichan][0]=0x7a; break;
@@ -3267,8 +3267,8 @@ int ImportMOD(const char* rfn){
         //if (verbose) cout << gethnibble(NINS) << getlnibble(NINS) << " ";
         pat[importid][indxr][ichan][1]=NINS;
         //if (verbose) cout << getlnibble(NFX) << gethnibble(NFXVAL) << getlnibble(NFXVAL) << " ";
-        switch(NFX){
-          case 0: if(NFXVAL!=0) {pat[importid][indxr][ichan][3]=10;pat[importid][indxr][ichan][4]=NFXVAL;} else {pat[importid][indxr][ichan][3]=0;pat[importid][indxr][ichan][4]=0;}; break;
+        switch(NFX) {
+          case 0: if (NFXVAL!=0) {pat[importid][indxr][ichan][3]=10;pat[importid][indxr][ichan][4]=NFXVAL;} else {pat[importid][indxr][ichan][3]=0;pat[importid][indxr][ichan][4]=0;}; break;
           case 1: pat[importid][indxr][ichan][3]=6;pat[importid][indxr][ichan][4]=NFXVAL; break;
           case 2: pat[importid][indxr][ichan][3]=5;pat[importid][indxr][ichan][4]=NFXVAL; break;
           case 3: pat[importid][indxr][ichan][3]=7;pat[importid][indxr][ichan][4]=NFXVAL;istherenote=false; break;
@@ -3325,7 +3325,7 @@ int ImportS3M() {
   char rfn[256];
   //gets(rfn);
   s3m=al_fopen(rfn,"rb");
-  if (s3m!=NULL){ // read the file
+  if (s3m!=NULL) { // read the file
   printf("loading S3M file, ");
     size=al_fsize(s3m);
   printf("%d bytes\n",size);
@@ -3340,7 +3340,7 @@ int ImportS3M() {
   }
   // module name
   printf("module name is ");
-  for (sk=0;sk<28;sk++){
+  for (sk=0;sk<28;sk++) {
     name[sk]=memblock[sk];
     if (sk==0) {printf(&memblock[sk]);}
   }
@@ -3351,9 +3351,9 @@ int ImportS3M() {
   printf("%d orders, %d instruments, %d patterns\n",orders,instruments,patterns);
   // order list
   printf("---ORDER LIST---\n");
-  for (sk=0x60;sk<orders+0x60;sk++){
+  for (sk=0x60;sk<orders+0x60;sk++) {
     patid[sk-0x60]=memblock[sk];
-    switch(memblock[sk]){
+    switch(memblock[sk]) {
       case -2: printf("+++ "); break;
       case -1: printf("--- "); break;
       default: printf("%d ",(int)(unsigned char)memblock[sk]); break;
@@ -3436,12 +3436,12 @@ int SaveFile() {
   filechooser=al_create_native_file_dialog(curdir,"save",NULL,ALLEGRO_FILECHOOSER_SAVE);
   al_show_native_file_dialog(display,filechooser);
   char rfn[256];
-  if (al_get_native_file_dialog_path(filechooser,0)!=NULL){
+  if (al_get_native_file_dialog_path(filechooser,0)!=NULL) {
   strcpy(rfn,al_get_native_file_dialog_path(filechooser,0));} else {printf("no file given\n");}
   al_destroy_native_file_dialog(filechooser);
   
   sfile=al_fopen(rfn,"wb");
-  if (sfile!=NULL){ // write the file
+  if (sfile!=NULL) { // write the file
     al_fseek(sfile,0,ALLEGRO_SEEK_SET); // seek to 0
     printf("writing headers...\n");
     printf("%d ",al_ftell(sfile));
@@ -3472,16 +3472,16 @@ int SaveFile() {
     printf("%d ",al_ftell(sfile));
     al_fseek(sfile,0x80,ALLEGRO_SEEK_SET); // seek to 0x80
     printf("%d ",al_ftell(sfile));
-    for (int ii=0; ii<256; ii++){
+    for (int ii=0; ii<256; ii++) {
       al_fputc(sfile,patid[ii]); // order list
     }
     printf("writing instruments...\n");
     al_fseek(sfile,0xd80,ALLEGRO_SEEK_SET); // seek to 0xD80, and start writing the instruments
     sk=0xd80;
-    for (int ii=0; ii<256; ii++){
+    for (int ii=0; ii<256; ii++) {
       IS_INS_BLANK[ii]=true;
       // check if the instrument is blank
-      for (int ii1=0; ii1<64; ii1++){
+      for (int ii1=0; ii1<64; ii1++) {
         if (ii1==0x2b) {
           if (instrument[ii].noteOffset!=48) {IS_INS_BLANK[ii]=false;break;}
         } else {
@@ -3497,10 +3497,10 @@ int SaveFile() {
     printf("writing sequences...\n");
     //sk=0x4d80;
     //al_fseek(sfile,0x4d80,ALLEGRO_SEEK_SET); // seek to 0x4D80, and start writing the sequence tables
-    for (int ii=0; ii<256; ii++){
+    for (int ii=0; ii<256; ii++) {
       IS_SEQ_BLANK[ii]=true;
-      for (int ii1=0; ii1<8; ii1++){
-        for (int ii2=0; ii2<256; ii2++){
+      for (int ii1=0; ii1<8; ii1++) {
+        for (int ii2=0; ii2<256; ii2++) {
             if (ii2==254 || ii2==255) {
               if (bytable[ii1][ii][ii2]!=255) {IS_SEQ_BLANK[ii]=false;break;}
             } else {
@@ -3513,11 +3513,11 @@ int SaveFile() {
         seqparas[ii]=0;continue;
       }
       seqparas[ii]=al_ftell(sfile);
-      for (int jj=0; jj<8; jj++){
+      for (int jj=0; jj<8; jj++) {
                                 al_fputc(sfile,bytable[jj][ii][253]);
                                 al_fputc(sfile,bytable[jj][ii][254]);
                                 al_fputc(sfile,bytable[jj][ii][255]);
-        for (int kk=0; kk<(bytable[jj][ii][253]+1); kk++){
+        for (int kk=0; kk<(bytable[jj][ii][253]+1); kk++) {
                                   al_fputc(sfile,bytable[jj][ii][kk]); // seqtable
         }
       }
@@ -3526,11 +3526,11 @@ int SaveFile() {
     printf("packing/writing patterns...\n");
     //al_fseek(sfile,0x84d80,ALLEGRO_SEEK_SET); // seek to 0x84D80, and start packing the patterns for further writing
     // pattern packer
-    for (int ii=0; ii<256; ii++){
+    for (int ii=0; ii<256; ii++) {
       IS_PAT_BLANK[ii]=true;
-      for (int ii1=0; ii1<256; ii1++){
-        for (int ii2=0; ii2<32; ii2++){
-          for (int ii3=0; ii3<5; ii3++){
+      for (int ii1=0; ii1<256; ii1++) {
+        for (int ii2=0; ii2<32; ii2++) {
+          for (int ii3=0; ii3<5; ii3++) {
             if (pat[ii][ii1][ii2][ii3]!=0) {IS_PAT_BLANK[ii]=false;break;}
           }
           if (!IS_PAT_BLANK[ii]) {break;}
@@ -3585,10 +3585,10 @@ int SaveFile() {
     pcmpointer=al_ftell(sfile);
     bool IS_PCM_DATA_BLANK=true;
     int maxpcmwrite=0;
-    for (int ii=0;ii<65280;ii++){
+    for (int ii=0;ii<65280;ii++) {
       if (chip[0].pcm[ii]!=0) {IS_PCM_DATA_BLANK=false; maxpcmwrite=ii;}
     }
-    if (!IS_PCM_DATA_BLANK){
+    if (!IS_PCM_DATA_BLANK) {
       al_fwrite32le(sfile,maxpcmwrite);
       al_fwrite(sfile,chip[0].pcm,maxpcmwrite);
     } else {pcmpointer=0;}
@@ -3614,7 +3614,7 @@ int SaveFile() {
   }
   return 1;
 }
-int LoadFile(const char* filename){
+int LoadFile(const char* filename) {
   // load file
   ALLEGRO_FILE *sfile;
   int sk=0;
@@ -3634,7 +3634,7 @@ int LoadFile(const char* filename){
   bool IS_SEQ_BLANK[256];
   char *checkstr=new char[8];
   sfile=al_fopen(filename,"rb");
-  if (sfile!=NULL){ // LOAD the file
+  if (sfile!=NULL) { // LOAD the file
     al_fseek(sfile,0,ALLEGRO_SEEK_SET); // seek to 0
     printf("loading file...\n");
     //printf("%d ",al_ftell(sfile));
@@ -3689,7 +3689,7 @@ int LoadFile(const char* filename){
     //printf("%d ",al_ftell(sfile));
     al_fseek(sfile,0x80,ALLEGRO_SEEK_SET); // seek to 0x80
     //printf("%d ",al_ftell(sfile));
-    for (int ii=0; ii<256; ii++){
+    for (int ii=0; ii<256; ii++) {
       patid[ii]=al_fgetc(sfile); // order list
     }
     al_fseek(sfile,0x3a,ALLEGRO_SEEK_SET); // seek to 0x3a
@@ -3719,10 +3719,10 @@ int LoadFile(const char* filename){
     }
     //printf("%d ",al_ftell(sfile));
     //printf("reading instruments...\n");
-    for (int ii=0; ii<256; ii++){
+    for (int ii=0; ii<256; ii++) {
       al_fseek(sfile,insparas[ii],ALLEGRO_SEEK_SET);
       // is it blank?
-      if (insparas[ii]==0){continue;}
+      if (insparas[ii]==0) {continue;}
       al_fread(sfile,&instrument[ii],64);
       // version<60 filter mode fix
       if (TVER<60) {
@@ -3751,20 +3751,20 @@ int LoadFile(const char* filename){
     }
     //printf("reading sequences...\n");
     if (TVER<143) { // old sequence format
-    for (int ii=0; ii<256; ii++){ // right now this is a full dump... we'll later fix this
+    for (int ii=0; ii<256; ii++) { // right now this is a full dump... we'll later fix this
       al_fseek(sfile,seqparas[ii],ALLEGRO_SEEK_SET);
       // is it blank?
-      if (seqparas[ii]==0){continue;}
-      for (int jj=0; jj<8; jj++){
-        for (int kk=0; kk<256; kk++){
+      if (seqparas[ii]==0) {continue;}
+      for (int jj=0; jj<8; jj++) {
+        for (int kk=0; kk<256; kk++) {
         bytable[jj][ii][kk]=al_fgetc(sfile); // seqtable
         }
       }
       // version<106 loop point fix conversion
-      if(TVER<106){
+      if (TVER<106) {
       IS_SEQ_BLANK[ii]=true;
-      for (int ii1=0; ii1<8; ii1++){
-        for (int ii2=0; ii2<256; ii2++){
+      for (int ii1=0; ii1<8; ii1++) {
+        for (int ii2=0; ii2<256; ii2++) {
             if (ii2==254 || ii2==255) {
               if (bytable[ii1][ii][ii2]!=255) {IS_SEQ_BLANK[ii]=false;break;}
             } else {
@@ -3785,15 +3785,15 @@ int LoadFile(const char* filename){
       }
     }
                 } else {
-                  for (int ii=0; ii<256; ii++){
+                  for (int ii=0; ii<256; ii++) {
       al_fseek(sfile,seqparas[ii],ALLEGRO_SEEK_SET);
       // is it blank?
-      if (seqparas[ii]==0){continue;}
-      for (int jj=0; jj<8; jj++){
+      if (seqparas[ii]==0) {continue;}
+      for (int jj=0; jj<8; jj++) {
                           bytable[jj][ii][253]=al_fgetc(sfile);
                           bytable[jj][ii][254]=al_fgetc(sfile);
                           bytable[jj][ii][255]=al_fgetc(sfile);
-        for (int kk=0; kk<bytable[jj][ii][253]+1; kk++){
+        for (int kk=0; kk<bytable[jj][ii][253]+1; kk++) {
          // seqtable
                                   bytable[jj][ii][kk]=al_fgetc(sfile);
         }
@@ -3803,7 +3803,7 @@ int LoadFile(const char* filename){
   // unpack patterns
   for (int pointer=0;pointer<256;pointer++) {
     // is it blank?
-    if (patparas[pointer]==0){patlength[pointer]=64;continue;}
+    if (patparas[pointer]==0) {patlength[pointer]=64;continue;}
     //printf("-unpacking pattern %d-\n",pointer);
     CurrentRow=0;
     sk=patparas[pointer];
@@ -3831,8 +3831,8 @@ int LoadFile(const char* filename){
       a++;
       pat[pointer][CurrentRow][NextChannel][2]=al_fgetc(sfile);
       // version<65 volume fix
-      if(TVER<65) {
-        if(pat[pointer][CurrentRow][NextChannel][0]!=0 && pat[pointer][CurrentRow][NextChannel][2]==0x7f){pat[pointer][CurrentRow][NextChannel][2]=0;}
+      if (TVER<65) {
+        if (pat[pointer][CurrentRow][NextChannel][0]!=0 && pat[pointer][CurrentRow][NextChannel][2]==0x7f) {pat[pointer][CurrentRow][NextChannel][2]=0;}
       }
     }
     if ((NextByte>>7)%2) {
@@ -3865,15 +3865,15 @@ void SaveInstrument() {
   char rfn[256];
   //gets(rfn);
   sfile=al_fopen(rfn,"wb");
-  if (sfile!=NULL){ // write the file
+  if (sfile!=NULL) { // write the file
     al_fseek(sfile,0,ALLEGRO_SEEK_SET); // seek to 0
     printf("writing header...\n");
     printf("%d ",al_ftell(sfile));
     al_fputs(sfile,"TRACKINS"); // magic number
     al_fwrite(sfile,&instrument[CurrentIns],64);
     printf("writing envelopes...\n");
-    for (int jj=0; jj<8; jj++){
-      for (int kk=0; kk<256; kk++){
+    for (int jj=0; jj<8; jj++) {
+      for (int kk=0; kk<256; kk++) {
         al_fputc(sfile,bytable[jj][instrument[CurrentIns].env[jj]][kk]); // seqtable
       }
     }
@@ -3889,15 +3889,15 @@ void LoadInstrument() {
   int NextFree=0;
   //gets(rfn);
   sfile=al_fopen(rfn,"rb");
-  if (sfile!=NULL){ // read the file
+  if (sfile!=NULL) { // read the file
     al_fseek(sfile,8,ALLEGRO_SEEK_SET); // seek to 8
     printf("reading header...\n");
     al_fread(sfile,&instrument[CurrentIns],64);
     printf("reading envelopes...\n");
-    for (int jj=0; jj<8; jj++){
+    for (int jj=0; jj<8; jj++) {
       NextFree=AllocateSequence(jj);
       instrument[CurrentIns].env[jj]=NextFree;
-      for (int kk=0; kk<256; kk++){
+      for (int kk=0; kk<256; kk++) {
         bytable[jj][NextFree][kk]=al_fgetc(sfile); // seqtable
       }
     }
@@ -3905,7 +3905,7 @@ void LoadInstrument() {
     printf("done\n");
   } else {fprintf(stderr,"error: couldn't open file for reading!\n");}
 }
-void LoadSample(const char* filename,int position){
+void LoadSample(const char* filename,int position) {
   printf("what the?\n");
   short* thepointer;
   int samplelength=0;
@@ -3913,19 +3913,19 @@ void LoadSample(const char* filename,int position){
   thepointer=(short*)al_get_sample_data(tempsample);
   samplelength=al_get_sample_length(tempsample);
   printf("%x bytes",samplelength);
-  for (int ii=0;ii<samplelength;ii++){
+  for (int ii=0;ii<samplelength;ii++) {
     chip[0].pcm[minval(ii+position,131071)]=thepointer[ii]>>8;
   }
   al_destroy_sample(tempsample);
 }
-void LoadRawSample(const char* filename,int position){
+void LoadRawSample(const char* filename,int position) {
   ALLEGRO_FILE *sfile;
   int samplelength=0;
   sfile=al_fopen(filename,"rb");
   samplelength=al_fsize(sfile);
   printf("%x bytes",samplelength);
-  if (samplelength<(65280-position)){
-    //for (int ii=0;ii<samplelength;ii++){
+  if (samplelength<(65280-position)) {
+    //for (int ii=0;ii<samplelength;ii++) {
       al_fseek(sfile,position,ALLEGRO_SEEK_SET);
       al_fread(sfile,chip[0].pcm+position,samplelength);
     //}
@@ -3934,7 +3934,7 @@ void LoadRawSample(const char* filename,int position){
   }
   al_fclose(sfile);
 }
-static void print_entry(const char* filepath){
+static void print_entry(const char* filepath) {
   ALLEGRO_FS_ENTRY *flist=al_create_fs_entry(filepath);
   printf("listing dir...\n");
   int increment=0;
@@ -4058,9 +4058,9 @@ void ClickEvents() {
     if (PIR(272,24,279,36,mstate.x,mstate.y)) {curoctave--; if (curoctave<0) {curoctave=0;}}
     if (PIR(280,24,288,36,mstate.x,mstate.y)) {curoctave++; if (curoctave>8) {curoctave=8;}}
     if (PIR(160,12,167,23,mstate.x,mstate.y)) {speed--; if (speed<1) {speed=1;}}
-    if (PIR(168,12,176,23,mstate.x,mstate.y)) {speed++; if(speed>31) {speed=31;}; if (speed<1) {speed=1;}}
-    if (PIR(160,24,167,35,mstate.x,mstate.y)) {tempo--; if(tempo<31) {tempo=31;}; FPS=tempo/2.5;}
-    if (PIR(168,24,176,35,mstate.x,mstate.y)) {tempo++; if(tempo>255) {tempo=255;}; FPS=tempo/2.5;}
+    if (PIR(168,12,176,23,mstate.x,mstate.y)) {speed++; if (speed>31) {speed=31;}; if (speed<1) {speed=1;}}
+    if (PIR(160,24,167,35,mstate.x,mstate.y)) {tempo--; if (tempo<31) {tempo=31;}; FPS=tempo/2.5;}
+    if (PIR(168,24,176,35,mstate.x,mstate.y)) {tempo++; if (tempo>255) {tempo=255;}; FPS=tempo/2.5;}
     if (PIR(160,36,167,48,mstate.x,mstate.y)) {if (curpat>0) curpat--; if (playmode==1) Play();}
     if (PIR(168,36,176,48,mstate.x,mstate.y)) {if (curpat<255) curpat++; if (playmode==1) Play();}
     if (PIR(272,12,279,24,mstate.x,mstate.y)) {patid[curpat]--;}
@@ -4164,12 +4164,12 @@ void ClickEvents() {
   if (screen==1) {
     // set the envelope ONLY in normal mode
     if (!hexmode) {
-    if (mstate.buttons&1 && PIR(0,90,scrW-285,scrH-30,mstate.x,mstate.y)){
+    if (mstate.buttons&1 && PIR(0,90,scrW-285,scrH-30,mstate.x,mstate.y)) {
       if (CurrentEnv==6) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][minval(minval(252,(512/valuewidth)+(scrollpos)+scrW-285),((scrollpos*valuewidth)+mstate.x)/valuewidth)]=maxval(minval(127,interpolate(94,scrH-42,0.5)-mstate.y),-128);}
       else {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][minval(minval(252,(512/valuewidth)+(scrollpos)+scrW-285),((scrollpos*valuewidth)+mstate.x)/valuewidth)]=maxval(minval(255,((scrH-43)-mstate.y)/((scrH-128)/256)),0);}
     }
     // line draw tool
-    if (PIR(0,90,scrW-285,scrH-30,mstate.x,mstate.y)){
+    if (PIR(0,90,scrW-285,scrH-30,mstate.x,mstate.y)) {
     if (rightpress) {
       linex1=mstate.x;
       liney1=mstate.y;
@@ -4185,10 +4185,10 @@ void ClickEvents() {
     }
     } else {
     for (int ii=0;ii<253;ii++) {
-      if (PIR(8+((ii%21)*24),102+((ii/21)*24),15+((ii%21)*24),114+((ii/21)*24),mstate.x,mstate.y)){
+      if (PIR(8+((ii%21)*24),102+((ii/21)*24),15+((ii%21)*24),114+((ii/21)*24),mstate.x,mstate.y)) {
         if (leftpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]+=16;
         if (rightpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]-=16;}
-      if (PIR(16+((ii%21)*24),102+((ii/21)*24),32+((ii%21)*24),114+((ii/21)*24),mstate.x,mstate.y)){
+      if (PIR(16+((ii%21)*24),102+((ii/21)*24),32+((ii%21)*24),114+((ii/21)*24),mstate.x,mstate.y)) {
         if (leftpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]+=1;
         if (rightpress) bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]-=1;}
     }
@@ -4208,7 +4208,7 @@ void ClickEvents() {
       if (PIR(464,72,471,84,mstate.x,mstate.y)) {instrument[CurrentIns].env[CurrentEnv]--;}
       if (PIR(480,72,496,84,mstate.x,mstate.y)) {instrument[CurrentIns].env[CurrentEnv]=AllocateSequence(CurrentEnv);}
       if (PIR(504,72,512,84,mstate.x,mstate.y)) {
-        for (int ii=0;ii<254;ii++){
+        for (int ii=0;ii<254;ii++) {
           bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][ii]=0;
         }
         bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]=255;
@@ -4239,45 +4239,45 @@ void ClickEvents() {
       // not this one
       if (PIR(488,60,512,72,mstate.x,mstate.y)) {hexmode=!hexmode;}
       // but yes these ones
-      if (PIR(scrW-200,180,scrW-193,191,mstate.x,mstate.y)){instrument[CurrentIns].DFM^=128;} 
-      if (PIR(scrW-192,180,scrW-185,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]+=16;}
-      if (PIR(scrW-184,180,scrW-177,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]++;}
-      if (PIR(scrW-176,180,scrW-169,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]+=16;}
-      if (PIR(scrW-168,180,scrW-160,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]++;}
-      if (PIR(scrW-88,180,scrW-81,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=4096;}
-      if (PIR(scrW-80,180,scrW-73,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=256;}
-      if (PIR(scrW-72,180,scrW-63,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen+=16;}
-      if (PIR(scrW-64,180,scrW-56,191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen++;}
+      if (PIR(scrW-200,180,scrW-193,191,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=128;} 
+      if (PIR(scrW-192,180,scrW-185,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[1]+=16;}
+      if (PIR(scrW-184,180,scrW-177,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[1]++;}
+      if (PIR(scrW-176,180,scrW-169,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[0]+=16;}
+      if (PIR(scrW-168,180,scrW-160,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[0]++;}
+      if (PIR(scrW-88,180,scrW-81,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen+=4096;}
+      if (PIR(scrW-80,180,scrW-73,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen+=256;}
+      if (PIR(scrW-72,180,scrW-63,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen+=16;}
+      if (PIR(scrW-64,180,scrW-56,191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen++;}
 
-      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=16;}
-      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH--;}
-      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=4096;}
-      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH-=256;}
+      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH-=16;}
+      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH--;}
+      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH-=4096;}
+      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH-=256;}
 
-      if (PIR(scrW-(800-624),252,scrW-(800-631),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO++;}
-      if (PIR(scrW-(800-632),252,scrW-(800-640),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO--;}
+      if (PIR(scrW-(800-624),252,scrW-(800-631),264,mstate.x,mstate.y)) {instrument[CurrentIns].LFO++;}
+      if (PIR(scrW-(800-632),252,scrW-(800-640),264,mstate.x,mstate.y)) {instrument[CurrentIns].LFO--;}
 
-      if (PIR(scrW-(800-600),324,scrW-(800-607),336,mstate.x,mstate.y)){instrument[CurrentIns].flags+=64;}
-      if (PIR(scrW-(800-608),324,scrW-(800-616),336,mstate.x,mstate.y)){instrument[CurrentIns].flags-=64;}
+      if (PIR(scrW-(800-600),324,scrW-(800-607),336,mstate.x,mstate.y)) {instrument[CurrentIns].flags+=64;}
+      if (PIR(scrW-(800-608),324,scrW-(800-616),336,mstate.x,mstate.y)) {instrument[CurrentIns].flags-=64;}
     }
     if (rightpress) {
-      if (PIR(scrW-(800-600),180,scrW-(800-607),191,mstate.x,mstate.y)){instrument[CurrentIns].DFM^=128;}
-      if (PIR(scrW-(800-608),180,scrW-(800-615),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]-=16;}
-      if (PIR(scrW-(800-616),180,scrW-(800-623),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[1]--;}
-      if (PIR(scrW-(800-624),180,scrW-(800-631),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]-=16;}
-      if (PIR(scrW-(800-632),180,scrW-(800-640),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmPos[0]--;}
-      if (PIR(scrW-(800-712),180,scrW-(800-719),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=4096;}
-      if (PIR(scrW-(800-720),180,scrW-(800-727),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=256;}
-      if (PIR(scrW-(800-728),180,scrW-(800-735),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen-=16;}
-      if (PIR(scrW-(800-736),180,scrW-(800-744),191,mstate.x,mstate.y)){instrument[CurrentIns].pcmLen--;}
-      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=16;}
-      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH++;}
-      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=4096;}
-      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)){instrument[CurrentIns].filterH+=256;}
+      if (PIR(scrW-(800-600),180,scrW-(800-607),191,mstate.x,mstate.y)) {instrument[CurrentIns].DFM^=128;}
+      if (PIR(scrW-(800-608),180,scrW-(800-615),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[1]-=16;}
+      if (PIR(scrW-(800-616),180,scrW-(800-623),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[1]--;}
+      if (PIR(scrW-(800-624),180,scrW-(800-631),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[0]-=16;}
+      if (PIR(scrW-(800-632),180,scrW-(800-640),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmPos[0]--;}
+      if (PIR(scrW-(800-712),180,scrW-(800-719),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen-=4096;}
+      if (PIR(scrW-(800-720),180,scrW-(800-727),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen-=256;}
+      if (PIR(scrW-(800-728),180,scrW-(800-735),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen-=16;}
+      if (PIR(scrW-(800-736),180,scrW-(800-744),191,mstate.x,mstate.y)) {instrument[CurrentIns].pcmLen--;}
+      if (PIR(scrW-(800-592),216,scrW-(800-599),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH+=16;}
+      if (PIR(scrW-(800-600),216,scrW-(800-607),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH++;}
+      if (PIR(scrW-(800-608),216,scrW-(800-615),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH+=4096;}
+      if (PIR(scrW-(800-616),216,scrW-(800-623),228,mstate.x,mstate.y)) {instrument[CurrentIns].filterH+=256;}
     }
     if (leftclick) {
-      if (PIR(0,scrH-18,8,scrH-6,mstate.x,mstate.y)) {scrollpos--; if(scrollpos<0){scrollpos=0;};}
-      if (PIR(500,scrH-18,512,scrH-6,mstate.x,mstate.y)) {scrollpos++; if(scrollpos>124){scrollpos=124;};}
+      if (PIR(0,scrH-18,8,scrH-6,mstate.x,mstate.y)) {scrollpos--; if (scrollpos<0) {scrollpos=0;};}
+      if (PIR(500,scrH-18,512,scrH-6,mstate.x,mstate.y)) {scrollpos++; if (scrollpos>124) {scrollpos=124;};}
       // bottom thing
       if (PIR(72,scrH-18,79,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]++;}
       if (PIR(80,scrH-18,87,scrH-6,mstate.x,mstate.y)) {bytable[CurrentEnv][instrument[CurrentIns].env[CurrentEnv]][254]--;}
@@ -4288,8 +4288,8 @@ void ClickEvents() {
       // other stuff
       if (PIR(240,60,272,71,mstate.x,mstate.y)) {SaveInstrument();}
       if (PIR(280,60,312,71,mstate.x,mstate.y)) {LoadInstrument();}
-      if (PIR(scrW-(800-608),252,scrW-(800-615),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO++;}
-      if (PIR(scrW-(800-616),252,scrW-(800-623),264,mstate.x,mstate.y)){instrument[CurrentIns].LFO--;}
+      if (PIR(scrW-(800-608),252,scrW-(800-615),264,mstate.x,mstate.y)) {instrument[CurrentIns].LFO++;}
+      if (PIR(scrW-(800-616),252,scrW-(800-623),264,mstate.x,mstate.y)) {instrument[CurrentIns].LFO--;}
     }
 
   }
@@ -4327,8 +4327,8 @@ void ClickEvents() {
         LoadRawSample(rfn,writeposition);}
       for (int ii=diskopscrollpos; ii<minval(diskopscrollpos+27,filecount); ii++) {
         if (PIR(0,120+(ii*12)-(diskopscrollpos*12),790,131+(ii*12)-(diskopscrollpos*12),mstate.x,mstate.y)) {
-          if (selectedfileindex==ii+1){
-          if(filenames[ii].isdir) {strcpy(curdir,filenames[ii].name.c_str());print_entry(curdir);diskopscrollpos=0;selectedfileindex=-1;}
+          if (selectedfileindex==ii+1) {
+          if (filenames[ii].isdir) {strcpy(curdir,filenames[ii].name.c_str());print_entry(curdir);diskopscrollpos=0;selectedfileindex=-1;}
           else {
                                           int success;
                                           if (strstr(filenames[ii].name.c_str(),".mod")==NULL) {success=LoadFile(filenames[ii].name.c_str());} else {
@@ -4377,7 +4377,7 @@ void ClickEvents() {
   if (screen==4) {
     int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
     if (leftclick) {
-      for (int ii=0;ii<chanstodisplay;ii++){
+      for (int ii=0;ii<chanstodisplay;ii++) {
         if (PIR(56+(ii*96)+mixerdrawoffset,84,63+(ii*96)+mixerdrawoffset,95,mstate.x,mstate.y)) {defchanvol[ii+(curedpage*8)]++;if (defchanvol[ii+(curedpage*8)]>128) {defchanvol[ii+(curedpage*8)]=128;}}
         if (PIR(64+(ii*96)+mixerdrawoffset,84,72+(ii*96)+mixerdrawoffset,95,mstate.x,mstate.y)) {defchanvol[ii+(curedpage*8)]--;if (defchanvol[ii+(curedpage*8)]>250) {defchanvol[ii+(curedpage*8)]=0;}}
         if (PIR(56+(ii*96)+mixerdrawoffset,96,63+(ii*96)+mixerdrawoffset,108,mstate.x,mstate.y)) {defchanpan[ii+(curedpage*8)]++;}
@@ -4385,25 +4385,25 @@ void ClickEvents() {
       }
     }
     if (leftpress) {
-      for (int ii=0;ii<chanstodisplay;ii++){
+      for (int ii=0;ii<chanstodisplay;ii++) {
         if (!kb[ALLEGRO_KEY_LSHIFT]) {if (PIR(16+(ii*96)+mixerdrawoffset,60,96+(ii*96)+mixerdrawoffset,72,mstate.x,mstate.y)) {muted[ii+(curedpage*8)]=!muted[ii+(curedpage*8)];}}
         else {if (PIR(16+(ii*96)+mixerdrawoffset,60,96+(ii*96)+mixerdrawoffset,72,mstate.x,mstate.y)) {midion[ii+(curedpage*8)]=!midion[ii+(curedpage*8)];}}
       }
     }
     if (rightpress) {
-      for (int ii=0;ii<chanstodisplay;ii++){
+      for (int ii=0;ii<chanstodisplay;ii++) {
         if (PIR(16+(ii*96)+mixerdrawoffset,60,96+(ii*96)+mixerdrawoffset,72,mstate.x,mstate.y)) {
           bool solomode=true;
-          for (int jj=0;jj<32;jj++){
+          for (int jj=0;jj<32;jj++) {
             if (jj==ii+(curedpage*8)) {continue;}
             if (!muted[jj]) {solomode=false;break;}
           }
           if (solomode) {
-            for (int jj=0;jj<32;jj++){
+            for (int jj=0;jj<32;jj++) {
               muted[jj]=false;
             }
           } else {
-            for (int jj=0;jj<32;jj++){
+            for (int jj=0;jj<32;jj++) {
               muted[jj]=true;
             }
             muted[ii+(curedpage*8)]=false;
@@ -4413,33 +4413,33 @@ void ClickEvents() {
     }
   }
   // events only in config view
-  if (screen==5){
-    if (leftpress){
-      if (PIR(280,96,368,107,mstate.x,mstate.y)){settings::distortion=!settings::distortion;}
-      if (PIR(280,132,368,143,mstate.x,mstate.y)){settings::cubicspline=!settings::cubicspline;}
-      if (PIR(280,240,368,251,mstate.x,mstate.y)){settings::nofilters=!settings::nofilters;}
-      if (PIR(280,252,368,264,mstate.x,mstate.y)){settings::muffle=!settings::muffle;}
+  if (screen==5) {
+    if (leftpress) {
+      if (PIR(280,96,368,107,mstate.x,mstate.y)) {settings::distortion=!settings::distortion;}
+      if (PIR(280,132,368,143,mstate.x,mstate.y)) {settings::cubicspline=!settings::cubicspline;}
+      if (PIR(280,240,368,251,mstate.x,mstate.y)) {settings::nofilters=!settings::nofilters;}
+      if (PIR(280,252,368,264,mstate.x,mstate.y)) {settings::muffle=!settings::muffle;}
     for (int ii=0;ii<27;ii++) {
-      if (PIR(160,96+(ii*12),167,107+(ii*12),mstate.x,mstate.y)){settings::colorR[ii]+=16;}
-      if (PIR(168,96+(ii*12),176,107+(ii*12),mstate.x,mstate.y)){settings::colorR[ii]++;}
+      if (PIR(160,96+(ii*12),167,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]+=16;}
+      if (PIR(168,96+(ii*12),176,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]++;}
 
-      if (PIR(184,96+(ii*12),191,107+(ii*12),mstate.x,mstate.y)){settings::colorG[ii]+=16;}
-      if (PIR(192,96+(ii*12),200,107+(ii*12),mstate.x,mstate.y)){settings::colorG[ii]++;}
+      if (PIR(184,96+(ii*12),191,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]+=16;}
+      if (PIR(192,96+(ii*12),200,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]++;}
 
-      if (PIR(208,96+(ii*12),215,107+(ii*12),mstate.x,mstate.y)){settings::colorB[ii]+=16;}
-      if (PIR(216,96+(ii*12),224,107+(ii*12),mstate.x,mstate.y)){settings::colorB[ii]++;}
+      if (PIR(208,96+(ii*12),215,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]+=16;}
+      if (PIR(216,96+(ii*12),224,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]++;}
     }
     }
-    if (rightpress){
+    if (rightpress) {
     for (int ii=0;ii<27;ii++) {
-      if (PIR(160,96+(ii*12),167,107+(ii*12),mstate.x,mstate.y)){settings::colorR[ii]-=16;}
-      if (PIR(168,96+(ii*12),176,107+(ii*12),mstate.x,mstate.y)){settings::colorR[ii]--;}
+      if (PIR(160,96+(ii*12),167,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]-=16;}
+      if (PIR(168,96+(ii*12),176,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]--;}
 
-      if (PIR(184,96+(ii*12),191,107+(ii*12),mstate.x,mstate.y)){settings::colorG[ii]-=16;}
-      if (PIR(192,96+(ii*12),200,107+(ii*12),mstate.x,mstate.y)){settings::colorG[ii]--;}
+      if (PIR(184,96+(ii*12),191,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]-=16;}
+      if (PIR(192,96+(ii*12),200,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]--;}
 
-      if (PIR(208,96+(ii*12),215,107+(ii*12),mstate.x,mstate.y)){settings::colorB[ii]-=16;}
-      if (PIR(216,96+(ii*12),224,107+(ii*12),mstate.x,mstate.y)){settings::colorB[ii]--;}
+      if (PIR(208,96+(ii*12),215,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]-=16;}
+      if (PIR(216,96+(ii*12),224,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]--;}
     }
     }
   }
@@ -4478,23 +4478,23 @@ void FastTracker() {
   int lastChan, lastMode;
   int selTop, selBottom;
   // scroll code
-  if(kbpressed[ALLEGRO_KEY_UP]){GoBack();drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_DOWN]){JustSkip();drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_RIGHT]){
+  if (kbpressed[ALLEGRO_KEY_UP]) {GoBack();drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_DOWN]) {JustSkip();drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_RIGHT]) {
   curedmode++;
-  if(curedmode>4){
+  if (curedmode>4) {
     curedchan++;
     curedmode=0;
-    if(curedchan>7){curedchan=7;curedmode=5;}
+    if (curedchan>7) {curedchan=7;curedmode=5;}
     }
   drawpatterns(true);
   }
-  if(kbpressed[ALLEGRO_KEY_LEFT]){
+  if (kbpressed[ALLEGRO_KEY_LEFT]) {
     curedmode--;
-    if(curedmode<0){
+    if (curedmode<0) {
   curedchan--;
   curedmode=4;
-  if(curedchan<0){curedchan=0;curedmode=0;}}
+  if (curedchan<0) {curedchan=0;curedmode=0;}}
     drawpatterns(true);
   }
   if (kbpressed[ALLEGRO_KEY_DELETE]) {
@@ -4535,130 +4535,130 @@ void FastTracker() {
     curselchan=curedchan;
     curselmode=curedmode;
   }
-  if(curedmode==0){
+  if (curedmode==0) {
   // silences and stuff
-  if(kbpressed[71]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0d;EditSkip();}
-  if(kbpressed[70]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0f;EditSkip();}
-  if(kbpressed[28]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0e;EditSkip();}
+  if (kbpressed[71]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0d;EditSkip();}
+  if (kbpressed[70]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0f;EditSkip();}
+  if (kbpressed[28]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0e;EditSkip();}
   // notes, main octave
-  if(kbpressed[ALLEGRO_KEY_Z]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_X]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_C]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_V]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_B]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_N]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_M]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_S]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_D]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_G]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_H]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_J]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval(curoctave<<4,0x90);EditSkip();}
-  if(kbpressed[72]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[12]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[73]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[60]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_Z]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_X]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_V]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_N]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_M]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_S]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_G]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_H]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_J]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[72]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[12]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[73]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[60]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
   // notes, 2nd octave
-  if(kbpressed[ALLEGRO_KEY_Q]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_W]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_E]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_R]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_T]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_Y]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_U]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_2]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_3]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_5]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_6]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_7]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_I]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_9]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_O]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_0]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if(kbpressed[ALLEGRO_KEY_P]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if(kbpressed[66]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if(kbpressed[65]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_Q]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_W]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_R]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_T]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_Y]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_U]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_I]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_O]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[ALLEGRO_KEY_P]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[66]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[65]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+2)<<4,0x90);EditSkip();}
   }
-  if(curedmode==1){
-  if(kbpressed[ALLEGRO_KEY_0]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4);drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_1]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+1;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_2]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+2;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_3]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+3;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_4]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+4;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_5]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+5;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_6]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+6;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_7]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+7;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_8]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+8;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_9]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+9;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_A]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+10;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_B]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+11;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_C]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+12;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_D]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+13;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_E]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+14;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_F]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+15;drawpatterns(true);}
+  if (curedmode==1) {
+  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4);drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+1;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+2;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+3;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+4;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+5;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+6;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+7;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+8;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+9;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+10;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+11;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+12;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+13;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+14;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+15;drawpatterns(true);}
   }
-  if(curedmode==2){
-  if(kbpressed[ALLEGRO_KEY_0]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4);drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_1]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+1;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_2]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+2;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_3]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+3;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_4]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+4;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_5]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+5;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_6]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+6;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_7]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+7;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_8]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+8;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_9]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+9;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_A]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+10;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_B]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+11;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_C]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+12;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_D]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+13;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_E]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+14;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_F]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+15;drawpatterns(true);}
+  if (curedmode==2) {
+  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4);drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+1;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+2;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+3;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+4;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+5;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+6;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+7;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+8;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+9;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+10;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+11;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+12;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+13;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+14;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+15;drawpatterns(true);}
   }
-  if(curedmode==3){
-  if(kbpressed[ALLEGRO_KEY_A]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=1;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_B]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=2;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_C]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=3;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_D]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=4;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_E]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=5;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_F]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=6;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_G]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=7;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_H]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=8;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_I]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=9;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_J]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=10;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_K]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=11;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_L]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=12;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_M]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=13;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_N]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=14;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_O]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=15;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_P]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=16;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_Q]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=17;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_R]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=18;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_S]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=19;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_T]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=20;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_U]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=21;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_V]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=22;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_W]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=23;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_X]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=24;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_Y]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=25;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_Z]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=26;drawpatterns(true);}
+  if (curedmode==3) {
+  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=1;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=2;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=3;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=4;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=5;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=6;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_G]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=7;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_H]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=8;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_I]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=9;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_J]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=10;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_K]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=11;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_L]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=12;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_M]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=13;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_N]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=14;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_O]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=15;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_P]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=16;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_Q]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=17;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_R]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=18;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_S]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=19;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_T]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=20;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_U]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=21;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_V]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=22;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_W]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=23;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_X]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=24;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_Y]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=25;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_Z]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=26;drawpatterns(true);}
   }
-  if(curedmode==4){
-  if(kbpressed[ALLEGRO_KEY_0]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4);drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_1]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+1;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_2]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+2;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_3]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+3;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_4]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+4;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_5]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+5;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_6]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+6;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_7]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+7;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_8]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+8;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_9]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+9;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_A]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+10;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_B]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+11;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_C]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+12;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_D]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+13;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_E]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+14;drawpatterns(true);}
-  if(kbpressed[ALLEGRO_KEY_F]){pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+15;drawpatterns(true);}
+  if (curedmode==4) {
+  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4);drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+1;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+2;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+3;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+4;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+5;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+6;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+7;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+8;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+9;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+10;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+11;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+12;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+13;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+14;drawpatterns(true);}
+  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+15;drawpatterns(true);}
   }
 }
 void InstrumentTest(int testnote, int testchan) {
@@ -4670,11 +4670,11 @@ void ModPlug() {
 
 
 }
-void RunTestNote(int keycode){
+void RunTestNote(int keycode) {
   //// PLAY SONG ////
   // set speed to song speed and other variables
   if (!speedlock) {speed=defspeed;}
-  if (!tempolock){
+  if (!tempolock) {
   if (ntsc) {
   #ifdef FILM
   tempo=60;
@@ -4691,7 +4691,7 @@ void RunTestNote(int keycode){
   //curtick=speed;curstep=-1;playmode=1;
   //tickstart=true;
   // reset channels
-  for (int su=0;su<32;su++){
+  for (int su=0;su<32;su++) {
   cvol[su]=0;
   Mvol[su]=0;
   plcount[su]=0;
@@ -4747,85 +4747,85 @@ void RunTestNote(int keycode){
   }
 }
 void MuteControls() {
-  if(kbpressed[ALLEGRO_KEY_1]) {muted[0]=!muted[0];}
-  if(kbpressed[ALLEGRO_KEY_2]) {muted[1]=!muted[1];}
-  if(kbpressed[ALLEGRO_KEY_3]) {muted[2]=!muted[2];}
-  if(kbpressed[ALLEGRO_KEY_4]) {muted[3]=!muted[3];}
-  if(kbpressed[ALLEGRO_KEY_5]) {muted[4]=!muted[4];}
-  if(kbpressed[ALLEGRO_KEY_6]) {muted[5]=!muted[5];}
-  if(kbpressed[ALLEGRO_KEY_7]) {muted[6]=!muted[6];}
-  if(kbpressed[ALLEGRO_KEY_8]) {muted[7]=!muted[7];}
-  if(kbpressed[ALLEGRO_KEY_Q]) {muted[8]=!muted[8];}
-  if(kbpressed[ALLEGRO_KEY_W]) {muted[9]=!muted[9];}
-  if(kbpressed[ALLEGRO_KEY_E]) {muted[10]=!muted[10];}
-  if(kbpressed[ALLEGRO_KEY_R]) {muted[11]=!muted[11];}
-  if(kbpressed[ALLEGRO_KEY_T]) {muted[12]=!muted[12];}
-  if(kbpressed[ALLEGRO_KEY_Y]) {muted[13]=!muted[13];}
-  if(kbpressed[ALLEGRO_KEY_U]) {muted[14]=!muted[14];}
-  if(kbpressed[ALLEGRO_KEY_I]) {muted[15]=!muted[15];}
-  if(kbpressed[ALLEGRO_KEY_A]) {muted[16]=!muted[16];}
-  if(kbpressed[ALLEGRO_KEY_S]) {muted[17]=!muted[17];}
-  if(kbpressed[ALLEGRO_KEY_D]) {muted[18]=!muted[18];}
-  if(kbpressed[ALLEGRO_KEY_F]) {muted[19]=!muted[19];}
-  if(kbpressed[ALLEGRO_KEY_G]) {muted[20]=!muted[20];}
-  if(kbpressed[ALLEGRO_KEY_H]) {muted[21]=!muted[21];}
-  if(kbpressed[ALLEGRO_KEY_J]) {muted[22]=!muted[22];}
-  if(kbpressed[ALLEGRO_KEY_K]) {muted[23]=!muted[23];}
-  if(kbpressed[ALLEGRO_KEY_Z]) {muted[24]=!muted[24];}
-  if(kbpressed[ALLEGRO_KEY_X]) {muted[25]=!muted[25];}
-  if(kbpressed[ALLEGRO_KEY_C]) {muted[26]=!muted[26];}
-  if(kbpressed[ALLEGRO_KEY_V]) {muted[27]=!muted[27];}
-  if(kbpressed[ALLEGRO_KEY_B]) {muted[28]=!muted[28];}
-  if(kbpressed[ALLEGRO_KEY_N]) {muted[29]=!muted[29];}
-  if(kbpressed[ALLEGRO_KEY_M]) {muted[30]=!muted[30];}
-  if(kbpressed[ALLEGRO_KEY_COMMA]) {muted[31]=!muted[31];}
+  if (kbpressed[ALLEGRO_KEY_1]) {muted[0]=!muted[0];}
+  if (kbpressed[ALLEGRO_KEY_2]) {muted[1]=!muted[1];}
+  if (kbpressed[ALLEGRO_KEY_3]) {muted[2]=!muted[2];}
+  if (kbpressed[ALLEGRO_KEY_4]) {muted[3]=!muted[3];}
+  if (kbpressed[ALLEGRO_KEY_5]) {muted[4]=!muted[4];}
+  if (kbpressed[ALLEGRO_KEY_6]) {muted[5]=!muted[5];}
+  if (kbpressed[ALLEGRO_KEY_7]) {muted[6]=!muted[6];}
+  if (kbpressed[ALLEGRO_KEY_8]) {muted[7]=!muted[7];}
+  if (kbpressed[ALLEGRO_KEY_Q]) {muted[8]=!muted[8];}
+  if (kbpressed[ALLEGRO_KEY_W]) {muted[9]=!muted[9];}
+  if (kbpressed[ALLEGRO_KEY_E]) {muted[10]=!muted[10];}
+  if (kbpressed[ALLEGRO_KEY_R]) {muted[11]=!muted[11];}
+  if (kbpressed[ALLEGRO_KEY_T]) {muted[12]=!muted[12];}
+  if (kbpressed[ALLEGRO_KEY_Y]) {muted[13]=!muted[13];}
+  if (kbpressed[ALLEGRO_KEY_U]) {muted[14]=!muted[14];}
+  if (kbpressed[ALLEGRO_KEY_I]) {muted[15]=!muted[15];}
+  if (kbpressed[ALLEGRO_KEY_A]) {muted[16]=!muted[16];}
+  if (kbpressed[ALLEGRO_KEY_S]) {muted[17]=!muted[17];}
+  if (kbpressed[ALLEGRO_KEY_D]) {muted[18]=!muted[18];}
+  if (kbpressed[ALLEGRO_KEY_F]) {muted[19]=!muted[19];}
+  if (kbpressed[ALLEGRO_KEY_G]) {muted[20]=!muted[20];}
+  if (kbpressed[ALLEGRO_KEY_H]) {muted[21]=!muted[21];}
+  if (kbpressed[ALLEGRO_KEY_J]) {muted[22]=!muted[22];}
+  if (kbpressed[ALLEGRO_KEY_K]) {muted[23]=!muted[23];}
+  if (kbpressed[ALLEGRO_KEY_Z]) {muted[24]=!muted[24];}
+  if (kbpressed[ALLEGRO_KEY_X]) {muted[25]=!muted[25];}
+  if (kbpressed[ALLEGRO_KEY_C]) {muted[26]=!muted[26];}
+  if (kbpressed[ALLEGRO_KEY_V]) {muted[27]=!muted[27];}
+  if (kbpressed[ALLEGRO_KEY_B]) {muted[28]=!muted[28];}
+  if (kbpressed[ALLEGRO_KEY_N]) {muted[29]=!muted[29];}
+  if (kbpressed[ALLEGRO_KEY_M]) {muted[30]=!muted[30];}
+  if (kbpressed[ALLEGRO_KEY_COMMA]) {muted[31]=!muted[31];}
 }
 void MuteAllChannels() {
-  for (int su=0;su<8*soundchips;su++){
+  for (int su=0;su<8*soundchips;su++) {
   cvol[su]=0;
         chip[su>>3].chan[su&7].vol=0;
   }
 }
 void SFXControls() {
-  if(kbpressed[ALLEGRO_KEY_1]) {cursfx=0;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_2]) {cursfx=1;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_3]) {cursfx=2;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_4]) {cursfx=3;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_5]) {cursfx=4;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_6]) {cursfx=5;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_7]) {cursfx=6;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_8]) {cursfx=7;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_Q]) {cursfx=8;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_W]) {cursfx=9;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_E]) {cursfx=10;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_R]) {cursfx=11;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_T]) {cursfx=12;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_Y]) {cursfx=13;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_U]) {cursfx=14;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_I]) {cursfx=15;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_A]) {cursfx=16;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_S]) {cursfx=17;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_D]) {cursfx=18;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_F]) {cursfx=19;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_G]) {cursfx=20;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_H]) {cursfx=21;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_J]) {cursfx=22;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_K]) {cursfx=23;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_Z]) {cursfx=24;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_X]) {cursfx=25;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_C]) {cursfx=26;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_V]) {cursfx=27;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_B]) {cursfx=28;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_N]) {cursfx=29;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_1]) {cursfx=0;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_2]) {cursfx=1;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_3]) {cursfx=2;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_4]) {cursfx=3;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_5]) {cursfx=4;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_6]) {cursfx=5;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_7]) {cursfx=6;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_8]) {cursfx=7;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_Q]) {cursfx=8;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_W]) {cursfx=9;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_E]) {cursfx=10;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_R]) {cursfx=11;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_T]) {cursfx=12;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_Y]) {cursfx=13;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_U]) {cursfx=14;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_I]) {cursfx=15;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_A]) {cursfx=16;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_S]) {cursfx=17;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_D]) {cursfx=18;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_F]) {cursfx=19;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_G]) {cursfx=20;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_H]) {cursfx=21;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_J]) {cursfx=22;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_K]) {cursfx=23;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_Z]) {cursfx=24;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_X]) {cursfx=25;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_C]) {cursfx=26;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_V]) {cursfx=27;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_B]) {cursfx=28;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_N]) {cursfx=29;sfxpos=0;}
   // pausers
-  if(kbpressed[ALLEGRO_KEY_M]) {if(playmode==0) {playmode=1;} else {playmode=0;};cursfx=30;sfxpos=0;}
-  if(kbpressed[ALLEGRO_KEY_COMMA]) {if(playmode==0) {playmode=1;} else {playmode=0;};cursfx=31;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_M]) {if (playmode==0) {playmode=1;} else {playmode=0;};cursfx=30;sfxpos=0;}
+  if (kbpressed[ALLEGRO_KEY_COMMA]) {if (playmode==0) {playmode=1;} else {playmode=0;};cursfx=31;sfxpos=0;}
 }
 void KeyboardEvents() {
   // keyboard states
   al_get_keyboard_state(&kbstate);
   // check for presses
-  for (int cntkb=0;cntkb<255;cntkb++){
+  for (int cntkb=0;cntkb<255;cntkb++) {
   kblast[cntkb]=kb[cntkb];
   kbpressed[cntkb]=false;
   kb[cntkb]=al_key_down(&kbstate,cntkb);
@@ -4834,14 +4834,14 @@ void KeyboardEvents() {
     //if (verbose) {cout << cntkb;}
   }}
   // main code here
-  if(edittype && screen==0){FastTracker();} else {ModPlug();}
-  if(screen==4) {MuteControls();}
-  if(kbpressed[ALLEGRO_KEY_PGDN]) {curedpage++; if (curedpage>3) {curedpage=3;
+  if (edittype && screen==0) {FastTracker();} else {ModPlug();}
+  if (screen==4) {MuteControls();}
+  if (kbpressed[ALLEGRO_KEY_PGDN]) {curedpage++; if (curedpage>3) {curedpage=3;
     #ifdef SOUNDS
     cursfx=1;sfxpos=0;
     #endif
   };drawpatterns(true);drawmixerlayer();}
-  if(kbpressed[ALLEGRO_KEY_PGUP]) {curedpage--; if (curedpage<0) {
+  if (kbpressed[ALLEGRO_KEY_PGUP]) {curedpage--; if (curedpage<0) {
     #ifdef SOUNDS
     cursfx=1;sfxpos=0;
     #endif
@@ -4861,7 +4861,7 @@ void KeyboardEvents() {
     #endif
   };drawpatterns(true);drawmixerlayer();}
   if (kbpressed[ALLEGRO_KEY_TAB]) {MuteAllChannels();}
-  if(kbpressed[ALLEGRO_KEY_MENU] || kbpressed[ALLEGRO_KEY_BACKQUOTE]){ntsc=!ntsc; if (ntsc) {
+  if (kbpressed[ALLEGRO_KEY_MENU] || kbpressed[ALLEGRO_KEY_BACKQUOTE]) {ntsc=!ntsc; if (ntsc) {
     if (tempo==125) {
       tempo=150;
       FPS=60;
@@ -4875,14 +4875,14 @@ void KeyboardEvents() {
     al_set_timer_speed(timer,1/50.0);
   }
   }
-  if (screen==9 || screen==7){
+  if (screen==9 || screen==7) {
     SFXControls();
   }
-  if (screen==1){
+  if (screen==1) {
     if (kbpressed[ALLEGRO_KEY_MINUS]) {valuewidth--; if (valuewidth<1) {valuewidth=1;}}
     if (kbpressed[ALLEGRO_KEY_EQUALS]) {valuewidth++;}
   }
-  if (screen==11){
+  if (screen==11) {
     if (kb[ALLEGRO_KEY_LEFT]) {pcmeditoffset-=4*maxval(1,(int)pow(2.0f,-pcmeditscale));}
     if (kb[ALLEGRO_KEY_RIGHT]) {pcmeditoffset+=4*maxval(1,(int)pow(2.0f,-pcmeditscale));}
     if (kbpressed[ALLEGRO_KEY_MINUS]) {pcmeditscale--;}
@@ -4907,7 +4907,7 @@ void drawdisp() {
     al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curpatrow*12)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curpatrow*12)),0);
     #endif
     al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_SRC_COLOR);
-    for (int j=0;j<8;j++){
+    for (int j=0;j<8;j++) {
   //al_draw_filled_rectangle(24+(j*96),255,112+(j*96),266,mapHSV(((float)cduty[j+(curedpage*8)]/128)*360,(cshape[j+(curedpage*8)]==4)?(0):(1),(float)cvol[j+(curedpage*8)]/128));
   }
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
@@ -4944,7 +4944,7 @@ void drawdisp() {
     }
   }
   /*
-  switch(curselmode){
+  switch(curselmode) {
   case 0: al_draw_filled_rectangle(((scrW/2)-400)+24+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
   case 1: al_draw_filled_rectangle(((scrW/2)-400)+48+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
   case 2: al_draw_filled_rectangle(((scrW/2)-400)+64+(curselchan*96)+((8-chanstodisplay)*45),255,((scrW/2)-400)+88+(curselchan*96)+((8-chanstodisplay)*45),266,al_map_rgb(128,128,128)); break;
@@ -5069,7 +5069,7 @@ void drawdisp() {
     //al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-7+0.5,getconfigcol(colDOWN));
   }
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
-  switch(screen){
+  switch(screen) {
     case 0: drawpatterns(false); break;
     case 1: drawinsedit(); break;
     case 2: drawdiskop(); break;
@@ -5086,7 +5086,7 @@ void drawdisp() {
   }
   //al_draw_text(text,getucol(10),56,12,ALLEGRO_ALIGN_LEFT,(string)defspeed);
 }
-int playfx(const unsigned char* fxdata,int fxpos,int achan){
+int playfx(const unsigned char* fxdata,int fxpos,int achan) {
   // returns number if not in the end, otherwise -1
   int fxoffset=0;
   if (fxpos==-1) {sfxplaying=false;return -1;}
@@ -5158,7 +5158,7 @@ int playfx(const unsigned char* fxdata,int fxpos,int achan){
   return fxoffset+fxpos+1;
 }
 
-int main(int argc, char **argv){
+int main(int argc, char **argv) {
   ALLEGRO_TRANSFORM tra;
   detunefactor=1;
   chip[0].Init();
@@ -5225,7 +5225,7 @@ DETUNE_FACTOR_GLOBAL=1;
    patlength=new unsigned char[256];
    //texthand=al_fopen("help.txt","rb");
   texthand=NULL;
-  if (texthand!=NULL){ // read the file
+  if (texthand!=NULL) { // read the file
   printf("loading helpfile, ");
     helpfilesize=al_fsize(texthand);
   printf("%d bytes\n",helpfilesize);
@@ -5238,12 +5238,12 @@ DETUNE_FACTOR_GLOBAL=1;
     //helptext="help.txt not found";
   }
   // allocate memory for files
-  /*for (int ii=0;ii<1024;ii++){
+  /*for (int ii=0;ii<1024;ii++) {
   filenames[ii].name=new char[257];
   }*/
 
    printf("initializing allegro\n");
-   if(!al_init()) {
+   if (!al_init()) {
       fprintf(stderr, "failed to initialize allegro!\n");
       return -1;
    }
@@ -5259,7 +5259,7 @@ DETUNE_FACTOR_GLOBAL=1;
    printf("creating timer\n");
    printf("%f\n",FPS);
    timer = al_create_timer(1.0 / FPS);
-   if(!timer) {
+   if (!timer) {
       fprintf(stderr, "failed to create timer!\n");
       return -1;
    }
@@ -5274,7 +5274,7 @@ al_set_new_window_title("soundtracker");
    dpiScale=getScale();
    display = al_create_display(scrW*dpiScale,scrH*dpiScale);
    //al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
-   if(!display) {
+   if (!display) {
       fprintf(stderr, "failed to create display!\n");
       al_destroy_timer(timer);
       return -1;
@@ -5282,19 +5282,19 @@ al_set_new_window_title("soundtracker");
 
    printf("loading font\n");
    text=al_load_ttf_font("unifont.ttf",16,0);
-   if(text==NULL){
+   if (text==NULL) {
      fprintf(stderr,"unifont.ttf wasn't found - halting");
      return -1;
    }
    g.init(text);
    printf("initializing mouse input\n");
    bool ismouse=al_install_mouse();
-   if(!ismouse){
+   if (!ismouse) {
      fprintf(stderr,"there will be no mouse!");
    }
    printf("initializing keyboard input\n");
    bool iskb=al_install_keyboard();
-   if(!iskb){
+   if (!iskb) {
      fprintf(stderr,"there will be no keyboard! :(");
    }
    patternbitmap=al_create_bitmap(scrW,scrH);
@@ -5327,7 +5327,7 @@ al_set_new_window_title("soundtracker");
   }
    // init colors
    ALLEGRO_COLOR colors[256]={};
-   for(int lc=0;lc<256;lc++) {
+   for (int lc=0;lc<256;lc++) {
      colors[lc]=getucol(lc);
    }
    al_set_target_bitmap(patternbitmap);
@@ -5339,7 +5339,7 @@ al_set_new_window_title("soundtracker");
    al_set_target_bitmap(piano);
    al_clear_to_color(al_map_rgb(0,0,0));
    // draw a piano
-  for(int ii=0;ii<10;ii++){
+  for (int ii=0;ii<10;ii++) {
     for (int jj=0; jj<7; jj++) {
       al_draw_filled_rectangle((jj*10)+(ii*70),60-60,((jj+1)*10)+(ii*70),60,al_map_rgb(64,64,64));
       al_draw_filled_rectangle((jj*10)+1+(ii*70),60-59,((jj+1)*10)+(ii*70),60-1,al_map_rgb(224,224,224));
@@ -5350,7 +5350,7 @@ al_set_new_window_title("soundtracker");
     }
 /*
     for (int jj=0;jj<12;jj++) {
-    if (jj==0 || jj==2 || jj==4 || jj==5 || jj==7 || jj==9 || jj==11){
+    if (jj==0 || jj==2 || jj==4 || jj==5 || jj==7 || jj==9 || jj==11) {
     al_draw_filled_rectangle((jj*6)+(ii*72),60-60,(jj*6)+6+(ii*72),60,al_map_rgb(64,64,64));
     al_draw_filled_rectangle((jj*6)+1+(ii*72),60-59,(jj*6)+5+(ii*72),60-1,al_map_rgb(255,255,255));
     }
@@ -5369,7 +5369,7 @@ al_set_new_window_title("soundtracker");
      al_set_target_bitmap(al_get_backbuffer(display));}
    printf("creating event queue\n");
    event_queue = al_create_event_queue();
-   if(!event_queue) {
+   if (!event_queue) {
       fprintf(stderr, "failed to create event_queue!\n");
       al_destroy_display(display);
       al_destroy_timer(timer);
@@ -5395,7 +5395,7 @@ al_set_new_window_title("soundtracker");
    }
    // some sound effects
    const char* examplefxerror="\x01\x01\x70\x7f\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x02\x00\x01\x00\x00\x00\x00";
-   for (int ii=0;ii<27;ii++){
+   for (int ii=0;ii<27;ii++) {
      sfxdata[1][ii]=examplefxerror[ii];
    }
    // example pauser sound effect
@@ -5468,22 +5468,22 @@ al_set_new_window_title("soundtracker");
    if (playermode) {
      al_rest(3600);
    } else {
-   while(1)
+   while (1)
    {
       ALLEGRO_EVENT ev;
       while (al_get_next_event(event_queue, &ev)) {
 
-      if(ev.type == ALLEGRO_EVENT_TIMER) {
+      if (ev.type == ALLEGRO_EVENT_TIMER) {
      //al_set_timer_speed(timer,1.0/FPS);
  
      skipframe=true;//!skipframe;
       }
-      else if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+      else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
      printf("close button pressed\n");
      al_stop_timer(timer);
                  quit=true;
          break;
-      } else if(ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
+      } else if (ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
       al_acknowledge_resize(display);
       al_destroy_bitmap(mixer);
       // recreate pattern bitmap
@@ -5494,7 +5494,7 @@ al_set_new_window_title("soundtracker");
       mixer=al_create_bitmap(scrW,scrH);
       drawmixerlayer();
       drawpatterns(true);
-    } else if(ev.type == ALLEGRO_EVENT_KEY_CHAR){
+    } else if (ev.type == ALLEGRO_EVENT_KEY_CHAR) {
       //printf("event, %c\n",ev.keyboard.unichar);
       if (inputvar!=NULL) {
       if (ev.keyboard.keycode==ALLEGRO_KEY_BACKSPACE) {inputcurpos--; if (inputcurpos<0) {inputcurpos=0;}; inputvar[inputcurpos]=0;}
@@ -5513,14 +5513,14 @@ al_set_new_window_title("soundtracker");
       //printf("new inputvar value: %s\n",inputvar);
       }
       }
-    } else if(ev.type == ALLEGRO_EVENT_KEY_DOWN){
-      if (screen==1){
+    } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
+      if (screen==1) {
         Play(); playmode=2;
         RunTestNote(ev.keyboard.keycode);
       }
     }
       }
-      if(true) {
+      if (true) {
         doframe=1;
   rt3=al_get_time();
       framecounter++;
@@ -5532,9 +5532,9 @@ al_set_new_window_title("soundtracker");
      maxrasterdelta=(maxval(0,raster2-raster1)>maxrasterdelta)?(maxval(0,raster2-raster1)):(maxrasterdelta);
      //printf("%f\n",raster2-raster1);
      ////cout << "\n";
-         if (!playermode) {if(skipframe) {al_clear_to_color(al_map_rgb(0,0,0));
+         if (!playermode) {if (skipframe) {al_clear_to_color(al_map_rgb(0,0,0));
      drawdisp();
-     if (kb[ALLEGRO_KEY_LSHIFT]){
+     if (kb[ALLEGRO_KEY_LSHIFT]) {
      al_draw_filled_rectangle(0,raster1,scrW,(raster1>raster2)?(525):(raster2),al_map_rgba(64,64,128,64));
      if (raster1>raster2) {
        al_draw_filled_rectangle(0,0,scrW,raster2,al_map_rgba(64,64,128,64));
