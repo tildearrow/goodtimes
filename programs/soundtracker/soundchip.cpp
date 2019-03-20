@@ -173,7 +173,7 @@ void soundchip::NextSample(float* l, float* r) {
           if (chan[i].freq>(0xffff-chan[i].swfreq.amt)) {
             chan[i].freq=0xffff;
           } else {
-            chan[i].freq+=chan[i].swfreq.amt;
+            chan[i].freq=(chan[i].freq*(0x80+chan[i].swfreq.amt))>>7;
             if ((chan[i].freq>>8)>chan[i].swfreq.bound) {
               chan[i].freq=chan[i].swfreq.bound<<8;
             }
@@ -182,7 +182,7 @@ void soundchip::NextSample(float* l, float* r) {
           if (chan[i].freq<chan[i].swfreq.amt) {
             chan[i].freq=0;
           } else {
-            chan[i].freq-=chan[i].swfreq.amt;
+            chan[i].freq=(chan[i].freq*(0xff-chan[i].swfreq.amt))>>8;
             if ((chan[i].freq>>8)<chan[i].swfreq.bound) {
               chan[i].freq=chan[i].swfreq.bound<<8;
             }
