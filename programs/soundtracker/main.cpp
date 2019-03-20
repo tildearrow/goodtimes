@@ -317,6 +317,8 @@ const char* sfxdata[32]={
   "V7fCRRRRRRRRRRRRRRRRRRRRR!",
   // error
   "$x!O6V7fAM1v02000100RRRRV7fO5ARRRRRRRRRRR!",
+  // shot
+  "$x!S4f4000V7fM3v04000100k01000000RRRRRRRRRRRRRRRRRRR!",
   NULL
 }; // sound effect data
 int cursfx=0; // current effect
@@ -2656,7 +2658,13 @@ void drawabout() {
   // draws about screen
   al_draw_text(text,al_map_rgb(255,255,255),scrW/2,60,ALLEGRO_ALIGN_CENTER,PROGRAM_NAME);
   al_draw_textf(text,getconfigcol(colSEL1),scrW/2,72,ALLEGRO_ALIGN_CENTER,"r%d",ver);
-  al_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*ALLEGRO_PI)/8)*(playmode!=0),0);
+  if (logo==NULL) {
+    g.tColor(15);
+    g.tPos(0,10);
+    g.printf("it seems you don't have the logo file!");
+  } else {
+    al_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*ALLEGRO_PI)/8)*(playmode!=0),0);
+  }
 }
 
 float getLKeyOff(int tone) {
@@ -5206,6 +5214,9 @@ al_set_new_window_title("soundtracker");
    mixer=al_create_bitmap(scrW,scrH);
    al_init_image_addon();
    logo=al_load_bitmap("logo.png");
+   if (!logo) {
+     printf("you don't have the logo.\n");
+   }
    //logo=al_create_bitmap(360,240);
    //al_set_target_bitmap(logo);
    // <~>'s logo
