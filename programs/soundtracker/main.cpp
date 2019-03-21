@@ -319,6 +319,8 @@ const char* sfxdata[32]={
   "$x!O6V7fAM1v02000100RRRRV7fO5ARRRRRRRRRRR!",
   // shot
   "$x!S4f4000V7fM3v04000100k01000000RRRRRRRRRRRRRRRRRRR!",
+  // jump
+  "$x!S0Y1ff0c00V7fM3v01800100k030081ffRRRRRRRRRRRRR!",
   NULL
 }; // sound effect data
 int cursfx=0; // current effect
@@ -856,16 +858,16 @@ ALLEGRO_COLOR getucol(unsigned char thecol) {
   }}
   return al_map_rgb(255,255,255);
 }
-ALLEGRO_COLOR GetFXColor(unsigned char fxval) {
+unsigned char GetFXColor(unsigned char fxval) {
   switch (fxval) {
-  case 1: case 20: return getconfigcol(colFXTM); break; // speed control
-  case 2: case 3: case 22: case 23: return getconfigcol(colFXSN); break; // song control
-  case 4: case 13: case 14: case 18: return getconfigcol(colFXVL); break; // volume control
-  case 5: case 6: case 7: case 8: case 11: case 12: case 21: return getconfigcol(colFXPT); break; // pitch control
-  case 9: case 10: case 15: case 17: return getconfigcol(colFXNO); break; // note control
-  case 19: case 26: return  getconfigcol(colFXSP); break; // special commands
-  case 16: case 24: case 25: return getconfigcol(colFXPN); break; // panning commands
-  default: return getconfigcol(colFXUK); break; // unknown commands
+  case 1: case 20: return 164; break; // speed control
+  case 2: case 3: case 22: case 23: return 9; break; // song control
+  case 4: case 13: case 14: case 18: return 10; break; // volume control
+  case 5: case 6: case 7: case 8: case 11: case 12: case 21: return 11; break; // pitch control
+  case 9: case 10: case 15: case 17: return 63; break; // note control
+  case 19: case 26: return 13; break; // special commands
+  case 16: case 24: case 25: return 14; break; // panning commands
+  default: return 8; break; // unknown commands
   }
 }
 int getpatlen(int thelen) {
@@ -2097,36 +2099,45 @@ void drawpatterns(bool force) {
   al_clear_to_color(al_map_rgb(0,0,0));
   al_draw_filled_rectangle(0,60,scrW,scrH,al_map_rgb(0,0,0));
   for (int i=0;i<getpatlen(patid[curpat]);i++) {
-  //if (i>curpatrow+15+((scrH-450)/12)) {continue;}
-  //if (i<curpatrow-16) {continue;}
-  g.tColor(8);
-  g.tPos(0,i);
-  g.printf("%.2X",i);
-  g.tColor(15);
-  g.printf("|");
-  // channel drawing routine, replicated 8 times
-  g.tPos((float)(((scrW/2)-400)+16+((8-chanstodisplay)*45))/8.0,i);
-  for (int j=0;j<chanstodisplay;j++) {
-  g.printf("|");
-  if (pat[patid[curpat]][i][j+(curedpage*8)][0]==0 && pat[patid[curpat]][i][j+(curedpage*8)][1]==0
-    && pat[patid[curpat]][i][j+(curedpage*8)][2]==0 && pat[patid[curpat]][i][j+(curedpage*8)][3]==0
-    && pat[patid[curpat]][i][j+(curedpage*8)][4]==0) {
-    g.tColor(245);
-    g.printf("...........");
-    continue;
-  }
-  // note
-  g.tColor(250);
-  g.printf("%s%s",getnote(pat[patid[curpat]][i][j+(curedpage*8)][0]),getoctave(pat[patid[curpat]][i][j+(curedpage*8)][0]));
-  // instrument
-  al_draw_textf(text,al_map_rgb(0x5f,0xd7,0xff),((scrW/2)-400)+48+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"%s%s",getinsH(pat[patid[curpat]][i][j+(curedpage*8)][1]),getinsL(pat[patid[curpat]][i][j+(curedpage*8)][1]));
-  if (pat[patid[curpat]][i][j+(curedpage*8)][2]==0 && pat[patid[curpat]][i][j+(curedpage*8)][0]!=0) {
-    al_draw_text(text,al_map_rgb(0x5f,0xd7,0xff),((scrW/2)-400)+64+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"v40");
-  } else {
-    al_draw_textf(text,al_map_rgb(0x00,0x50,0xff),((scrW/2)-400)+64+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"%s%s%s",getVFX(pat[patid[curpat]][i][j+(curedpage*8)][2]),getVFXH(pat[patid[curpat]][i][j+(curedpage*8)][2]),getVFXL(pat[patid[curpat]][i][j+(curedpage*8)][2]));}
-  // effect
-  al_draw_textf(text,GetFXColor(pat[patid[curpat]][i][j+(curedpage*8)][3]),((scrW/2)-400)+88+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"%s%s%s",getFX(pat[patid[curpat]][i][j+(curedpage*8)][3]),getinsH(pat[patid[curpat]][i][j+(curedpage*8)][4]),getinsL(pat[patid[curpat]][i][j+(curedpage*8)][4]));
-  }
+    //if (i>curpatrow+15+((scrH-450)/12)) {continue;}
+    //if (i<curpatrow-16) {continue;}
+    g.tColor(8);
+    g.tPos(0,i);
+    g.printf("%.2X",i);
+    g.tColor(15);
+    g.printf("|");
+    // channel drawing routine, replicated 8 times
+    g.tPos((float)(((scrW/2)-400)+16+((8-chanstodisplay)*45))/8.0,i);
+    for (int j=0;j<chanstodisplay;j++) {
+      g.tColor(15);
+      g.printf("|");
+      if (pat[patid[curpat]][i][j+(curedpage*8)][0]==0 &&
+          pat[patid[curpat]][i][j+(curedpage*8)][1]==0 &&
+          pat[patid[curpat]][i][j+(curedpage*8)][2]==0 &&
+          pat[patid[curpat]][i][j+(curedpage*8)][3]==0 &&
+          pat[patid[curpat]][i][j+(curedpage*8)][4]==0) {
+        g.tColor(245);
+        g.printf("...........");
+        continue;
+      }
+      // note
+      g.tColor(250);
+      g.printf("%s%s",getnote(pat[patid[curpat]][i][j+(curedpage*8)][0]),getoctave(pat[patid[curpat]][i][j+(curedpage*8)][0]));
+      g.tColor(81);
+      g.printf("%s%s",getinsH(pat[patid[curpat]][i][j+(curedpage*8)][1]),getinsL(pat[patid[curpat]][i][j+(curedpage*8)][1]));
+      // instrument
+      if (pat[patid[curpat]][i][j+(curedpage*8)][2]==0 && pat[patid[curpat]][i][j+(curedpage*8)][0]!=0) {
+        g.printf("v40");
+      } else {
+        g.tColor(27);
+        g.printf("%s%s%s",getVFX(pat[patid[curpat]][i][j+(curedpage*8)][2]),getVFXH(pat[patid[curpat]][i][j+(curedpage*8)][2]),getVFXL(pat[patid[curpat]][i][j+(curedpage*8)][2]));
+      }
+      // effect
+      g.tColor(GetFXColor(pat[patid[curpat]][i][j+(curedpage*8)][3]));
+      g.printf("%s%s%s",getFX(pat[patid[curpat]][i][j+(curedpage*8)][3]),getinsH(pat[patid[curpat]][i][j+(curedpage*8)][4]),getinsL(pat[patid[curpat]][i][j+(curedpage*8)][4]));
+    }
+    g.tColor(15);
+    g.printf("|");
   }
   al_set_target_bitmap(al_get_backbuffer(display));
 }
@@ -4638,41 +4649,6 @@ void ModPlug() {
 
 }
 void RunTestNote(int keycode) {
-  //// PLAY SONG ////
-  // set speed to song speed and other variables
-  if (!speedlock) {speed=defspeed;}
-  if (!tempolock) {
-  if (ntsc) {
-  #ifdef FILM
-  tempo=60;
-  #else
-  tempo=150;
-  #endif
-  } else {
-  tempo=125;
-  }
-  }
-  FPS=tempo/2.5;
-  //detunefactor=DETUNE_FACTOR_GLOBAL*(50/FPS);
-  // reset cursor position
-  //curtick=speed;curstep=-1;playmode=1;
-  //tickstart=true;
-  // reset channels
-  for (int su=0;su<32;su++) {
-  cvol[su]=0;
-  Mvol[su]=0;
-  plcount[su]=0;
-  plpos[su]=0;
-  chanvol[su]=defchanvol[su];
-  //chanpan[su]=defchanpan[su];
-  if ((su+1)&2) {chanpan[su]=96;} else {chanpan[su]=-96;} // amiga auto-pan logic
-  //if (su&1) {chanpan[su]=96;} else {chanpan[su]=-96;} // normal auto-pan logic
-  finedelay=0;
-  }
-  // reset global volume
-  cglobvol=128;
-  // process next row
-  //NextRow();
   // notes, main octave
   switch (keycode) {
   case ALLEGRO_KEY_Z: InstrumentTest(0x01+minval(curoctave<<4,0x90),FreeChannel()); break;
@@ -4756,9 +4732,13 @@ void MuteAllChannels() {
 }
 
 void triggerfx(int num) {
+  if (sfxdata[num]==NULL) return;
   cursfx=num;
-  if (sfxdata[cursfx]==NULL) return;
   sfxpos=0;
+  // if effect was playing, reset channel
+  if (sfxplaying) {
+    memset(&chip[0].chan[chantoplayfx],0,16);
+  }
   chantoplayfx=FreeChannel();
   sfxInst.setChan(chantoplayfx);
   sfxplaying=true;
@@ -5374,7 +5354,6 @@ al_set_new_window_title("soundtracker");
       }
     } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
       if (screen==1) {
-        Play(); playmode=2;
         RunTestNote(ev.keyboard.keycode);
       }
     }
