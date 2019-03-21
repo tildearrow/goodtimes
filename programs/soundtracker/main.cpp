@@ -1140,13 +1140,13 @@ int mscale(int nval) {
   // storage to playback note converter
   return ((nval/16)*12)+((nval-1)%16);
 }
-ALLEGRO_COLOR getmixerposcol(int channel,int envid) {
-  if (!EnvelopesRunning[channel][envid]) {return al_map_rgb(128,128,128);}
-  if (inspos[channel][envid]>=bytable[envid][instrument[Mins[channel]].env[envid]][254]) {return al_map_rgb(255,255,0);}
-  if (IRP[channel][envid] && released[channel]) {return al_map_rgb(0,255,0);}
-  if (released[channel]) {return al_map_rgb(255,0,0);}
-  if (IRP[channel][envid]) {return al_map_rgb(0,0,255);}
-  return al_map_rgb(0,255,255);
+unsigned char getmixerposcol(int channel,int envid) {
+  if (!EnvelopesRunning[channel][envid]) {return 8;}
+  if (inspos[channel][envid]>=bytable[envid][instrument[Mins[channel]].env[envid]][254]) {return 11;}
+  if (IRP[channel][envid] && released[channel]) {return 10;}
+  if (released[channel]) {return 9;}
+  if (IRP[channel][envid]) {return 12;}
+  return 14;
 }
 
 int noteperiod(unsigned char note) {
@@ -2478,56 +2478,79 @@ void drawmixerlayer() {
   al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,60,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
   al_set_target_bitmap(al_get_backbuffer(display));
 }
+
+char shapeSym(int sh) {
+  switch (sh) {
+    case 0: return 's'; break;
+    case 1: return 'R'; break;
+    case 2: return 'S'; break;
+    case 3: return 't'; break;
+    case 4: return 'N'; break;
+    case 5: return 'n'; break;
+  }
+  return '?';
+}
+
 void drawmixer() {
   // draws the mixer dialog
   int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
   al_draw_bitmap(mixer,0,0,0);
   for (int chantodraw=0;chantodraw<chanstodisplay;chantodraw++) {
-    al_draw_textf(text,(midion[chantodraw+(curedpage*8)])?(al_map_rgb(255,0,0)):(getconfigcol(colDEFA)),24+(chantodraw*96)+mixerdrawoffset,60,ALLEGRO_ALIGN_LEFT,"Channel");
-    al_draw_textf(text,(!muted[chantodraw+(curedpage*8)])?(al_map_rgb(0,255,255)):(al_map_rgb(128,128,128)),88+(chantodraw*96)+mixerdrawoffset,60,ALLEGRO_ALIGN_LEFT,"%d",chantodraw+(curedpage*8));
+    if (midion[chantodraw+(curedpage*8)]) {
+      g.tColor(9);
+    } else {
+      g.tColor(15);
+    }
+    g.tNLPos(2+chantodraw*12+((float)mixerdrawoffset/8.0));
+    g.tPos(5);
+    g.printf(" Channel ");
+    if (!muted[chantodraw+(curedpage*8)]) {
+      g.tColor(14);
+    } else {
+      g.tColor(8);
+    }
+    g.printf("%d\n\n",chantodraw+(curedpage*8));
 
     al_draw_filled_rectangle(16+(chantodraw*96)+mixerdrawoffset-1,scrH-4-1,58+(chantodraw*96)+mixerdrawoffset+1,(scrH-4)-(((float)cvol[chantodraw+(curedpage*8)]*((127-(maxval(0,(float)cpan[chantodraw+(curedpage*8)])))/127))*((scrH-244)/128))+1,al_map_rgb(0,200,0));
     al_draw_filled_rectangle(62+(chantodraw*96)+mixerdrawoffset-1,scrH-4-1,104+(chantodraw*96)+mixerdrawoffset+1,(scrH-4)-(((float)cvol[chantodraw+(curedpage*8)]*((128+(minval(0,(float)cpan[chantodraw+(curedpage*8)])))/128))*((scrH-244)/128))+1,al_map_rgb(0,200,0));
     al_draw_filled_rectangle(16+(chantodraw*96)+mixerdrawoffset,scrH-4,58+(chantodraw*96)+mixerdrawoffset,(scrH-4)-(((float)cvol[chantodraw+(curedpage*8)]*((127-(maxval(0,(float)cpan[chantodraw+(curedpage*8)])))/127))*((scrH-244)/128)),al_map_rgb(0,255,0));
     al_draw_filled_rectangle(62+(chantodraw*96)+mixerdrawoffset,scrH-4,104+(chantodraw*96)+mixerdrawoffset,(scrH-4)-(((float)cvol[chantodraw+(curedpage*8)]*((128+(minval(0,(float)cpan[chantodraw+(curedpage*8)])))/128))*((scrH-244)/128)),al_map_rgb(0,255,0));
     
-    al_draw_textf(text,al_map_rgb(0,255,255),40+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"%.2x",defchanvol[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),40+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"%.2x",(unsigned char)defchanpan[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),64+(chantodraw*96)+mixerdrawoffset,120,ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),40+(chantodraw*96)+mixerdrawoffset,144,ALLEGRO_ALIGN_LEFT,"%.2x",Mins[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),88+(chantodraw*96)+mixerdrawoffset,144,ALLEGRO_ALIGN_LEFT,"%.2x",Mvol[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),0),40+(chantodraw*96)+mixerdrawoffset,156,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][0]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),1),88+(chantodraw*96)+mixerdrawoffset,156,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][1]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),2),40+(chantodraw*96)+mixerdrawoffset,168,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][2]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),3),88+(chantodraw*96)+mixerdrawoffset,168,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][3]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),4),40+(chantodraw*96)+mixerdrawoffset,180,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][4]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),5),88+(chantodraw*96)+mixerdrawoffset,180,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][5]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),6),40+(chantodraw*96)+mixerdrawoffset,192,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][6]);
-    al_draw_textf(text,getmixerposcol(chantodraw+(curedpage*8),7),88+(chantodraw*96)+mixerdrawoffset,192,ALLEGRO_ALIGN_LEFT,"%.2x",inspos[chantodraw+(curedpage*8)][7]);
-    al_draw_textf(text,al_map_rgb(0,255,255),40+(chantodraw*96)+mixerdrawoffset,204,ALLEGRO_ALIGN_LEFT,"%.2x",(int)(curnote[chantodraw+(curedpage*8)])%256);
-    al_draw_textf(text,al_map_rgb(0,255,255),88+(chantodraw*96)+mixerdrawoffset,204,ALLEGRO_ALIGN_LEFT,"%.2x",portastatic[chantodraw+(curedpage*8)]%256);
-    al_draw_textf(text,al_map_rgb(0,0,255),80+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"%.2x",cduty[chantodraw+(curedpage*8)]%256);
-    switch (cshape[chantodraw+(curedpage*8)]) {
-      case 0: al_draw_text(text,al_map_rgb(0,0,255),96+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"s"); break;
-      case 1: al_draw_text(text,al_map_rgb(0,0,255),96+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"R"); break;
-      case 2: al_draw_text(text,al_map_rgb(0,0,255),96+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"S"); break;
-      case 3: al_draw_text(text,al_map_rgb(0,0,255),96+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"t"); break;
-      case 4: al_draw_text(text,al_map_rgb(0,0,255),96+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"N"); break;
-      case 5: al_draw_text(text,al_map_rgb(0,0,255),96+(chantodraw*96)+mixerdrawoffset,84,ALLEGRO_ALIGN_LEFT,"n"); break;
-    }
-    al_draw_textf(text,al_map_rgb(0,0,255),48+(chantodraw*96)+mixerdrawoffset,132,ALLEGRO_ALIGN_LEFT,"%.1f",(float)coff[chantodraw+(curedpage*8)]/10);
+    g.tColor(14);
+    g.printf("   %.2x",defchanvol[chantodraw+(curedpage*8)]);
+    g.tColor(12);
+    g.printf("   %.2x%c\n",cduty[chantodraw+(curedpage*8)]%256,shapeSym(cshape[chantodraw+(curedpage*8)]));
+    g.tColor(14);
+    g.printf("   %.2x   ",(unsigned char)defchanpan[chantodraw+(curedpage*8)]);
     switch (cfmode[chantodraw+(curedpage*8)]) {
-      case 0: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"   "); break;
-      case 1: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"  l"); break;
-      case 2: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT," h "); break;
-      case 3: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT," hl"); break;
-      case 4: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"b  "); break;
-      case 5: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"b l"); break;
-      case 6: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"bh "); break;
-      case 7: al_draw_text(text,al_map_rgb(0,255,255),80+(chantodraw*96)+mixerdrawoffset,96,ALLEGRO_ALIGN_LEFT,"bhl"); break;
+      case 0: g.printf("   \n\n"); break;
+      case 1: g.printf("  l\n\n"); break;
+      case 2: g.printf(" h \n\n"); break;
+      case 3: g.printf(" hl\n\n"); break;
+      case 4: g.printf("b  \n\n"); break;
+      case 5: g.printf("b l\n\n"); break;
+      case 6: g.printf("bh \n\n"); break;
+      case 7: g.printf("bhl\n\n"); break;
+    }
+    g.printf("      %.4x\n",cfreq[chantodraw+(curedpage*8)]);
+    g.tColor(12);
+    g.printf("    %.1f\n",(float)coff[chantodraw+(curedpage*8)]/10);
+
+    g.tColor(14);
+    g.printf("   %.2x",Mins[chantodraw+(curedpage*8)]);
+    g.printf("    %.2x\n",Mvol[chantodraw+(curedpage*8)]);
+
+    for (int j=0; j<8; j++) {
+      g.tColor(getmixerposcol(chantodraw+(curedpage*8),j));
+      g.printf(j&1?"    %.2x\n":"   %.2x",inspos[chantodraw+(curedpage*8)][j]);
     }
 
+    g.tColor(14);
+    g.printf("   %.2x",(int)(curnote[chantodraw+(curedpage*8)])%256);
+    g.printf("    %.2x",portastatic[chantodraw+(curedpage*8)]%256);
+
   }
+  g.tNLPos(0);
 }
 void drawdiskop() {
   // draws the disk operations dialog
