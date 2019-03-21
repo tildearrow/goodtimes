@@ -13,6 +13,11 @@ void Graphics::tPos(float x, float y) {
   //::fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
 }
 
+void Graphics::tPos(float y) {
+  textPos.x=nlPos; textPos.y=y;
+  //::fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
+}
+
 void Graphics::tNLPos(float x) {
   nlPos=x;
 }

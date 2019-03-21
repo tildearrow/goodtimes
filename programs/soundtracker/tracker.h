@@ -40,6 +40,7 @@ class Graphics {
     Point getTPos();
     Point getWSize();
     void tPos(float x, float y);
+    void tPos(float y);
     void tNLPos(float x);
     void tColor(unsigned char color);
     int printf(const char* format, ...);

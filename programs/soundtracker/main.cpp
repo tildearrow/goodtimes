@@ -2456,19 +2456,23 @@ void drawmixerlayer() {
   int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
   for (int chantodraw=0;chantodraw<chanstodisplay;chantodraw++) {
     al_draw_line(12.5+(chantodraw*96)+mixerdrawoffset,60,12.5+(chantodraw*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,24+60,ALLEGRO_ALIGN_LEFT,"Vol  ^v");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,36+60,ALLEGRO_ALIGN_LEFT,"Pan  ^v");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,60+60,ALLEGRO_ALIGN_LEFT,"Freq");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,72+60,ALLEGRO_ALIGN_LEFT,"Cut");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,84+60,ALLEGRO_ALIGN_LEFT,"Ins  |Vol  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,96+60,ALLEGRO_ALIGN_LEFT,"EP0  |EP1  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,108+60,ALLEGRO_ALIGN_LEFT,"EP2  |EP3  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,120+60,ALLEGRO_ALIGN_LEFT,"EP4  |EP5  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,132+60,ALLEGRO_ALIGN_LEFT,"EP6  |EP7  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,144+60,ALLEGRO_ALIGN_LEFT,"Not  |Por  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,156+60,ALLEGRO_ALIGN_LEFT,"Vib  |Trm  ");
-    al_draw_textf(text,getconfigcol(colDEFA),16+(chantodraw*96)+mixerdrawoffset,168+60,ALLEGRO_ALIGN_LEFT,"Trr  |Pbr  ");
+    g.tColor(15);
+    g.tNLPos(2+chantodraw*12+((float)mixerdrawoffset/8.0));
+    g.tPos(5+2);
+    g.printf("Vol  ^v\n");
+    g.printf("Pan  ^v\n\n");
+    g.printf("Freq\n");
+    g.printf("Cut\n");
+    g.printf("Ins  |Vol  \n");
+    g.printf("EP0  |EP1  \n");
+    g.printf("EP2  |EP3  \n");
+    g.printf("EP4  |EP5  \n");
+    g.printf("EP6  |EP7  \n");
+    g.printf("Not  |Por  \n");
+    g.printf("Vib  |Trm  \n");
+    g.printf("Trr  |Pbr  ");
   }
+  g.tNLPos(0);
   al_draw_line(0,21.5+60,scrW,21.5+60,getconfigcol(colDEFA),1);
   al_draw_line(0,57.5+60,scrW,57.5+60,getconfigcol(colDEFA),1);
   al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,60,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
@@ -2608,25 +2612,12 @@ void drawsong() {
   al_draw_textf(text,getconfigcol(colSEL2),424,60,ALLEGRO_ALIGN_LEFT,"%.2x",(unsigned char)songdf);
   al_draw_textf(text,getconfigcol(colSEL2),536,60,ALLEGRO_ALIGN_LEFT,"%.2x",songlength);
   al_draw_textf(text,getconfigcol(colSEL2),744,60,ALLEGRO_ALIGN_LEFT,"%.2X",defspeed);
-  for (int chantodraw=0;chantodraw<8;chantodraw++) {
-    al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),152,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.2x",cvol[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),184,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.2x",(unsigned char)cpan[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),216,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.2x",cduty[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),248,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.5x",coff[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),296,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.2x",creso[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),328,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.1x%.1x%.1x%.1x",cfmode[chantodraw+(curedpage*8)],cshape[chantodraw+(curedpage*8)],
-                                                         cmode[chantodraw+(curedpage*8)],crm[chantodraw+(curedpage*8)]);
-    /*al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.2x",cfreq[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);
-    al_draw_textf(text,al_map_rgb(0,255,255),112,120+(chantodraw*12),ALLEGRO_ALIGN_LEFT,"%.4x",cfreq[chantodraw+(curedpage*8)]);*/
-  }
 }
 void drawhelp() {
   // draws the help screen
-  al_draw_text(text,al_map_rgb(255,255,255),0,60,ALLEGRO_ALIGN_LEFT,helptext);
+  g.tColor(15);
+  g.tPos(0,5);
+  g.printf(helptext);
 }
 void drawconfig() {
   g.tColor(15);
