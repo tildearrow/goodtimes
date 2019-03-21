@@ -2099,18 +2099,25 @@ void drawpatterns(bool force) {
   for (int i=0;i<getpatlen(patid[curpat]);i++) {
   //if (i>curpatrow+15+((scrH-450)/12)) {continue;}
   //if (i<curpatrow-16) {continue;}
-  al_draw_textf(text,al_map_rgb(128,128,128),0,((i)*12),ALLEGRO_ALIGN_LEFT,"%.2X",i); //pattern pos, optimized
-  al_draw_text(text,getconfigcol(colDEFA),16,((i)*12),ALLEGRO_ALIGN_LEFT,"|");
-  al_draw_text(text,getconfigcol(colDEFA),((scrW/2)-400)+16+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"|");
+  g.tColor(8);
+  g.tPos(0,i);
+  g.printf("%.2X",i);
+  g.tColor(15);
+  g.printf("|");
   // channel drawing routine, replicated 8 times
+  g.tPos((float)(((scrW/2)-400)+16+((8-chanstodisplay)*45))/8.0,i);
   for (int j=0;j<chanstodisplay;j++) {
-  al_draw_text(text,getconfigcol(colDEFA),((scrW/2)-400)+112+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"|");
+  g.printf("|");
   if (pat[patid[curpat]][i][j+(curedpage*8)][0]==0 && pat[patid[curpat]][i][j+(curedpage*8)][1]==0
     && pat[patid[curpat]][i][j+(curedpage*8)][2]==0 && pat[patid[curpat]][i][j+(curedpage*8)][3]==0
-    && pat[patid[curpat]][i][j+(curedpage*8)][4]==0)
-  {al_draw_text(text,al_map_rgb(0xa0,0xa0,0xa0),((scrW/2)-400)+24+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"...........");continue;}
+    && pat[patid[curpat]][i][j+(curedpage*8)][4]==0) {
+    g.tColor(245);
+    g.printf("...........");
+    continue;
+  }
   // note
-  al_draw_textf(text,al_map_rgb(0xd0,0xd0,0xd0),((scrW/2)-400)+24+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"%s%s",getnote(pat[patid[curpat]][i][j+(curedpage*8)][0]),getoctave(pat[patid[curpat]][i][j+(curedpage*8)][0]));
+  g.tColor(250);
+  g.printf("%s%s",getnote(pat[patid[curpat]][i][j+(curedpage*8)][0]),getoctave(pat[patid[curpat]][i][j+(curedpage*8)][0]));
   // instrument
   al_draw_textf(text,al_map_rgb(0x5f,0xd7,0xff),((scrW/2)-400)+48+(j*96)+((8-chanstodisplay)*45),((i)*12),ALLEGRO_ALIGN_LEFT,"%s%s",getinsH(pat[patid[curpat]][i][j+(curedpage*8)][1]),getinsL(pat[patid[curpat]][i][j+(curedpage*8)][1]));
   if (pat[patid[curpat]][i][j+(curedpage*8)][2]==0 && pat[patid[curpat]][i][j+(curedpage*8)][0]!=0) {
