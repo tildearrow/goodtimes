@@ -20,6 +20,8 @@
 #include <string> 
 #include <vector>
 
+#include "fextra.h"
+
 struct Point {
   float x, y;
 };

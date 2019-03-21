@@ -2932,7 +2932,7 @@ int ImportIT() {
   int sk;
   bool istherenote=false;
   int samples;
-  ALLEGRO_FILE *it;
+  FILE *it;
   //string fn;
   int NextByte;
   int NextChannel;
@@ -2953,15 +2953,15 @@ int ImportIT() {
   //int insparas[256];
   int patparas[256];
   //gets(rfn);
-  it=al_fopen(rfn,"rb");
+  it=fopen(rfn,"rb");
   if (it!=NULL) { // read the file
   printf("loading IT file, ");
-    size=al_fsize(it);
+    size=fsize(it);
   printf("%d bytes\n",size);
     memblock=new char[size];
-    al_fseek(it,0,ALLEGRO_SEEK_SET);
-    al_fread(it,memblock,size);
-    al_fclose(it);
+    fseek(it,0,SEEK_SET);
+    fread(memblock,1,size,it);
+    fclose(it);
   if (memblock[0]=='I' && memblock[1]=='M' && memblock[2]=='P' && memblock[3]=='M') {
     printf("IT module detected\n");
     // name
@@ -3091,20 +3091,20 @@ int ImportMOD(const char* rfn) {
   char * memblock;
   int sk;
   bool istherenote=false;
-  ALLEGRO_FILE *mod;
+  FILE *mod;
   //string fn;
   int chans;
   int CurrentSampleSeek=0;
   printf("\nplease write filename? ");
-  mod=al_fopen(rfn,"rb");
+  mod=fopen(rfn,"rb");
   if (mod!=NULL) { // read the file
   printf("loading MOD file, ");
-    size=al_fsize(mod);
+    size=fsize(mod);
   printf("%d bytes\n",size);
     memblock=new char[size];
-    al_fseek(mod,0,ALLEGRO_SEEK_SET);
-    al_fread(mod,memblock,size);
-    al_fclose(mod);
+    fseek(mod,0,SEEK_SET);
+    fread(memblock,1,size,mod);
+    fclose(mod);
     printf("success, now importing file\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
     patlength[nonsense]=64;
@@ -3319,22 +3319,22 @@ int ImportS3M() {
   int NextChannel;
   int CurrentRow;
   bool istherenote=false;
-  ALLEGRO_FILE *s3m;
+  FILE *s3m;
   int insparas[99];
   int patparas[256];
   //string fn;
   printf("\nplease write filename? ");
   char rfn[256];
   //gets(rfn);
-  s3m=al_fopen(rfn,"rb");
+  s3m=fopen(rfn,"rb");
   if (s3m!=NULL) { // read the file
-  printf("loading S3M file, ");
-    size=al_fsize(s3m);
-  printf("%d bytes\n",size);
+    printf("loading S3M file, ");
+    size=fsize(s3m);
+    printf("%d bytes\n",size);
     memblock=new char[size];
-    al_fseek(s3m,0,ALLEGRO_SEEK_SET);
-    al_fread(s3m,memblock,size);
-    al_fclose(s3m);
+    fseek(s3m,0,SEEK_SET);
+    fread(memblock,1,size,s3m);
+    fclose(s3m);
     printf("success, now importing file\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
     patlength[nonsense]=64;

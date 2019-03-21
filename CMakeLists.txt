@@ -29,6 +29,7 @@ add_executable(timertest programs/timertest/main.cpp)
 add_executable(soundtracker programs/soundtracker/soundchip.cpp
                             programs/soundtracker/graphics.cpp
                             programs/soundtracker/ssinter.cpp
+                            programs/soundtracker/fextra.cpp
                             programs/soundtracker/main.cpp)
 if (HAVE_JACK)
 target_link_libraries(4channelbypass jack)
