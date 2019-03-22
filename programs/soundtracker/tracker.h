@@ -36,6 +36,7 @@ class Graphics {
   char putBuf[4096];
   bool inited;
   float nlPos;
+  float align;
   ALLEGRO_FONT* allegFont;
   ALLEGRO_COLOR alCol;
   public:
@@ -44,9 +45,10 @@ class Graphics {
     void tPos(float x, float y);
     void tPos(float y);
     void tNLPos(float x);
+    void tAlign(float x);
     void tColor(unsigned char color);
     int printf(const char* format, ...);
     bool init(ALLEGRO_FONT* f);
     bool quit();
-    Graphics(): inited(false), nlPos(0) {}
+    Graphics(): inited(false), nlPos(0), align(0) {}
 };

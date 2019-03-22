@@ -22,6 +22,10 @@ void Graphics::tNLPos(float x) {
   nlPos=x;
 }
 
+void Graphics::tAlign(float x) {
+  align=x;
+}
+
 void Graphics::tColor(unsigned char color) {
   textCol.r=0;
   textCol.g=0;
@@ -63,11 +67,15 @@ int Graphics::printf(const char* format, ...) {
   int ret;
   va_start(va,format);
   ret=vsnprintf(putBuf,4095,format,va);
+  
+  if (align!=0) {
+    tPos(textPos.x-(float)ret*align,textPos.y);
+  }
   //write(2,putBuf,ret);
   
   al_hold_bitmap_drawing(true);
   for (int i=0; i<ret; i++) {
-    if (putBuf[i]=='\n') {
+    if (putBuf[i]=='\n' || putBuf[i]=='\r') {
       textPos.x=nlPos;
       textPos.y++;
     } else {
