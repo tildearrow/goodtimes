@@ -2041,7 +2041,7 @@ void drawpatterns(bool force) {
   oldpat=curpat;
   UPDATEPATTERNS=true;
   al_destroy_bitmap(patternbitmap);
-  patternbitmap=al_create_bitmap(scrW,(((patlength[patid[curpat]]==0)?(256):(patlength[patid[curpat]]))*12)+8);
+  patternbitmap=al_create_bitmap(scrW,(((patlength[patid[curpat]]==0)?(256):(patlength[patid[curpat]]))*12)+4);
   g.setTarget(patternbitmap);
   al_clear_to_color(al_map_rgb(0,0,0));
   al_draw_filled_rectangle(0,60,scrW,scrH,al_map_rgb(0,0,0));
@@ -4839,9 +4839,16 @@ void drawdisp() {
   // -(int)((((float)speed-(float)curtick)/(float)speed)*12.0f)
   if (screen==0) {
 #ifdef SMOOTH_SCROLL
-    al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curpatrow*12)+(int)(((float)curtick/(float)speed)*12.0)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curpatrow*12)+(int)(((float)curtick/(float)speed)*12.0)),0);
+    al_draw_bitmap_region(patternbitmap,0,-minval(0,189-(curpatrow*12)+(int)(((float)curtick/(float)speed)*12.0)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,189-(curpatrow*12)+(int)(((float)curtick/(float)speed)*12.0)),0);
 #else
-    al_draw_bitmap_region(patternbitmap,0,-minval(0,192-(curpatrow*12)),al_get_bitmap_width(patternbitmap),al_get_bitmap_height(patternbitmap),0,60+maxval(0,192-(curpatrow*12)),0);
+    //al_draw_bitmap(patternbitmap,0,0,0);
+    al_draw_bitmap_region(patternbitmap,0,
+                          maxval(0,curpatrow-16)*12,
+                          al_get_bitmap_width(patternbitmap),
+                          scrH-maxval(60,252-(curpatrow*12)),//al_get_bitmap_height(patternbitmap),
+                          0,
+                          maxval(60,252-(curpatrow*12)),
+                          0);
     #endif
     al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_SRC_COLOR);
     for (int j=0;j<8;j++) {
@@ -4894,7 +4901,7 @@ void drawdisp() {
   // grid markers
   #ifdef MOUSE_GRID
   al_draw_rectangle(1+((mstate.x/8)*8),1+((mstate.y/12)*12),((mstate.x/8)*8)+9,((mstate.y/12)*12)+14,al_map_rgb(0,255,255),1);
-  g.tPos(mstate.x/12,(mstate.y/12)-1);
+  g.tPos(20,0);
   g.tColor(14);
   g.printf("%d, %d",(mstate.x/8)*8,(mstate.y/12)*12);
   #endif

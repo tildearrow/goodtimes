@@ -156,6 +156,7 @@ Point Graphics::getWSize() {
 bool Graphics::quit() {
   al_destroy_font(allegFont);
   al_destroy_display(display);
+  return true;
 }
 
 bool Graphics::init(int width, int height) {
