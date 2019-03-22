@@ -32,23 +32,33 @@ struct Color {
 
 class Graphics {
   Point textPos;
+  Point scrSize;
   Color textCol;
   char putBuf[4096];
   bool inited;
   float nlPos;
   float align;
+  float dpiScale;
   ALLEGRO_FONT* allegFont;
+  ALLEGRO_DISPLAY* display;
   ALLEGRO_COLOR alCol;
   public:
     Point getTPos();
     Point getWSize();
+    // HACK BEGIN //
+    ALLEGRO_DISPLAY* _getDisplay();
+    float _getScale();
+    // HACK END //
+    
     void tPos(float x, float y);
     void tPos(float y);
     void tNLPos(float x);
     void tAlign(float x);
     void tColor(unsigned char color);
+    void setTarget(ALLEGRO_BITMAP* where);
+    void trigResize();
     int printf(const char* format, ...);
-    bool init(ALLEGRO_FONT* f);
+    bool init(int width, int height);
     bool quit();
     Graphics(): inited(false), nlPos(0), align(0) {}
 };

@@ -65,7 +65,6 @@ soundchip chip[4]; // up to 4 soundchips
 #define soundchips 2
 
 using namespace std;
-   ALLEGRO_TIMER *timer = NULL;
 const bool verbose=false; // change this to turn on verbose mode
 char songdf=0;
 double FPS=50;
@@ -404,7 +403,6 @@ bool leftclick=false;
 bool leftclickprev=false;
 bool rightclick=false;  
 bool rightclickprev=false;
-bool skipframe=false;
 int prevZ=0;
 int hover[16]={}; // hover time per button
 int16_t ver=144; // version number
@@ -458,7 +456,6 @@ ALLEGRO_BITMAP *pianoroll=NULL;
 ALLEGRO_BITMAP *pianoroll_temp=NULL;
 ALLEGRO_BITMAP *piano=NULL;
 ALLEGRO_BITMAP *mixer=NULL;
-ALLEGRO_DISPLAY *display=NULL;
 bool firstframe=true;
 float* abuf;
 float oscbuf[65536]={}; // safe oscilloscope buffer
@@ -508,51 +505,6 @@ bool PIR(float x1, float y1, float x2, float y2, float checkx, float checky) {
   return false;
 }
 #define interpolatee(aa,bb,cc) (aa+((bb-aa)*cc))
-
-double getScale() {
-  char* env;
-  // try with environment variable
-  env=getenv("TRACKER_SCALE");
-  if (env!=NULL) {
-    return atof(env);
-  }
-#if defined(__linux__)
-  // linux (wayland) code here
-#elif defined(_WIN32)
-  // windows code here
-  HDC disp;
-  int dpi;
-  disp=GetDC(NULL);
-  if (disp==NULL) {
-    return 1;
-  }
-  dpi=GetDeviceCaps(disp,LOGPIXELSX);
-  ReleaseDC(NULL,disp);
-  return (double)dpi/96.0;
-#elif defined(__APPLE__)
-  // macOS code here
-  double dpi;
-  if ((dpi=nsStubDPI())>0) {
-    return dpi;
-  }
-#elif defined(__ANDROID__)
-  // android code here
-#endif
-#if defined(__unix__)
-  // X11
-  Display* disp;
-  int dpi;
-  disp=XOpenDisplay(NULL);
-  if (disp!=NULL) {
-    dpi=(int)(0.5+(25.4*(double)XDisplayWidth(disp,XDefaultScreen(disp))/(double)XDisplayWidthMM(disp,XDefaultScreen(disp))));
-    XCloseDisplay(disp);
-    return (double)dpi/96.0;
-  }
-#endif
-  // assume 1
-  return 1;
-}
-
 
 bool reservedevent[32]={0,0,0,0,0,0,0,0,
       0,0,0,0,0,0,0,0,
@@ -2139,7 +2091,7 @@ void drawpatterns(bool force) {
     g.tColor(15);
     g.printf("|");
   }
-  al_set_target_bitmap(al_get_backbuffer(display));
+  g.setTarget(NULL);
 }
 
 void drawinsedit() {
@@ -2476,7 +2428,7 @@ void drawmixerlayer() {
   al_draw_line(0,21.5+60,scrW,21.5+60,getconfigcol(colDEFA),1);
   al_draw_line(0,57.5+60,scrW,57.5+60,getconfigcol(colDEFA),1);
   al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,60,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
-  al_set_target_bitmap(al_get_backbuffer(display));
+  g.setTarget(NULL);
 }
 
 char shapeSym(int sh) {
@@ -2741,7 +2693,7 @@ void drawpiano() {
   al_set_target_bitmap(pianoroll);
   al_clear_to_color(al_map_rgb(0,0,0));
   al_draw_bitmap(pianoroll_temp,0,0,0);
-  al_set_target_bitmap(al_get_backbuffer(display));
+  g.setTarget(NULL);
   //printf("--------------\n");
   for (int ii=0;ii<32;ii++) {
     if (muted[ii] || cvol[ii]==0) continue;
@@ -2802,7 +2754,7 @@ void drawpiano() {
       ));
                 }
                 al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_INVERSE_ALPHA);
-    al_set_target_bitmap(al_get_backbuffer(display));
+    g.setTarget(NULL);
   }
   al_draw_scaled_bitmap(pianoroll,0,0,700,128,(scrW/2)-((((scrW)/700)*700)/2),scrH-(((scrH-(60+((((scrW)/700)*60))))/128)*128)-(((scrW)/700)*60),((scrW)/700)*700,((scrH-(60+((((scrW)/700)*60))))/128)*128,0);
   for (int ii=0;ii<32;ii++) {
@@ -2970,7 +2922,7 @@ int ImportIT() {
   int LastFXVal[32];
   ALLEGRO_FILECHOOSER* filechooser;
   filechooser=al_create_native_file_dialog(".","load IT module",NULL,0);
-  al_show_native_file_dialog(display,filechooser);
+  al_show_native_file_dialog(g._getDisplay(),filechooser);
   char rfn[256];
   if (al_get_native_file_dialog_path(filechooser,0)!=NULL) {
   strcpy(rfn,al_get_native_file_dialog_path(filechooser,0));} else {printf("no file given\n");}
@@ -3461,7 +3413,7 @@ int SaveFile() {
   // just for the sake of linux
   ALLEGRO_FILECHOOSER* filechooser;
   filechooser=al_create_native_file_dialog(curdir,"save",NULL,ALLEGRO_FILECHOOSER_SAVE);
-  al_show_native_file_dialog(display,filechooser);
+  al_show_native_file_dialog(g._getDisplay(),filechooser);
   char rfn[256];
   if (al_get_native_file_dialog_path(filechooser,0)!=NULL) {
   strcpy(rfn,al_get_native_file_dialog_path(filechooser,0));} else {printf("no file given\n");}
@@ -4862,13 +4814,11 @@ void KeyboardEvents() {
       tempo=150;
       FPS=60;
     }
-    al_set_timer_speed(timer,1/60.0);
   } else {
     if (tempo==150) {
       tempo=125;
       FPS=50;
     }
-    al_set_timer_speed(timer,1/50.0);
   }
   }
   if (screen==9 || screen==7) {
@@ -5016,7 +4966,7 @@ void drawdisp() {
   g.tColor(15);
   g.printf(" %.2x/%.2x\n",curtick,speed);
   g.printf(" %.2x/%.2x\n",maxval(0,curstep),patlength[patid[curpat]]);
-  g.printf("%.2x:%.2x/%.2x",patid[curpat],curpat,songlength);
+  g.printf(" %.2x:%.2x",patid[curpat],curpat,songlength);
   // draw orders
   // -128, 192, 255, +191, 128
   al_set_clipping_rectangle(184*dpiScale,16*dpiScale,16*dpiScale,36*dpiScale);
@@ -5189,37 +5139,14 @@ DETUNE_FACTOR_GLOBAL=1;
    al_init_ttf_addon();
    al_init_primitives_addon();
 
-   printf("creating timer\n");
-   printf("%f\n",FPS);
-   timer = al_create_timer(1.0 / FPS);
-   if (!timer) {
-      fprintf(stderr, "failed to create timer!\n");
-      return -1;
-   }
    if (!playermode) {
    printf("creating display\n");
-   al_set_new_display_flags(ALLEGRO_WINDOWED|ALLEGRO_RESIZABLE);
-#ifndef __APPLE__
-#ifndef __MINGW32__
-al_set_new_window_title("soundtracker");
-#endif
-#endif
-   dpiScale=getScale();
-   display = al_create_display(scrW*dpiScale,scrH*dpiScale);
-   //al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
-   if (!display) {
-      fprintf(stderr, "failed to create display!\n");
-      al_destroy_timer(timer);
-      return -1;
-   }}
-
-   printf("loading font\n");
-   text=al_load_ttf_font("unifont.ttf",16,0);
-   if (text==NULL) {
-     fprintf(stderr,"unifont.ttf wasn't found - halting");
-     return -1;
+   if (!g.init(scrW,scrH)) {
+     printf("couldn't initialize display...\n");
+     return 1;
    }
-   g.init(text);
+   dpiScale=g._getScale();
+   }
    printf("initializing mouse input\n");
    bool ismouse=al_install_mouse();
    if (!ismouse) {
@@ -5302,13 +5229,11 @@ al_set_new_window_title("soundtracker");
      al_set_target_bitmap(mixer);
      al_clear_to_color(al_map_rgb(0,0,0));
        drawmixerlayer();
-     al_set_target_bitmap(al_get_backbuffer(display));}
+     g.setTarget(NULL);}
    printf("creating event queue\n");
    event_queue = al_create_event_queue();
    if (!event_queue) {
       fprintf(stderr, "failed to create event_queue!\n");
-      al_destroy_display(display);
-      al_destroy_timer(timer);
       return -1;
    }
    printf("initializing audio channels\n");
@@ -5316,9 +5241,8 @@ al_set_new_window_title("soundtracker");
    //success=ImportMOD();
    CleanupPatterns();
    // register_event_sources
-  if (!playermode) {al_register_event_source(event_queue, al_get_display_event_source(display));
+  if (!playermode) {al_register_event_source(event_queue, al_get_display_event_source(g._getDisplay()));
   al_register_event_source(event_queue, al_get_keyboard_event_source());}
-   al_register_event_source(event_queue, al_get_timer_event_source(timer));
    // clear to black
    if (!playermode) {al_clear_to_color(al_map_rgb(0,0,0));
    // flip buffers
@@ -5331,7 +5255,6 @@ al_set_new_window_title("soundtracker");
    }
    printf("run\n");
    // run timer
-   al_start_timer(timer);
 #ifndef JACK
    SDL_PauseAudioDevice(audioID,0);
 #endif
@@ -5348,24 +5271,18 @@ al_set_new_window_title("soundtracker");
       ALLEGRO_EVENT ev;
       while (al_get_next_event(event_queue, &ev)) {
 
-      if (ev.type == ALLEGRO_EVENT_TIMER) {
-     //al_set_timer_speed(timer,1.0/FPS);
- 
-     skipframe=true;//!skipframe;
-      }
-      else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+      if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
      printf("close button pressed\n");
-     al_stop_timer(timer);
                  quit=true;
          break;
       } else if (ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
-      al_acknowledge_resize(display);
+      g.trigResize();
       al_destroy_bitmap(mixer);
       // recreate pattern bitmap
       al_destroy_bitmap(patternbitmap);
-      patternbitmap=al_create_bitmap(al_get_display_width(display)/dpiScale,al_get_display_height(display)/dpiScale);
-      scrW=al_get_display_width(display)/dpiScale;
-      scrH=al_get_display_height(display)/dpiScale;
+      patternbitmap=al_create_bitmap(g.getWSize().x,g.getWSize().y);
+      scrW=g.getWSize().x;
+      scrH=g.getWSize().y;
       mixer=al_create_bitmap(scrW,scrH);
       drawmixerlayer();
       drawpatterns(true);
@@ -5399,14 +5316,14 @@ al_set_new_window_title("soundtracker");
   rt3=al_get_time();
       framecounter++;
      if (!playermode) {
-     scrW=al_get_display_width(display)/dpiScale;
-     scrH=al_get_display_height(display)/dpiScale;
+     scrW=g.getWSize().x;
+     scrH=g.getWSize().y;
      }
 
      maxrasterdelta=(maxval(0,raster2-raster1)>maxrasterdelta)?(maxval(0,raster2-raster1)):(maxrasterdelta);
      //printf("%f\n",raster2-raster1);
      ////cout << "\n";
-         if (!playermode) {if (skipframe) {al_clear_to_color(al_map_rgb(0,0,0));
+         if (!playermode) {al_clear_to_color(al_map_rgb(0,0,0));
      drawdisp();
      if (kb[ALLEGRO_KEY_LSHIFT]) {
      al_draw_filled_rectangle(0,raster1,scrW,(raster1>raster2)?(525):(raster2),al_map_rgba(64,64,128,64));
@@ -5436,7 +5353,7 @@ al_set_new_window_title("soundtracker");
      al_wait_for_vsync();
      time2=time1;
      time1=al_get_time();
-  }}
+  }
      
       }
       if (quit) {
@@ -5449,10 +5366,8 @@ al_set_new_window_title("soundtracker");
 #ifdef JACK
    jack_deactivate(jclient);
 #endif
-   printf("destroying timer\n");
-   al_destroy_timer(timer);
    printf("destroying display\n");
-   al_destroy_display(display);
+   g.quit();
    printf("destroying event queue\n");
    al_destroy_event_queue(event_queue);
    al_shutdown_primitives_addon();

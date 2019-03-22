@@ -4,18 +4,62 @@ float intens[6]={
   0, 0.37, 0.53, 0.68, 0.84, 1
 };
 
+double getScale() {
+  char* env;
+  // try with environment variable
+  env=getenv("TRACKER_SCALE");
+  if (env!=NULL) {
+    return atof(env);
+  }
+#if defined(__linux__)
+  // linux (wayland) code here
+#elif defined(_WIN32)
+  // windows code here
+  HDC disp;
+  int dpi;
+  disp=GetDC(NULL);
+  if (disp==NULL) {
+    return 1;
+  }
+  dpi=GetDeviceCaps(disp,LOGPIXELSX);
+  ReleaseDC(NULL,disp);
+  return (double)dpi/96.0;
+#elif defined(__APPLE__)
+  // macOS code here
+  double dpi;
+  if ((dpi=nsStubDPI())>0) {
+    return dpi;
+  }
+#elif defined(__ANDROID__)
+  // android code here
+#endif
+#if defined(__unix__)
+  // X11
+  Display* disp;
+  int dpi;
+  disp=XOpenDisplay(NULL);
+  if (disp!=NULL) {
+    dpi=(int)(0.5+(25.4*(double)XDisplayWidth(disp,XDefaultScreen(disp))/(double)XDisplayWidthMM(disp,XDefaultScreen(disp))));
+    XCloseDisplay(disp);
+    return (double)dpi/96.0;
+  }
+#endif
+  // assume 1
+  return 1;
+}
+
 Point Graphics::getTPos() {
   return textPos;
 }
 
 void Graphics::tPos(float x, float y) {
   textPos.x=x; textPos.y=y;
-  //::fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
+  //fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
 }
 
 void Graphics::tPos(float y) {
   textPos.x=nlPos; textPos.y=y;
-  //::fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)x+1);
+  //fprintf(stderr,"\x1b[%d;%dH",(int)y+1,(int)nlPos+1);
 }
 
 void Graphics::tNLPos(float x) {
@@ -58,7 +102,7 @@ void Graphics::tColor(unsigned char color) {
       textCol.b=intens[(color-16)%6];
     }
   }
-  //::fprintf(stderr,"\x1b[38;5;%dm",color);
+  //fprintf(stderr,"\x1b[38;5;%dm",color);
   alCol=al_map_rgb_f(textCol.r,textCol.g,textCol.b);
 }
 
@@ -71,13 +115,16 @@ int Graphics::printf(const char* format, ...) {
   if (align!=0) {
     tPos(textPos.x-(float)ret*align,textPos.y);
   }
-  //write(2,putBuf,ret);
   
   al_hold_bitmap_drawing(true);
   for (int i=0; i<ret; i++) {
+    //fputc(putBuf[i],stderr);
     if (putBuf[i]=='\n' || putBuf[i]=='\r') {
       textPos.x=nlPos;
       textPos.y++;
+      if (nlPos!=0) {
+        //fprintf(stderr,"\x1b[%d;%dH",(int)textPos.y+1,(int)textPos.x+1);
+      }
     } else {
       al_draw_glyph(allegFont,alCol,8*textPos.x,12*textPos.y,putBuf[i]);
       textPos.x++;
@@ -88,10 +135,62 @@ int Graphics::printf(const char* format, ...) {
   return ret;
 }
 
-bool Graphics::init(ALLEGRO_FONT* f) {
+void Graphics::setTarget(ALLEGRO_BITMAP* where) {
+  if (where==NULL) {
+    al_set_target_bitmap(al_get_backbuffer(display));
+  } else {
+    al_set_target_bitmap(where);
+  }
+}
+
+void Graphics::trigResize() {
+  al_acknowledge_resize(display);
+  scrSize.x=al_get_display_width(display);
+  scrSize.y=al_get_display_height(display);
+}
+
+Point Graphics::getWSize() {
+  return scrSize;
+}
+
+bool Graphics::quit() {
+  al_destroy_font(allegFont);
+  al_destroy_display(display);
+}
+
+bool Graphics::init(int width, int height) {
   tPos(0,0);
   tColor(15);
-  allegFont=f;
-  //::fprintf(stderr,"\x1b[2J");
+  
+  al_set_new_display_flags(ALLEGRO_WINDOWED|ALLEGRO_RESIZABLE);
+#ifndef __APPLE__
+#ifndef __MINGW32__
+  al_set_new_window_title("soundtracker");
+#endif
+#endif
+  dpiScale=getScale();
+  display=al_create_display(width*dpiScale,height*dpiScale);
+  al_set_display_option(display,ALLEGRO_VSYNC,ALLEGRO_REQUIRE);
+  if (!display) {
+    return false;
+  }
+  
+  allegFont=al_load_ttf_font("unifont.ttf",16,0);
+  if (allegFont==NULL) {
+    printf("unifont.ttf wasn't found...");
+    return false;
+  }
+  scrSize.x=width;
+  scrSize.y=height;
+  
+  //fprintf(stderr,"\x1b[2J");
   return true;
+}
+
+ALLEGRO_DISPLAY* Graphics::_getDisplay() {
+  return display;
+}
+
+float Graphics::_getScale() {
+  return dpiScale;
 }
