@@ -3644,25 +3644,23 @@ int LoadFile(const char* filename) {
     orders=fgetc(sfile); // orders
     defspeed=fgetc(sfile); // speed
     seqs=fgetc(sfile); // sequences
-    //al_fputc(sfile,125); // tempo
+    //fputc(sfile,125); // tempo
     fseek(sfile,16,SEEK_SET);
     fgets(name,32,sfile); // name
     //printf("%d ",ftell(sfile));
     fseek(sfile,48,SEEK_SET); // seek to 0x30
     //printf("%d ",ftell(sfile));
-    //al_fputc(sfile,0); // default filter mode
-    //al_fputc(sfile,32); // channels
-    //al_fwrite16le(sfile,0); // flags
-    //al_fputc(sfile,128); // global volume
-    //al_fputc(sfile,0); // global panning
-    //al_fwrite32le(sfile,0); // mute flags
-    //al_fwrite32le(sfile,0); // PCM data pointer
-    //al_fwrite16le(sfile,0); // reserved
+    //fputc(sfile,0); // default filter mode
+    //fputc(sfile,32); // channels
+    //fputsh(sfile,0); // flags
+    //fputc(sfile,128); // global volume
+    //fputc(sfile,0); // global panning
+    //fputi(sfile,0); // mute flags
+    //fputi(sfile,0); // PCM data pointer
+    //fputsh(sfile,0); // reserved
     fseek(sfile,0x3e,SEEK_SET); // seek to 0x3e
     songdf=fgetc(sfile); // detune factor
-    //printf("%d ",al_ftell(sfile));
     fseek(sfile,0x80,SEEK_SET); // seek to 0x80
-    //printf("%d ",al_ftell(sfile));
     for (int ii=0; ii<256; ii++) {
       patid[ii]=fgetc(sfile); // order list
     }
@@ -3691,7 +3689,6 @@ int LoadFile(const char* filename) {
     for (int ii=0;ii<256;ii++) {
       patparas[ii]=fgeti(sfile);
     }
-    //printf("%d ",al_ftell(sfile));
     //printf("reading instruments...\n");
     for (int ii=0; ii<256; ii++) {
       fseek(sfile,insparas[ii],SEEK_SET);
@@ -5100,7 +5097,7 @@ DETUNE_FACTOR_GLOBAL=1;
    scrH=450;
    // create memory blocks
    patlength=new unsigned char[256];
-   //texthand=al_fopen("help.txt","rb");
+   //texthand=fopen("help.txt","rb");
   texthand=NULL;
   if (texthand!=NULL) { // read the file
   printf("loading helpfile, ");
@@ -5161,10 +5158,6 @@ DETUNE_FACTOR_GLOBAL=1;
    if (!logo) {
      printf("you don't have the logo.\n");
    }
-   //logo=al_create_bitmap(360,240);
-   //g.setTarget(logo);
-   // <~>'s logo
-   //al_draw_rectangle(10,10,350,230,al_map_rgb(255,255,255),5);
 
   printf("cleaning up stuff\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
