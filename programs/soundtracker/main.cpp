@@ -391,11 +391,6 @@ enum envTypes {
 };
 
 ALLEGRO_FONT *text=NULL;
-ALLEGRO_AUDIO_STREAM *chan[33]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
-                  NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
-                NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
-                NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
-                           ,     NULL            };
 ALLEGRO_MOUSE_STATE mstate;
 ALLEGRO_KEYBOARD_STATE kbstate;
 ALLEGRO_BITMAP *logo=NULL;
@@ -2047,7 +2042,7 @@ void drawpatterns(bool force) {
   UPDATEPATTERNS=true;
   al_destroy_bitmap(patternbitmap);
   patternbitmap=al_create_bitmap(scrW,(((patlength[patid[curpat]]==0)?(256):(patlength[patid[curpat]]))*12)+8);
-  al_set_target_bitmap(patternbitmap);
+  g.setTarget(patternbitmap);
   al_clear_to_color(al_map_rgb(0,0,0));
   al_draw_filled_rectangle(0,60,scrW,scrH,al_map_rgb(0,0,0));
   for (int i=0;i<getpatlen(patid[curpat]);i++) {
@@ -2403,7 +2398,7 @@ int NumberLetter(char cval) {
   return 0;
 }
 void drawmixerlayer() {
-  al_set_target_bitmap(mixer);
+  g.setTarget(mixer);
   al_clear_to_color(al_map_rgba(0,0,0,0));
   int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
   for (int chantodraw=0;chantodraw<chanstodisplay;chantodraw++) {
@@ -2688,9 +2683,9 @@ void drawpiano() {
   double prefreq;
   int postfreq;
   al_draw_scaled_bitmap(piano,0,0,700,60,(scrW/2)-(((scrW)/700)*700)/2,scrH-(60*((scrW)/700)),((scrW)/700)*700,((scrW)/700)*60,0);
-  al_set_target_bitmap(pianoroll_temp);
+  g.setTarget(pianoroll_temp);
   al_draw_bitmap(pianoroll,0,-1,0);
-  al_set_target_bitmap(pianoroll);
+  g.setTarget(pianoroll);
   al_clear_to_color(al_map_rgb(0,0,0));
   al_draw_bitmap(pianoroll_temp,0,0,0);
   g.setTarget(NULL);
@@ -2740,7 +2735,7 @@ void drawpiano() {
         (cshape[ii]!=1 && cshape[ii]!=2)?(cvol[ii]*2):(0),
         255));
     }
-    al_set_target_bitmap(pianoroll);
+    g.setTarget(pianoroll);
                 al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_ONE);
                 if (cshape[ii]==0) {
                  al_draw_filled_rectangle(((prefreq-0.5)*6)+1-0.5,127,((prefreq-0.5)*6)+5,128,
@@ -3595,7 +3590,7 @@ int SaveFile() {
 }
 int LoadFile(const char* filename) {
   // load file
-  ALLEGRO_FILE *sfile;
+  FILE *sfile;
   int sk=0;
   int CurrentRow=0;
   int maskdata=0; // mask byte
@@ -3612,12 +3607,12 @@ int LoadFile(const char* filename) {
   int oplaymode;
   bool IS_SEQ_BLANK[256];
   char *checkstr=new char[8];
-  sfile=al_fopen(filename,"rb");
+  sfile=fopen(filename,"rb");
   if (sfile!=NULL) { // LOAD the file
-    al_fseek(sfile,0,ALLEGRO_SEEK_SET); // seek to 0
+    fseek(sfile,0,SEEK_SET); // seek to 0
     printf("loading file...\n");
-    //printf("%d ",al_ftell(sfile));
-    al_fgets(sfile,checkstr,9); // magic number
+    //printf("%d ",ftell(sfile));
+    fread(checkstr,1,8,sfile); // magic number
     //printf("%s",checkstr);
     if (checkstr[0]!='T' ||
       checkstr[1]!='R' ||
@@ -3626,7 +3621,7 @@ int LoadFile(const char* filename) {
       checkstr[4]!='K' ||
       checkstr[5]!='8' ||
       checkstr[6]!='B' ||
-      checkstr[7]!='T') {printf("error: not a soundtracker file!\n");al_fclose(sfile);
+      checkstr[7]!='T') {printf("error: not a soundtracker file!\n");fclose(sfile);
     #ifdef SOUNDS
     triggerfx(1);
     #endif
@@ -3634,8 +3629,8 @@ int LoadFile(const char* filename) {
     oplaymode=playmode;
     playmode=0;
     CleanupPatterns();
-    //printf("%d ",al_ftell(sfile));
-    TVER=al_fread16le(sfile); // version
+    //printf("%d ",ftell(sfile));
+    TVER=fgetsh(sfile); // version
     printf("module version %d\n",TVER);
     if (TVER<60) {printf("-applying filter mode compatibility\n");}
     if (TVER<65) {printf("-applying volume column compatibility\n");}
@@ -3643,18 +3638,18 @@ int LoadFile(const char* filename) {
     if (TVER<143) {printf("-applying old sequence format compatibility\n");}
     if (TVER<144) {printf("-applying endianness compatibility\n");}
     //if (TVER<145) {printf("-applying legacy instrument compatibility\n");}
-    //printf("%d ",al_ftell(sfile));
-    instruments=al_fgetc(sfile); // instruments
-    patterns=al_fgetc(sfile); // patterns
-    orders=al_fgetc(sfile); // orders
-    defspeed=al_fgetc(sfile); // speed
-    seqs=al_fgetc(sfile); // sequences
+    //printf("%d ",ftell(sfile));
+    instruments=fgetc(sfile); // instruments
+    patterns=fgetc(sfile); // patterns
+    orders=fgetc(sfile); // orders
+    defspeed=fgetc(sfile); // speed
+    seqs=fgetc(sfile); // sequences
     //al_fputc(sfile,125); // tempo
-    al_fseek(sfile,16,ALLEGRO_SEEK_SET);
-    al_fgets(sfile,name,32); // name
-    //printf("%d ",al_ftell(sfile));
-    al_fseek(sfile,48,ALLEGRO_SEEK_SET); // seek to 0x30
-    //printf("%d ",al_ftell(sfile));
+    fseek(sfile,16,SEEK_SET);
+    fgets(name,32,sfile); // name
+    //printf("%d ",ftell(sfile));
+    fseek(sfile,48,SEEK_SET); // seek to 0x30
+    //printf("%d ",ftell(sfile));
     //al_fputc(sfile,0); // default filter mode
     //al_fputc(sfile,32); // channels
     //al_fwrite16le(sfile,0); // flags
@@ -3663,46 +3658,46 @@ int LoadFile(const char* filename) {
     //al_fwrite32le(sfile,0); // mute flags
     //al_fwrite32le(sfile,0); // PCM data pointer
     //al_fwrite16le(sfile,0); // reserved
-    al_fseek(sfile,0x3e,ALLEGRO_SEEK_SET); // seek to 0x3e
-    songdf=al_fgetc(sfile); // detune factor
+    fseek(sfile,0x3e,SEEK_SET); // seek to 0x3e
+    songdf=fgetc(sfile); // detune factor
     //printf("%d ",al_ftell(sfile));
-    al_fseek(sfile,0x80,ALLEGRO_SEEK_SET); // seek to 0x80
+    fseek(sfile,0x80,SEEK_SET); // seek to 0x80
     //printf("%d ",al_ftell(sfile));
     for (int ii=0; ii<256; ii++) {
-      patid[ii]=al_fgetc(sfile); // order list
+      patid[ii]=fgetc(sfile); // order list
     }
-    al_fseek(sfile,0x3a,ALLEGRO_SEEK_SET); // seek to 0x3a
+    fseek(sfile,0x3a,SEEK_SET); // seek to 0x3a
     memset(comments,0,65536); // clean comments
-    commentpointer=al_fread32le(sfile);
+    commentpointer=fgeti(sfile);
     if (commentpointer!=0) {
-    al_fseek(sfile,commentpointer,ALLEGRO_SEEK_SET);
-    al_fgets(sfile,comments,65536);
+    fseek(sfile,commentpointer,SEEK_SET);
+    fgets(comments,65536,sfile);
     }
-    al_fseek(sfile,0x36,ALLEGRO_SEEK_SET); // seek to 0x36
+    fseek(sfile,0x36,SEEK_SET); // seek to 0x36
     memset(chip[0].pcm,0,65280); // clean PCM memory
-    pcmpointer=al_fread32le(sfile);
+    pcmpointer=fgeti(sfile);
     if (pcmpointer!=0) {
-      al_fseek(sfile,pcmpointer,ALLEGRO_SEEK_SET);
-      maxpcmread=min(65280,al_fread32le(sfile));
-      al_fread(sfile,chip[0].pcm,maxpcmread);
+      fseek(sfile,pcmpointer,ALLEGRO_SEEK_SET);
+      maxpcmread=min(65280,fgeti(sfile));
+      fread(chip[0].pcm,1,maxpcmread,sfile);
     }
-    al_fseek(sfile,0x180,ALLEGRO_SEEK_SET);
+    fseek(sfile,0x180,SEEK_SET);
     for (int ii=0;ii<256;ii++) {
-      insparas[ii]=al_fread32le(sfile);
-    }
-    for (int ii=0;ii<256;ii++) {
-      seqparas[ii]=al_fread32le(sfile);
+      insparas[ii]=fgeti(sfile);
     }
     for (int ii=0;ii<256;ii++) {
-      patparas[ii]=al_fread32le(sfile);
+      seqparas[ii]=fgeti(sfile);
+    }
+    for (int ii=0;ii<256;ii++) {
+      patparas[ii]=fgeti(sfile);
     }
     //printf("%d ",al_ftell(sfile));
     //printf("reading instruments...\n");
     for (int ii=0; ii<256; ii++) {
-      al_fseek(sfile,insparas[ii],ALLEGRO_SEEK_SET);
+      fseek(sfile,insparas[ii],SEEK_SET);
       // is it blank?
       if (insparas[ii]==0) {continue;}
-      al_fread(sfile,&instrument[ii],64);
+      fread(&instrument[ii],1,64,sfile);
       // version<60 filter mode fix
       if (TVER<60) {
         if (instrument[ii].activeEnv&2) {instrument[ii].DFM^=1;}
@@ -3731,12 +3726,12 @@ int LoadFile(const char* filename) {
     //printf("reading sequences...\n");
     if (TVER<143) { // old sequence format
     for (int ii=0; ii<256; ii++) { // right now this is a full dump... we'll later fix this
-      al_fseek(sfile,seqparas[ii],ALLEGRO_SEEK_SET);
+      fseek(sfile,seqparas[ii],SEEK_SET);
       // is it blank?
       if (seqparas[ii]==0) {continue;}
       for (int jj=0; jj<8; jj++) {
         for (int kk=0; kk<256; kk++) {
-        bytable[jj][ii][kk]=al_fgetc(sfile); // seqtable
+          bytable[jj][ii][kk]=fgetc(sfile); // seqtable
         }
       }
       // version<106 loop point fix conversion
@@ -3763,22 +3758,22 @@ int LoadFile(const char* filename) {
       }
       }
     }
-                } else {
-                  for (int ii=0; ii<256; ii++) {
-      al_fseek(sfile,seqparas[ii],ALLEGRO_SEEK_SET);
+  } else {
+    for (int ii=0; ii<256; ii++) {
+      fseek(sfile,seqparas[ii],SEEK_SET);
       // is it blank?
       if (seqparas[ii]==0) {continue;}
       for (int jj=0; jj<8; jj++) {
-                          bytable[jj][ii][253]=al_fgetc(sfile);
-                          bytable[jj][ii][254]=al_fgetc(sfile);
-                          bytable[jj][ii][255]=al_fgetc(sfile);
+        bytable[jj][ii][253]=fgetc(sfile);
+        bytable[jj][ii][254]=fgetc(sfile);
+        bytable[jj][ii][255]=fgetc(sfile);
         for (int kk=0; kk<bytable[jj][ii][253]+1; kk++) {
-         // seqtable
-                                  bytable[jj][ii][kk]=al_fgetc(sfile);
+          // seqtable
+          bytable[jj][ii][kk]=fgetc(sfile);
         }
       }
-                }
-                }
+    }
+  }
   // unpack patterns
   for (int pointer=0;pointer<256;pointer++) {
     // is it blank?
@@ -3786,14 +3781,14 @@ int LoadFile(const char* filename) {
     //printf("-unpacking pattern %d-\n",pointer);
     CurrentRow=0;
     sk=patparas[pointer];
-    al_fseek(sfile,sk+1,ALLEGRO_SEEK_SET);
-    int patsize=al_fread32le(sfile);
+    fseek(sfile,sk+1,SEEK_SET);
+    int patsize=fgeti(sfile);
     //printf("%d bytes in pattern\n",patsize);
-    patlength[pointer]=al_fgetc(sfile);
+    patlength[pointer]=fgetc(sfile);
     sk=patparas[pointer]+16;
-    al_fseek(sfile,sk,ALLEGRO_SEEK_SET);
+    fseek(sfile,sk,SEEK_SET);
     for (int a=0;a<patsize;a++) {
-    NextByte=al_fgetc(sfile);
+    NextByte=fgetc(sfile);
     if (NextByte==0) {
       CurrentRow++;
       if (CurrentRow==patlength[pointer]) {break;}
@@ -3802,13 +3797,13 @@ int LoadFile(const char* filename) {
     NextChannel=NextByte%32;
     if ((NextByte>>5)%2) {
       a++;
-      pat[pointer][CurrentRow][NextChannel][0]=al_fgetc(sfile);
+      pat[pointer][CurrentRow][NextChannel][0]=fgetc(sfile);
       a++;
-      pat[pointer][CurrentRow][NextChannel][1]=al_fgetc(sfile);
+      pat[pointer][CurrentRow][NextChannel][1]=fgetc(sfile);
     }
     if ((NextByte>>6)%2) {
       a++;
-      pat[pointer][CurrentRow][NextChannel][2]=al_fgetc(sfile);
+      pat[pointer][CurrentRow][NextChannel][2]=fgetc(sfile);
       // version<65 volume fix
       if (TVER<65) {
         if (pat[pointer][CurrentRow][NextChannel][0]!=0 && pat[pointer][CurrentRow][NextChannel][2]==0x7f) {pat[pointer][CurrentRow][NextChannel][2]=0;}
@@ -3816,14 +3811,14 @@ int LoadFile(const char* filename) {
     }
     if ((NextByte>>7)%2) {
       a++;
-      pat[pointer][CurrentRow][NextChannel][3]=al_fgetc(sfile);
+      pat[pointer][CurrentRow][NextChannel][3]=fgetc(sfile);
       a++;
-      pat[pointer][CurrentRow][NextChannel][4]=al_fgetc(sfile);
+      pat[pointer][CurrentRow][NextChannel][4]=fgetc(sfile);
     }
     }
   }
-    //printf("%d ",al_ftell(sfile));
-    al_fclose(sfile);
+    //printf("%d ",ftell(sfile));
+    fclose(sfile);
     printf("done\n");
     if (!playermode && !fileswitch) {curpat=0;}
     if (oplaymode==1) {Play();}
@@ -4069,7 +4064,6 @@ void ClickEvents() {
         selStart=(int)((mstate.y-255+curpatrow*12)/12);
         if (selStart<0) selStart=0;
         if (selStart>=patlength[patid[curpat]]) selStart=patlength[patid[curpat]]-1;
-        printf("ss: %d\n",selStart);
         curedchan=minval(maxval(((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/96,0),chanstodisplay-1);
         switch ((((400-(scrW/2))+mstate.x-16-((8-chanstodisplay)*44))/8)%12) {
         case 0: curedmode=0; break;
@@ -5168,18 +5162,10 @@ DETUNE_FACTOR_GLOBAL=1;
      printf("you don't have the logo.\n");
    }
    //logo=al_create_bitmap(360,240);
-   //al_set_target_bitmap(logo);
+   //g.setTarget(logo);
    // <~>'s logo
    //al_draw_rectangle(10,10,350,230,al_map_rgb(255,255,255),5);
 
-   printf("initializing audio system\n");
-   is_audio_inited=al_install_audio();
-   is_audio_inited&=al_init_acodec_addon();
-   if (!is_audio_inited) {
-     fprintf(stderr, "unable to init audio -- program might be inaudible\n");
-     return -1;
-   }
-     al_reserve_samples(0);
   printf("cleaning up stuff\n");
   for (int nonsense=0;nonsense<256;nonsense++) {
     patlength[nonsense]=64;
@@ -5193,13 +5179,13 @@ DETUNE_FACTOR_GLOBAL=1;
    for (int lc=0;lc<256;lc++) {
      colors[lc]=getucol(lc);
    }
-   al_set_target_bitmap(patternbitmap);
+   g.setTarget(patternbitmap);
    al_clear_to_color(al_map_rgb(0,0,0));
-   al_set_target_bitmap(pianoroll);
+   g.setTarget(pianoroll);
    al_clear_to_color(al_map_rgb(0,0,0));
-   al_set_target_bitmap(pianoroll_temp);
+   g.setTarget(pianoroll_temp);
    al_clear_to_color(al_map_rgb(0,0,0));
-   al_set_target_bitmap(piano);
+   g.setTarget(piano);
    al_clear_to_color(al_map_rgb(0,0,0));
    // draw a piano
   for (int ii=0;ii<10;ii++) {
@@ -5211,22 +5197,9 @@ DETUNE_FACTOR_GLOBAL=1;
       if (jj==2) continue;
       al_draw_filled_rectangle((jj+0.666666667)*10+(ii*70),60-60,((jj+1.36)*10)+(ii*70),60-25,al_map_rgb(0,0,0));
     }
-/*
-    for (int jj=0;jj<12;jj++) {
-    if (jj==0 || jj==2 || jj==4 || jj==5 || jj==7 || jj==9 || jj==11) {
-    al_draw_filled_rectangle((jj*6)+(ii*72),60-60,(jj*6)+6+(ii*72),60,al_map_rgb(64,64,64));
-    al_draw_filled_rectangle((jj*6)+1+(ii*72),60-59,(jj*6)+5+(ii*72),60-1,al_map_rgb(255,255,255));
-    }
-    else {
-    al_draw_filled_rectangle((jj*6)+(ii*72),60-60,(jj*6)+6+(ii*72),60-29,al_map_rgb(0,0,0));
-    al_draw_filled_rectangle((jj*6)+(ii*72),60-29,(jj*6)+6+(ii*72),60,al_map_rgb(64,64,64));
-    al_draw_filled_rectangle((jj*6)+1+(ii*72),60-28,(jj*6)+5+(ii*72),60-1,al_map_rgb(255,255,255));
-    }
-    }
-*/
   }
    if (!playermode) {
-     al_set_target_bitmap(mixer);
+     g.setTarget(mixer);
      al_clear_to_color(al_map_rgb(0,0,0));
        drawmixerlayer();
      g.setTarget(NULL);}
@@ -5321,8 +5294,6 @@ DETUNE_FACTOR_GLOBAL=1;
      }
 
      maxrasterdelta=(maxval(0,raster2-raster1)>maxrasterdelta)?(maxval(0,raster2-raster1)):(maxrasterdelta);
-     //printf("%f\n",raster2-raster1);
-     ////cout << "\n";
          if (!playermode) {al_clear_to_color(al_map_rgb(0,0,0));
      drawdisp();
      if (kb[ALLEGRO_KEY_LSHIFT]) {
@@ -5361,8 +5332,7 @@ DETUNE_FACTOR_GLOBAL=1;
       }
    }
    }
-    printf("destroying audio system\n");
-   al_uninstall_audio();
+  printf("destroying audio system\n");
 #ifdef JACK
    jack_deactivate(jclient);
 #endif
