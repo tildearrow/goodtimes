@@ -1979,27 +1979,6 @@ void Playback() {
     chip[iiii>>3].chan[iiii&7].reson=creso[iiii];
   }
 }
-void JustSkip() {
-  // skipping
-  if (playmode==0) {
-       curtick=1;
-       curstep++;
-       if (curstep>(getpatlen(patid[curpat])-1)) {
-         curstep=0;
-         curpat++;
-       }
-     }
-}
-void GoBack() {
-  // go back
-  if (playmode==0) {
-       curtick=1;
-       curstep--;
-       if (curstep<0) {
-         curstep=0;
-       }
-     }
-}
 
 void CleanupPatterns() {
   // cleans up all patterns
@@ -4437,23 +4416,73 @@ void FastTracker() {
   int lastChan, lastMode;
   int selTop, selBottom;
   // scroll code
-  if (kbpressed[ALLEGRO_KEY_UP]) {GoBack();drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_DOWN]) {JustSkip();drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_RIGHT]) {
-  curedmode++;
-  if (curedmode>4) {
-    curedchan++;
-    curedmode=0;
-    if (curedchan>7) {curedchan=7;curedmode=5;}
+  if (kbpressed[ALLEGRO_KEY_UP]) {
+    // go back
+    if (playmode==0) {
+      curtick=1;
+      curstep--;
+      if (curstep<0) {
+        curstep=0;
+      }
+      selEnd=curstep;
+      if (!kb[ALLEGRO_KEY_LSHIFT]) {
+        selStart=curstep;
+        curselchan=curedchan;
+        curselmode=curedmode;
+      }
     }
-  drawpatterns(true);
+    drawpatterns(true);
+  }
+  if (kbpressed[ALLEGRO_KEY_DOWN]) {
+    // skipping
+    if (playmode==0) {
+      curtick=1;
+      curstep++;
+      if (curstep>(getpatlen(patid[curpat])-1)) {
+        curstep=0;
+        curpat++;
+      }
+      selEnd=curstep;
+      if (!kb[ALLEGRO_KEY_LSHIFT]) {
+        selStart=curstep;
+        curselchan=curedchan;
+        curselmode=curedmode;
+      }
+    }
+    drawpatterns(true);
+  }
+  if (kbpressed[ALLEGRO_KEY_RIGHT]) {
+    curedmode++;
+    if (curedmode>4) {
+      curedchan++;
+      curedmode=0;
+      if (curedchan>=chanstodisplay) {
+        curedchan=chanstodisplay-1;
+        curedmode=4;
+      }
+    }
+    if (!kb[ALLEGRO_KEY_LSHIFT]) {
+      curselchan=curedchan;
+      curselmode=curedmode;
+      selEnd=selStart;
+    }
+    drawpatterns(true);
   }
   if (kbpressed[ALLEGRO_KEY_LEFT]) {
     curedmode--;
     if (curedmode<0) {
-  curedchan--;
-  curedmode=4;
-  if (curedchan<0) {curedchan=0;curedmode=0;}}
+      curedchan--;
+      curedmode=4;
+      if (curedchan<0) {
+        curedchan=0;
+        curedmode=0;
+      }
+    }
+    if (!kb[ALLEGRO_KEY_LSHIFT]) {
+      curselchan=curedchan;
+      curselmode=curedmode;
+      selEnd=selStart;
+    }
     drawpatterns(true);
   }
   if (kbpressed[ALLEGRO_KEY_DELETE]) {
