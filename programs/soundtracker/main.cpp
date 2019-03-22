@@ -4085,6 +4085,10 @@ void ClickEvents() {
     if ((mstate.z-prevZ)<0) {
       if (follow) {
         curstep-=(mstate.z-prevZ);
+        if (curstep>(patlength[patid[curpat]]-1)) {
+          curstep-=patlength[patid[curpat]];
+          curpat++;
+        }
       } else {
         curpatrow-=(mstate.z-prevZ)*3;
         curpatrow=fmin(curpatrow,(unsigned char)(patlength[patid[curpat]]-1));
