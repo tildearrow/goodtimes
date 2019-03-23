@@ -145,8 +145,8 @@ void Graphics::setTarget(ALLEGRO_BITMAP* where) {
 
 void Graphics::trigResize() {
   al_acknowledge_resize(display);
-  scrSize.x=al_get_display_width(display);
-  scrSize.y=al_get_display_height(display);
+  scrSize.x=al_get_display_width(display)/dpiScale;
+  scrSize.y=al_get_display_height(display)/dpiScale;
 }
 
 Point Graphics::getWSize() {
