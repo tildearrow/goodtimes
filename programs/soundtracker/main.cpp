@@ -7,12 +7,6 @@
 //>++++++++++-+-++-*.*-++-+-++++++++++<//
 
 #define PROGRAM_NAME "soundtracker"
-#ifdef _WIN32
-#define PROGRAM_NAME "soundtracker.exe"
-#endif
-#ifdef __APPLE__
-#define PROGRAM_NAME "soun..."
-#endif
 float rt1=0;
 float rt2=0;
 

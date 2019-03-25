@@ -16,6 +16,11 @@
 #include <X11/Xlib.h> 
 #endif 
 #endif 
+#ifdef __APPLE__
+extern "C" {
+  #include "nsstub.h"
+}
+#endif
 #include <stdint.h> 
 #include <string> 
 #include <vector>

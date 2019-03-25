@@ -7,6 +7,7 @@ endif (WIN32)
 if (APPLE)
   include_directories(/usr/local/include/)
   link_directories(/usr/local/lib/)
+  find_library(HAVE_APPKIT AppKit PATHS ${CMAKE_OSX_SYSROOT}/System/Library PATH_SUFFIXES Frameworks NO_DEFAULT_PATH)
 endif (APPLE)
 find_library(HAVE_JACK jack)
 if (HAVE_JACK)
@@ -26,11 +27,15 @@ add_executable(pads programs/pads/main.cpp)
 add_executable(credits programs/credits/main.cpp)
 add_executable(thegame programs/thegame/engine.cpp programs/thegame/main.cpp)
 add_executable(timertest programs/timertest/main.cpp)
-add_executable(soundtracker programs/soundtracker/soundchip.cpp
-                            programs/soundtracker/graphics.cpp
-                            programs/soundtracker/ssinter.cpp
-                            programs/soundtracker/fextra.cpp
-                            programs/soundtracker/main.cpp)
+set(TRACKER_SRC programs/soundtracker/soundchip.cpp
+                programs/soundtracker/graphics.cpp
+                programs/soundtracker/ssinter.cpp
+                programs/soundtracker/fextra.cpp
+                programs/soundtracker/main.cpp)
+if (APPLE)
+list(APPEND TRACKER_SRC programs/soundtracker/nsstub.m)
+endif (APPLE)
+add_executable(soundtracker ${TRACKER_SRC})
 if (HAVE_JACK)
 target_link_libraries(4channelbypass jack)
 target_link_libraries(lightshow jack)
@@ -65,6 +70,7 @@ target_link_libraries(counter allegro allegro_main allegro_font allegro_ttf)
 target_link_libraries(videotests allegro allegro_main allegro_font allegro_ttf allegro_primitives allegro_color)
 target_link_libraries(stdinaudio allegro allegro_main allegro_font allegro_ttf allegro_primitives allegro_audio)
 target_link_libraries(timertest allegro allegro_main)
+target_link_libraries(soundtracker ${HAVE_APPKIT})
 else (APPLE)
 target_link_libraries(thegame allegro allegro_font allegro_ttf allegro_primitives allegro_image)
 target_link_libraries(credits allegro allegro_font allegro_ttf allegro_primitives)
