@@ -1816,8 +1816,20 @@ void NextTick() {
   // run effects
   for (int looper=0;looper<32;looper++) {
   // Bxx
-  if (nfxid[looper]==2)
-    {if (curtick==0) {curpat=nfxvl[looper];curstep=-1;NextRow();}}
+  if (nfxid[looper]==2) {
+    if (curtick==0) {
+      curpat=nfxvl[looper];
+      curstep=-1;
+      for (int l=0; l<32; l++) {
+        // check for Cxx's
+        if (nfxid[l]==3) {
+          curstep=nfxvl[l]-1;
+        }
+      }
+      NextRow();
+      
+    }
+  }
   // Cxx
   if (nfxid[looper]==3)
     {if (curtick==0) {SkipPattern(looper);}}
