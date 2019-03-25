@@ -164,7 +164,7 @@ bool Graphics::init(int width, int height) {
   tColor(15);
   
   al_set_new_display_flags(ALLEGRO_WINDOWED|ALLEGRO_RESIZABLE);
-  al_set_new_display_option(ALLEGRO_VSYNC,1,ALLEGRO_REQUIRE);
+  al_set_new_display_option(ALLEGRO_VSYNC,1,ALLEGRO_SUGGEST);
   al_set_new_window_title("soundtracker");
   dpiScale=getScale();
   display=al_create_display(width*dpiScale,height*dpiScale);
