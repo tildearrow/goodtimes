@@ -400,7 +400,7 @@ bool rightclick=false;
 bool rightclickprev=false;
 int prevZ=0;
 int hover[16]={}; // hover time per button
-int16_t ver=144; // version number
+int16_t ver=145; // version number
 unsigned char chs0[5000];
 char* helptext;
 char* comments;
@@ -409,8 +409,6 @@ int chantoplayfx=0;
 char* inputvar=NULL;
 int inputwhere=0; // 0=none, 1=songname, 2=insname, 3=filepath, 4=comments
 int maxinputsize=0;
-int LastUsedChannel[8]={0,0,0,0,0,0,0,0};
-int LastUsedChannelMax;
 char* curdir;
 int pcmeditscale=0;
 int pcmeditseek=0;
@@ -459,10 +457,6 @@ float oscbuf2[65536]={}; // safe oscilloscope buffer
 ALLEGRO_EVENT_QUEUE *aqueue[33];
 // settings
 namespace settings {
-  // default colors are:    NOTE INST VOLU FXTM FXSN FXVL FXPT FXNO FXSP FXPN FXUK BROW SEL1 SEL2 SEL3 PEAK DEFA DARK LOOP RELE CPOS UPPP DOWN ABSO CRHL SELE NOVL
-  unsigned char colorR[27]={0xd0,0x5f,0x00,0xd0,0xff,0x00,0xff,0x60,0xff,0x60,0x80,0xa0,0x00,0xff,0x00,0x00,0xff,0xc0,0x00,0xff,0x00,0x00,0xff,0xff,0x40,0x80,0x5f};
-  unsigned char colorG[27]={0xd0,0xd7,0x50,0x30,0x00,0xff,0xff,0x60,0x00,0xff,0x80,0xa0,0xff,0xff,0xff,0xff,0xff,0xc0,0xff,0x00,0xff,0xff,0x00,0xff,0x40,0x80,0xd7};
-  unsigned char colorB[27]={0xd0,0xff,0xff,0xd0,0x00,0x00,0x00,0xff,0xff,0xff,0x80,0xa0,0xff,0x00,0x00,0x00,0xff,0xc0,0xff,0xff,0x00,0x00,0x00,0x00,0x40,0x80,0xff};
   // audio settings
   bool distortion=false;
   bool threading=false;
@@ -481,14 +475,6 @@ namespace settings {
 Graphics g;
 // NEW VARIABLES END //
 
-enum colorindexes {
-  colNOTE, colINST, colVOLU, colFXTM, colFXSN, colFXVL, colFXPT, colFXNO, colFXSP, colFXPN, colFXUK, colBROW,
-  colSEL1, colSEL2, colSEL3, colPEAK, colDEFA, colDARK, colLOOP, colRELE, colCPOS, colUPPP, colDOWN, colABSO,
-  colCRHL, colSELE, colNOVL
-};
-ALLEGRO_COLOR getconfigcol(int colid) {
-  return al_map_rgb(settings::colorR[colid],settings::colorG[colid],settings::colorB[colid]);
-}
 void Playback();
 void MuteAllChannels();
 int playfx(const char* fxdata,int fxpos,int achan);
@@ -611,21 +597,6 @@ int nothing (jack_nframes_t nframes, void *arg) {
                                                       chip[updateindex1>>3].chan[updateindex1&7].vol=0;
                                                     }
                                                   }
-            }
-            LastUsedChannel[7]=LastUsedChannel[6];
-            LastUsedChannel[6]=LastUsedChannel[5];
-            LastUsedChannel[5]=LastUsedChannel[4];
-            LastUsedChannel[4]=LastUsedChannel[3];
-            LastUsedChannel[3]=LastUsedChannel[2];
-            LastUsedChannel[2]=LastUsedChannel[1];
-            LastUsedChannel[1]=LastUsedChannel[0];
-            LastUsedChannel[0]=0;
-            for (int updateindex2=32;updateindex2>0;updateindex2--) {
-              if (cvol[updateindex2-1]!=0) { LastUsedChannel[0]=updateindex2; break; }
-            }
-            LastUsedChannelMax=0;
-            for (int ii=0;ii<8;ii++) {
-              LastUsedChannelMax=(LastUsedChannelMax<LastUsedChannel[ii])?(LastUsedChannel[ii]):(LastUsedChannelMax);
             }
             if (ntsc) {
             #ifdef FILM
@@ -1993,9 +1964,12 @@ void Playback() {
 }
 
 void CleanupPatterns() {
-  // cleans up all patterns
+  // patterns
   memset(pat,0,256*256*32*5);
-  // cleans up all envelopes
+  // pattern details
+  memset(patlength,0x40,256);
+  memset(patid,0,256);
+  // envelopes
   memset(bytable,0,8*256*256);
   for (int kk=0;kk<8;kk++) {
     for (int jj=0;jj<256;jj++) {
@@ -2003,10 +1977,15 @@ void CleanupPatterns() {
       bytable[kk][jj][255]=255;
     }
   }
-  // cleans up all instruments
+  // instruments
   memset(instrument,0,256*64);
   for (int jj=0;jj<256;jj++) {
     instrument[jj].noteOffset=48;
+  }
+  // default vol/pan
+  for (int j=0; j<32; j++) {
+    defchanvol[j]=0x80;
+    defchanpan[j]=((j+1)&2)?96:-96;
   }
 }
 
@@ -2116,7 +2095,7 @@ void drawinsedit() {
   g.tPos(0,(float)(scrH-18)/12);
   g.printf("< Loop   ^v+- Release   ^v+- Length   ^v+-                     >");
   
-  al_draw_rectangle(0,94,516+(scrW-800),scrH-34,getconfigcol(colDEFA),1);
+  al_draw_rectangle(0,94,516+(scrW-800),scrH-34,al_map_rgb(255,255,255),1);
   // draws envelope waveform
   if (!hexmode) {
   for (int ii=scrollpos;ii<minval(253,(516/valuewidth)+scrollpos+((scrW-800)/valuewidth));ii++) {
@@ -2197,7 +2176,7 @@ void drawinsedit() {
   g.tColor((inputwhere==2)?11:15);
   g.printf("%s",instrument[CurrentIns].name);
   if (inputwhere==2) {
-    al_draw_line((scrW-272)+(inputcurpos*8),133,(scrW-272)+(inputcurpos*8),145,getconfigcol(colSEL2),1);
+    al_draw_line((scrW-272)+(inputcurpos*8),133,(scrW-272)+(inputcurpos*8),145,al_map_rgb(255,255,0),1);
   }
   
   g.tPos(55,6);
@@ -2393,7 +2372,7 @@ void drawmixerlayer() {
   al_clear_to_color(al_map_rgba(0,0,0,0));
   int mixerdrawoffset=(scrW/2)-chanstodisplay*48-12;
   for (int chantodraw=0;chantodraw<chanstodisplay;chantodraw++) {
-    al_draw_line(12.5+(chantodraw*96)+mixerdrawoffset,60,12.5+(chantodraw*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
+    al_draw_line(12.5+(chantodraw*96)+mixerdrawoffset,60,12.5+(chantodraw*96)+mixerdrawoffset,scrW-0.5,al_map_rgb(255,255,255),1);
     g.tColor(15);
     g.tNLPos(2+chantodraw*12+((float)mixerdrawoffset/8.0));
     g.tPos(5+2);
@@ -2411,9 +2390,9 @@ void drawmixerlayer() {
     g.printf("Trr  |Pbr  ");
   }
   g.tNLPos(0);
-  al_draw_line(0,21.5+60,scrW,21.5+60,getconfigcol(colDEFA),1);
-  al_draw_line(0,57.5+60,scrW,57.5+60,getconfigcol(colDEFA),1);
-  al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,60,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-0.5,getconfigcol(colDEFA),1);
+  al_draw_line(0,21.5+60,scrW,21.5+60,al_map_rgb(255,255,255),1);
+  al_draw_line(0,57.5+60,scrW,57.5+60,al_map_rgb(255,255,255),1);
+  al_draw_line(12.5+(chanstodisplay*96)+mixerdrawoffset,60,12.5+(chanstodisplay*96)+mixerdrawoffset,scrW-0.5,al_map_rgb(255,255,255),1);
   g.setTarget(NULL);
 }
 
@@ -2505,7 +2484,7 @@ void drawdiskop() {
   g.tPos(9,7);
   g.printf("%s",curdir);
   if (selectedfileindex>(diskopscrollpos)) {
-  al_draw_filled_rectangle(0,111+((selectedfileindex-diskopscrollpos)*12),scrW,123+((selectedfileindex-diskopscrollpos)*12),getconfigcol(colSELE));
+  al_draw_filled_rectangle(0,111+((selectedfileindex-diskopscrollpos)*12),scrW,123+((selectedfileindex-diskopscrollpos)*12),al_map_rgb(128,128,128));
   }
   for (int i=diskopscrollpos; i<minval(diskopscrollpos+27,filecount); i++) {
     g.tPos(0,10+i-diskopscrollpos);
@@ -2571,7 +2550,7 @@ void drawsong() {
   g.tPos(11,7);
   g.printf(name);
   if (inputwhere==1) {
-      al_draw_line(89+(inputcurpos*8),85,89+(inputcurpos*8),97,getconfigcol(colSEL2),1);
+      al_draw_line(89+(inputcurpos*8),85,89+(inputcurpos*8),97,al_map_rgb(255,255,0),1);
   }
   g.tColor(11);
   g.tPos(53,5);
@@ -2763,7 +2742,7 @@ void drawcomments() {
   if (DRAWCUR_X>(scrW/8)) {DRAWCUR_X=0;DRAWCUR_Y++;}
   if (DRAWCUR_Y>((scrH/12)-5)) {break;}
   if (ii==(inputcurpos-1) && inputwhere==4) {
-    al_draw_line(1+(DRAWCUR_X*8),60+(DRAWCUR_Y*12),1+(DRAWCUR_X*8),75+(DRAWCUR_Y*12),getconfigcol(colSEL2),1);
+    al_draw_line(1+(DRAWCUR_X*8),60+(DRAWCUR_Y*12),1+(DRAWCUR_X*8),75+(DRAWCUR_Y*12),al_map_rgb(255,255,0),1);
   }
   }
   g.tPos(0,5);
@@ -2786,14 +2765,14 @@ void drawpcmeditor() {
   }
   g.printf("position: %.5x",(int)((float)pcmeditseek*pow(2.0f,-pcmeditscale)));
   al_draw_line((int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)-128,
-    (int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)+128,getconfigcol(colSEL2),1);
+    (int)((float)pcmeditseek*pow(2.0f,-pcmeditscale))*pow(2.0f,pcmeditscale),(scrH/2)+128,al_map_rgb(255,255,0),1);
   for (float ii=0;ii<(scrW*pow(2.0f,-pcmeditscale));ii+=pow(2.0f,-pcmeditscale)) {
-    al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+chip[0].pcm[(int)ii+pcmeditoffset],(pcmeditenable)?getconfigcol(colSEL2):getconfigcol(colDEFA));
+    al_draw_pixel(ii*pow(2.0f,pcmeditscale),(scrH/2)+chip[0].pcm[(int)ii+pcmeditoffset],(pcmeditenable)?al_map_rgb(255,255,0):al_map_rgb(255,255,255));
   }
   for (int ii=0;ii<32;ii++) {
     if (cmode[ii]==1 && cvol[ii]>0) {
       al_draw_line(((float)cpcmpos[ii]*pow(2.0f,pcmeditscale)),(scrH/2)-140,
-    ((float)cpcmpos[ii]*pow(2.0f,pcmeditscale)),(scrH/2)-129,getconfigcol(colSEL1),1);
+    ((float)cpcmpos[ii]*pow(2.0f,pcmeditscale)),(scrH/2)-129,al_map_rgb(0,255,255),1);
       g.tColor(11);
       g.tPos((float)(cpcmpos[ii]*pow(2.0f,pcmeditscale))/8.0,(float)((scrH/2)-153)/12);
       g.printf("%d",ii);
@@ -2863,8 +2842,8 @@ void Play() {
   plpos[su]=0;
   chanvol[su]=defchanvol[su];
   doretrigger[su]=false;
-  //chanpan[su]=defchanpan[su];
-  if ((su+1)&2) {chanpan[su]=96;} else {chanpan[su]=-96;} // amiga auto-pan logic
+  chanpan[su]=defchanpan[su];
+  //if ((su+1)&2) {chanpan[su]=96;} else {chanpan[su]=-96;} // amiga auto-pan logic
   //if (su&1) {chanpan[su]=96;} else {chanpan[su]=-96;} // normal auto-pan logic
   finedelay=0;
   cutcount[su]=-1;
@@ -3435,6 +3414,9 @@ int SaveFile() {
     al_fseek(sfile,0x3e,ALLEGRO_SEEK_SET); // seek to 0x3e
     al_fputc(sfile,songdf); // detune factor
     printf("%d ",al_ftell(sfile));
+    al_fseek(sfile,0x40,ALLEGRO_SEEK_SET); // seek to 0x40
+    al_fwrite(sfile,defchanvol,32); // channel volume
+    al_fwrite(sfile,defchanpan,32); // channel panning
     al_fseek(sfile,0x80,ALLEGRO_SEEK_SET); // seek to 0x80
     printf("%d ",al_ftell(sfile));
     for (int ii=0; ii<256; ii++) {
@@ -3628,7 +3610,8 @@ int LoadFile(const char* filename) {
     if (TVER<106) {printf("-applying loop point fix compatibility\n");}
     if (TVER<143) {printf("-applying old sequence format compatibility\n");}
     if (TVER<144) {printf("-applying endianness compatibility\n");}
-    //if (TVER<145) {printf("-applying legacy instrument compatibility\n");}
+    if (TVER<145) {printf("-applying channel pan/vol compatibility\n");}
+    //if (TVER<??) {printf("-applying legacy instrument compatibility\n");}
     //printf("%d ",ftell(sfile));
     instruments=fgetc(sfile); // instruments
     patterns=fgetc(sfile); // patterns
@@ -3651,6 +3634,9 @@ int LoadFile(const char* filename) {
     //fputsh(sfile,0); // reserved
     fseek(sfile,0x3e,SEEK_SET); // seek to 0x3e
     songdf=fgetc(sfile); // detune factor
+    fseek(sfile,0x40,SEEK_SET); // seek to 0x40
+    fread(defchanvol,1,32,sfile); // channel volume
+    fread(defchanpan,1,32,sfile); // channel panning
     fseek(sfile,0x80,SEEK_SET); // seek to 0x80
     for (int ii=0; ii<256; ii++) {
       patid[ii]=fgetc(sfile); // order list
@@ -3701,8 +3687,22 @@ int LoadFile(const char* filename) {
         instrument[ii].pcmLoop[0]^=instrument[ii].pcmLoop[1];
         instrument[ii].filterH=bswapu16(instrument[ii].filterH);
       }
+      // version<145 panning
+      if (TVER<145) {
+        for (int j=0; j<32; j++) {
+          defchanpan[j]=((j+1)&2)?96:-96;
+          defchanvol[j]=0x80;
+        }
+      }
       
-      // version<145 force legacy instrument
+      // version<75 mono
+      if (TVER<75) {
+        for (int j=0; j<32; j++) {
+          defchanpan[j]=0;
+        }
+      }
+      
+      // version<?? force legacy instrument
       /*
       if (TVER<144) {
         instrument[ii].ver&=~0x8000;
@@ -4383,28 +4383,6 @@ void ClickEvents() {
       if (PIR(280,132,368,143,mstate.x,mstate.y)) {settings::cubicspline=!settings::cubicspline;}
       if (PIR(280,240,368,251,mstate.x,mstate.y)) {settings::nofilters=!settings::nofilters;}
       if (PIR(280,252,368,264,mstate.x,mstate.y)) {settings::muffle=!settings::muffle;}
-    for (int ii=0;ii<27;ii++) {
-      if (PIR(160,96+(ii*12),167,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]+=16;}
-      if (PIR(168,96+(ii*12),176,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]++;}
-
-      if (PIR(184,96+(ii*12),191,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]+=16;}
-      if (PIR(192,96+(ii*12),200,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]++;}
-
-      if (PIR(208,96+(ii*12),215,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]+=16;}
-      if (PIR(216,96+(ii*12),224,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]++;}
-    }
-    }
-    if (rightpress) {
-    for (int ii=0;ii<27;ii++) {
-      if (PIR(160,96+(ii*12),167,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]-=16;}
-      if (PIR(168,96+(ii*12),176,107+(ii*12),mstate.x,mstate.y)) {settings::colorR[ii]--;}
-
-      if (PIR(184,96+(ii*12),191,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]-=16;}
-      if (PIR(192,96+(ii*12),200,107+(ii*12),mstate.x,mstate.y)) {settings::colorG[ii]--;}
-
-      if (PIR(208,96+(ii*12),215,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]-=16;}
-      if (PIR(216,96+(ii*12),224,107+(ii*12),mstate.x,mstate.y)) {settings::colorB[ii]--;}
-    }
     }
   }
   // events only in comments view
@@ -5051,10 +5029,8 @@ void drawdisp() {
   for (int ii=0;ii<128;ii++) {
     al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf[ii]*18)-9+0.5,al_map_rgb_f(0,(1-(((oscbuf[ii]+1)*18)-(int)((oscbuf[ii]+1)*18)))*1.5,0));
     al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-9+0.5,al_map_rgb_f((1-(((oscbuf2[ii]+1)*18)-(int)((oscbuf2[ii]+1)*18)))*1.5,0,0));
-    //al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-8+0.5,getconfigcol(colDOWN));
     al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf[ii]*18)-8+0.5,al_map_rgb_f(0,((((oscbuf[ii]+1)*18)-(int)((oscbuf[ii]+1)*18)))*1.5,0));
     al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-8+0.5,al_map_rgb_f(((((oscbuf2[ii]+1)*18)-(int)((oscbuf2[ii]+1)*18)))*1.5,0,0));
-    //al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-7+0.5,getconfigcol(colDOWN));
   }
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
   switch(screen) {
@@ -5211,14 +5187,7 @@ DETUNE_FACTOR_GLOBAL=1;
      printf("you don't have the logo.\n");
    }
 
-  printf("cleaning up stuff\n");
-  for (int nonsense=0;nonsense<256;nonsense++) {
-    patlength[nonsense]=64;
-    instrument[nonsense].noteOffset=48;
-  }
-  for (int nonsense2=0;nonsense2<256;nonsense2++) {
-    instrument[nonsense2].noteOffset=48;
-  }
+   CleanupPatterns();
    // init colors
    ALLEGRO_COLOR colors[256]={};
    for (int lc=0;lc<256;lc++) {
@@ -5256,8 +5225,6 @@ DETUNE_FACTOR_GLOBAL=1;
    }
    printf("initializing audio channels\n");
    initaudio();
-   //success=ImportMOD();
-   CleanupPatterns();
    // register_event_sources
   if (!playermode) {al_register_event_source(event_queue, al_get_display_event_source(g._getDisplay()));
   al_register_event_source(event_queue, al_get_keyboard_event_source());}
