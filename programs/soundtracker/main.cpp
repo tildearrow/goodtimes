@@ -39,8 +39,7 @@ float DETUNE_FACTOR_GLOBAL;
 #ifdef JACK
 #include <jack/jack.h>
 #include <jack/midiport.h>
-jack_port_t *joutl;
-jack_port_t *joutr;
+jack_port_t* ao[2];
 jack_port_t *midi;
 jack_client_t *jclient;
 jack_status_t jstatus;
@@ -418,6 +417,11 @@ float *buf;
 int pitch = 0x20;
 int val = 0;
 int i;
+float resa0[2], resa1[2];
+int sr;
+double targetSR;
+double noProc;
+double procPos;
 
 float nsL[33];
 float nsR[33];
@@ -445,7 +449,6 @@ ALLEGRO_BITMAP *piano=NULL;
 ALLEGRO_BITMAP *mixer=NULL;
 ALLEGRO_BITMAP* osc=NULL;
 bool firstframe=true;
-float* abuf;
 float oscbuf[65536]={}; // safe oscilloscope buffer
 float oscbuf2[65536]={}; // safe oscilloscope buffer
 unsigned short oscbufRPos=0;
@@ -504,177 +507,96 @@ bool midion[32]={0,0,0,0,0,0,0,0,
       0,0,0,0,0,0,0,0,
        0,0,0,0,0,0,0,0,
        0,0,0,0,0,0,0,0};
-       #ifdef JACK
-int nothing (jack_nframes_t nframes, void *arg) {
-#else
-  static void nothing(void*  userdata,
-  Uint8* stream,
-  int    len) {
-#endif
+
+#define resaf 0.33631372025095791864295318996109
+
+#ifdef JACK
+int nothing(jack_nframes_t nframes, void* arg) {
   rt1=al_get_time();
-#ifdef JACK
-  jack_default_audio_sample_t *outl, *outr;
-  outl = (float*)jack_port_get_buffer (joutl, nframes);
-  outr = (float*)jack_port_get_buffer (joutr, nframes);
-  void* port_buf = jack_port_get_buffer(midi, nframes);
-  unsigned char* midibuffer;
-  jack_midi_clear_buffer(port_buf);
-#else
-  float *outl, *outr;
-  outl=(float*)stream;
-  outr=(float*)stream;
-  int nframes=len/8;
-#endif
-      if (ntsc) {
-      ASC::interval=(int)(6180000/FPS);
-      totalrender=(309000.0f/(float)jacksr)*nframes;
-      if (tempo==150) {ASC::interval=103103;}
-      } else {
-      totalrender=(297500.0f/(float)jacksr)*nframes;
-      ASC::interval=(int)(5950000/FPS);
+  float* buf[2];
+  float temp[4];
+  for (int i=0; i<2; i++) {
+    buf[i]=(float*)jack_port_get_buffer(ao[i],nframes);
+  }
+  if (ntsc) {
+    ASC::interval=(int)(6180000/FPS);
+    if (tempo==150) ASC::interval=103103;
+    targetSR=309000;
+    noProc=sr/targetSR;
+  } else {
+    ASC::interval=(int)(5950000/FPS);
+    targetSR=297500;
+    noProc=sr/targetSR;
+  }
+  if (kb[ALLEGRO_KEY_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {
+    ASC::interval=16384;
+  }
+  for (size_t i=0; i<nframes;) {
+    ASC::currentclock-=20; // 20 CPU cycles per sound output cycle
+    if (ASC::currentclock<=0) {
+      for (int ii=0;ii<32;ii++) {
+        cshapeprev[ii]=cshape[ii];
       }
-      if (kb[ALLEGRO_KEY_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {ASC::interval=16384;}
-      fakeASC::interval=ASC::interval;
-      memset(abuf,0,totalrender*2*sizeof(float));
-      for (cycle=0;cycle<(int)totalrender;cycle++) {
-        for (cycle1=0;cycle1<20;cycle1++) {
-#ifndef VBLANK    
-                            ASC::currentclock--;
-                            if (ASC::currentclock<1) {
-#else
-                             if (doframe) {
-#endif
-          
-                                    doframe=0;
-          if (ntsc) {
-          #ifdef FILM
-            raster1=(((double)cycle*20)+(double)cycle1)/190.4;
-          #else
-            raster1=(((double)cycle*20)+(double)cycle1)/190.47619047619047619047619047619;
-          #endif
-          } else {
-            raster1=(((double)cycle*20)+(double)cycle1)/190.4;
-          }
-            double partialtime=al_get_time();
-            ASC::currentclock=ASC::interval;
-            for (int ii=0;ii<32;ii++) {
-              cshapeprev[ii]=cshape[ii];
-            }
-            if (playmode>0) {
-              Playback();
-#ifdef JACK
-              for (int iiiii=0;iiiii<32;iiiii++) {
-              if (reservedevent[iiiii] && midion[iiiii]) {
-                reservedevent[iiiii]=0;
-                midibuffer = jack_midi_event_reserve(port_buf, 0, 3);
-              midibuffer[2] = cvol[iiiii];  // velocity
-              midibuffer[1] = (unsigned char)(((log((((((6203.34-(songdf*2)))/**(1/detunefactor)*/)*(float)oldperiod[iiiii]/14.0)))/log(2.0f))*12.0f)+69.1);
-              midibuffer[0] = 0x80+(iiiii%16);  // note on or off
-              if (!offinstead[iiiii]) {
-              midibuffer = jack_midi_event_reserve(port_buf, 0, 3);
-              midibuffer[2] = cvol[iiiii];  // velocity
-              midibuffer[1] = (unsigned char)(((log((((((6203.34-(songdf*2)))/**(1/detunefactor)*/)*(float)newperiod[iiiii]/14.0)))/log(2.0f))*12.0f)+69.1);
-              midibuffer[0] = 0x90+(iiiii%16);  // note on or off
-              } else {offinstead[iiiii]=false;}
-              }}
-#endif
-            }
-            else {
-              MuteAllChannels();
-            }
-            if (sfxplaying) {
-              sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
-              if (sfxpos==-1) {
-                sfxplaying=false;
-              }
-            }
-            for (int updateindex1=0;updateindex1<32;updateindex1++) {
-              if (muted[updateindex1]) { cvol[updateindex1]=0;
-                                                    if (updateindex1<(8*soundchips)) {
-                                                      chip[updateindex1>>3].chan[updateindex1&7].vol=0;
-                                                    }
-                                                  }
-            }
-            if (ntsc) {
-            #ifdef FILM
-            raster2=fmod(al_get_time()*50,1)*525;
-            #else
-            raster2=((((double)cycle*20)+(double)cycle1)/190.47619047619047619047619047619)+((al_get_time()-partialtime)*525);
-            #endif
-            } else {
-            raster2=((((double)cycle*20)+(double)cycle1)/190.4)+((al_get_time()-partialtime)*625);
-            }
+      if (playmode>0) {
+        Playback();
+      } else {
+         MuteAllChannels();
+      }
+      if (sfxplaying) {
+        sfxpos=playfx(sfxdata[cursfx],sfxpos,chantoplayfx);
+        if (sfxpos==-1) {
+          sfxplaying=false;
+        }
+      }
+      for (int updateindex1=0;updateindex1<32;updateindex1++) {
+        if (muted[updateindex1]) {
+          cvol[updateindex1]=0;
+          if (updateindex1<(8*soundchips)) {
+            chip[updateindex1>>3].chan[updateindex1&7].vol=0;
           }
         }
-          float heyl, heyr;
-                                  abuf[((cycle%bufsize)*2)]=0;
-                                  abuf[((cycle%bufsize)*2)+1]=0;
-                                  for (int sci=0; sci<soundchips; sci++) {
-                                    chip[sci].NextSample(&heyl,&heyr);
-                                    abuf[((cycle%bufsize)*2)]+=heyl;
-                                    abuf[((cycle%bufsize)*2)+1]+=heyr;
-                                  }
-
-        
-        #define fff 0.33631372025095791864295318996109
-       if (settings::muffle) {
-        muffleb0[0]=muffleb0[0]+fff*(abuf[((cycle%bufsize)*2)]-muffleb0[0]);
-        muffleb1[0]=muffleb1[0]+fff*(muffleb0[0]-muffleb1[0]);
-        abuf[((cycle%bufsize)*2)]=muffleb1[0];
-        
-        muffleb0[1]=muffleb0[1]+fff*(abuf[((cycle%bufsize)*2)+1]-muffleb0[1]);
-        muffleb1[1]=muffleb1[1]+fff*(muffleb0[1]-muffleb1[1]);
-        abuf[((cycle%bufsize)*2)+1]=muffleb1[1];
-       }
       }
-      audioframecounter++;
-#define dointerpolate
-  for (int iii=0; iii<nframes; iii++) {
-#ifdef dointerpolate
-  outl[
-#ifdef JACK
-  iii
-#else
-  iii*2
-#endif
-  ]=interpolatee(abuf[(int)((float)iii*totalrender/(float)nframes)*2],abuf[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
-  oscbuf[oscbufWPos]=outl[iii];
-  outr[
-#ifdef JACK
-  iii
-#else
-  (iii*2)+1
-#endif 
-  ]=interpolatee(abuf[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
-  oscbuf2[oscbufWPos]=outr[iii];
-#else
-  outl[
-#ifdef JACK
-  iii
-#else
-  iii*2
-#endif  
-  ]=abuf[(int)((float)iii*totalrender/(float)nframes)*2]/2;
-  oscbuf[oscbufWPos]=outl[iii];
-  outr[
-#ifdef JACK
-  iii
-#else
-  (iii*2)+1
-#endif   
-  ]=abuf[1+(int)((float)iii*totalrender/(float)nframes)*2]/2;
-  oscbuf2[oscbufWPos]=outr[iii];
-#endif
-  oscbufWPos++;
+      ASC::currentclock+=ASC::interval;
+    }
+    temp[2]=0; temp[3]=0;
+    for (int j=0; j<soundchips; j++) {
+      chip[j].NextSample(&temp[0],&temp[1]);
+      temp[2]+=temp[0]; temp[3]+=temp[1];
+    }
+    if (settings::muffle) {
+      resa0[0]=resa0[0]+resaf*(temp[2]-resa0[0]);
+      resa1[0]=resa1[0]+resaf*(resa0[0]-resa1[0]);
+      resa1[0]=resa1[0]+resaf*(resa0[0]-resa1[0]);
+      resa1[0]=resa1[0]+resaf*(resa0[0]-resa1[0]);
+  
+      resa0[1]=resa0[1]+resaf*(temp[3]-resa0[1]);
+      resa1[1]=resa1[1]+resaf*(resa0[1]-resa1[1]);
+      resa1[1]=resa1[1]+resaf*(resa0[1]-resa1[1]);
+      resa1[1]=resa1[1]+resaf*(resa0[1]-resa1[1]);
+    } else {
+      resa1[0]=temp[2];
+      resa1[1]=temp[3];
+    }
+
+    buf[0][i]=0.5*resa1[0];
+    buf[1][i]=0.5*resa1[1];
+    procPos+=noProc;
+    if (procPos>=1) {
+      procPos-=1;
+      i++;
+      oscbuf[oscbufWPos]=resa1[0];
+      oscbuf2[oscbufWPos]=resa1[1];
+      oscbufWPos++;
+    }
   }
-  rt2=al_get_time();
-#ifdef JACK
-  return 0;      
-#endif
+  return 0;
 }
+#endif
+
 void initaudio() {
   //cout << "\npreparing audio system... ";
   printf("ok\n");
+  procPos=0;
 #ifdef JACK
   const char** jports;
   jclient=jack_client_open("soundtracker",JackNullOption,&jstatus);
@@ -696,25 +618,28 @@ void initaudio() {
   printf ("engine sample rate: %" PRIu32 "\n",
     jack_get_sample_rate (jclient));
   jacksr=jack_get_sample_rate (jclient);
-  joutl = jack_port_register (jclient, "outL",
+  sr=jacksr;
+  ao[0] = jack_port_register (jclient, "outL",
             JACK_DEFAULT_AUDIO_TYPE,
             JackPortIsOutput, 0);
-  if (joutl == NULL) {
+  if (ao[0] == NULL) {
     fprintf(stderr, "no more JACK ports available\n");
   }
-  joutr = jack_port_register (jclient, "outR",
+  ao[1] = jack_port_register (jclient, "outR",
             JACK_DEFAULT_AUDIO_TYPE,
             JackPortIsOutput, 0);
-  if (joutr == NULL) {
+  if (ao[1] == NULL) {
     fprintf(stderr, "no more JACK ports available\n");
   }
 
+  /*
   midi = jack_port_register (jclient, "midi",
             JACK_DEFAULT_MIDI_TYPE,
             JackPortIsOutput, 0);
   if ((midi == NULL)) {
     fprintf(stderr, "no more JACK ports available\n");
   }
+  */
 #else
       //////////////// SDL CODE HERE ////////////////
       SDL_Init(SDL_INIT_AUDIO);
@@ -729,7 +654,6 @@ void initaudio() {
       audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,sout,spout, SDL_AUDIO_ALLOW_ANY_CHANGE);
       jacksr=44100;
 #endif
-      abuf=new float[65536];
 #ifdef JACK
       if (jack_activate (jclient)) {
     fprintf (stderr, "cannot activate client");
@@ -741,10 +665,10 @@ void initaudio() {
     fprintf(stderr, "no physical playback ports\n");
     //exit (1);
   }
-  if (jack_connect (jclient, jack_port_name (joutl), jports[0])) {
+  if (jack_connect (jclient, jack_port_name (ao[0]), jports[0])) {
     printf("cannot connect output port l\n");
   }
-  if (jack_connect (jclient, jack_port_name (joutr), jports[1])) {
+  if (jack_connect (jclient, jack_port_name (ao[1]), jports[1])) {
     printf("cannot connect output port r\n");
   }
   free (jports);
@@ -5026,10 +4950,8 @@ void drawdisp() {
   al_draw_line(scrW-128,0,scrW-128,59,al_map_rgb(255,255,255),1);
   g.setTarget(osc);
   al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_ONE);
-  pointsToDraw=(pointsToDraw*255+(signed short)(oscbufWPos-oscbufRPos))/256;
-  if (pointsToDraw>(signed short)(oscbufWPos-oscbufRPos)) {
-    pointsToDraw=(signed short)(oscbufWPos-oscbufRPos);
-  }
+  pointsToDraw=735;//(pointsToDraw*255+(signed short)(oscbufWPos-oscbufRPos))/256;
+  oscbufRPos=oscbufWPos-735;
   //printf("ptd: %d\n",pointsToDraw);
   if (pointsToDraw<0) {
     pointsToDraw=0;
