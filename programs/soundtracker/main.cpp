@@ -512,12 +512,20 @@ bool midion[32]={0,0,0,0,0,0,0,0,
 
 #ifdef JACK
 int nothing(jack_nframes_t nframes, void* arg) {
+#else
+static void nothing(void* userdata, Uint8* stream, int len) {
+#endif
   rt1=al_get_time();
   float* buf[2];
   float temp[4];
+#ifdef JACK
   for (int i=0; i<2; i++) {
     buf[i]=(float*)jack_port_get_buffer(ao[i],nframes);
   }
+#else
+  size_t nframes=len/(sizeof(float)*2);
+  buf[0]=(float*)stream;
+#endif
   if (ntsc) {
     ASC::interval=(int)(6180000/FPS);
     if (tempo==150) ASC::interval=103103;
@@ -578,8 +586,13 @@ int nothing(jack_nframes_t nframes, void* arg) {
       resa1[1]=temp[3];
     }
 
+#ifdef JACK
     buf[0][i]=0.5*resa1[0];
     buf[1][i]=0.5*resa1[1];
+#else
+    buf[0][i<<1]=0.5*resa1[0];
+    buf[0][1+(i<<1)]=0.5*resa1[1];
+#endif
     procPos+=noProc;
     if (procPos>=1) {
       procPos-=1;
@@ -589,9 +602,10 @@ int nothing(jack_nframes_t nframes, void* arg) {
       oscbufWPos++;
     }
   }
+#ifdef JACK
   return 0;
-}
 #endif
+}
 
 void initaudio() {
   //cout << "\npreparing audio system... ";
@@ -653,6 +667,7 @@ void initaudio() {
       sout->userdata=NULL;
       audioID=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,sout,spout, SDL_AUDIO_ALLOW_ANY_CHANGE);
       jacksr=44100;
+      sr=jacksr;
 #endif
 #ifdef JACK
       if (jack_activate (jclient)) {
