@@ -443,10 +443,13 @@ ALLEGRO_BITMAP *pianoroll=NULL;
 ALLEGRO_BITMAP *pianoroll_temp=NULL;
 ALLEGRO_BITMAP *piano=NULL;
 ALLEGRO_BITMAP *mixer=NULL;
+ALLEGRO_BITMAP* osc=NULL;
 bool firstframe=true;
 float* abuf;
 float oscbuf[65536]={}; // safe oscilloscope buffer
 float oscbuf2[65536]={}; // safe oscilloscope buffer
+unsigned short oscbufRPos=0;
+unsigned short oscbufWPos=0;
 // only way for 7 channels glitch-free - 7 event queues
 ALLEGRO_EVENT_QUEUE *aqueue[33];
 // settings
@@ -625,10 +628,6 @@ int nothing (jack_nframes_t nframes, void *arg) {
        }
       }
       audioframecounter++;
-      for (int ii=0;ii<nframes;ii++) {
-      oscbuf[ii*128/nframes]=abuf[ii*2];
-      oscbuf2[ii*128/nframes]=abuf[(ii*2)+1];
-      }
 #define dointerpolate
   for (int iii=0; iii<nframes; iii++) {
 #ifdef dointerpolate
@@ -639,6 +638,7 @@ int nothing (jack_nframes_t nframes, void *arg) {
   iii*2
 #endif
   ]=interpolatee(abuf[(int)((float)iii*totalrender/(float)nframes)*2],abuf[2+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
+  oscbuf[oscbufWPos]=outl[iii];
   outr[
 #ifdef JACK
   iii
@@ -646,6 +646,7 @@ int nothing (jack_nframes_t nframes, void *arg) {
   (iii*2)+1
 #endif 
   ]=interpolatee(abuf[1+(int)((float)iii*totalrender/(float)nframes)*2],abuf[3+(int)((float)iii*totalrender/(float)nframes)*2],fmod((float)iii*totalrender/(float)nframes,1))/2;
+  oscbuf2[oscbufWPos]=outr[iii];
 #else
   outl[
 #ifdef JACK
@@ -654,6 +655,7 @@ int nothing (jack_nframes_t nframes, void *arg) {
   iii*2
 #endif  
   ]=abuf[(int)((float)iii*totalrender/(float)nframes)*2]/2;
+  oscbuf[oscbufWPos]=outl[iii];
   outr[
 #ifdef JACK
   iii
@@ -661,7 +663,9 @@ int nothing (jack_nframes_t nframes, void *arg) {
   (iii*2)+1
 #endif   
   ]=abuf[1+(int)((float)iii*totalrender/(float)nframes)*2]/2;
+  oscbuf2[oscbufWPos]=outr[iii];
 #endif
+  oscbufWPos++;
   }
   rt2=al_get_time();
 #ifdef JACK
@@ -4849,6 +4853,7 @@ void drawdisp() {
   int firstChan, firstMode;
   int lastChan, lastMode;
   int selTop, selBottom;
+  static int pointsToDraw=735;
   if (playermode) {return;}
   ClickEvents();
   KeyboardEvents();
@@ -5019,14 +5024,29 @@ void drawdisp() {
   al_draw_rectangle((scrW/2)+34,18,(scrW/2)+48,32,al_map_rgb(255,255,255),2);
   // oscilloscope
   al_draw_line(scrW-128,0,scrW-128,59,al_map_rgb(255,255,255),1);
+  g.setTarget(osc);
   al_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_ONE);
-  for (int ii=0;ii<128;ii++) {
-    al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf[ii]*18)-9+0.5,al_map_rgb_f(0,(1-(((oscbuf[ii]+1)*18)-(int)((oscbuf[ii]+1)*18)))*1.5,0));
-    al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-9+0.5,al_map_rgb_f((1-(((oscbuf2[ii]+1)*18)-(int)((oscbuf2[ii]+1)*18)))*1.5,0,0));
-    al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf[ii]*18)-8+0.5,al_map_rgb_f(0,((((oscbuf[ii]+1)*18)-(int)((oscbuf[ii]+1)*18)))*1.5,0));
-    al_draw_pixel((ii+scrW-128)+0.5,36+(int)(oscbuf2[ii]*18)-8+0.5,al_map_rgb_f(((((oscbuf2[ii]+1)*18)-(int)((oscbuf2[ii]+1)*18)))*1.5,0,0));
+  pointsToDraw=(pointsToDraw*255+(signed short)(oscbufWPos-oscbufRPos))/256;
+  if (pointsToDraw>(signed short)(oscbufWPos-oscbufRPos)) {
+    pointsToDraw=(signed short)(oscbufWPos-oscbufRPos);
+  }
+  //printf("ptd: %d\n",pointsToDraw);
+  if (pointsToDraw<0) {
+    pointsToDraw=0;
+  }
+  if (pointsToDraw) {
+    al_clear_to_color(al_map_rgb(0,0,0));
+    for (int ii=0;ii<pointsToDraw;ii++) {
+      al_draw_pixel(((ii*128/pointsToDraw))+0.5,36+(int)(oscbuf[oscbufRPos]*18)-9+0.5,al_map_rgb_f(0,(1-(((oscbuf[oscbufRPos]+1)*18)-(int)((oscbuf[oscbufRPos]+1)*18)))*1.5,0));
+      al_draw_pixel(((ii*128/pointsToDraw))+0.5,36+(int)(oscbuf2[oscbufRPos]*18)-9+0.5,al_map_rgb_f((1-(((oscbuf2[oscbufRPos]+1)*18)-(int)((oscbuf2[oscbufRPos]+1)*18)))*1.5,0,0));
+      al_draw_pixel(((ii*128/pointsToDraw))+0.5,36+(int)(oscbuf[oscbufRPos]*18)-8+0.5,al_map_rgb_f(0,((((oscbuf[oscbufRPos]+1)*18)-(int)((oscbuf[oscbufRPos]+1)*18)))*1.5,0));
+      al_draw_pixel(((ii*128/pointsToDraw))+0.5,36+(int)(oscbuf2[oscbufRPos]*18)-8+0.5,al_map_rgb_f(((((oscbuf2[oscbufRPos]+1)*18)-(int)((oscbuf2[oscbufRPos]+1)*18)))*1.5,0,0));
+      oscbufRPos++;
+    }
   }
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
+  g.setTarget(NULL);
+  al_draw_bitmap(osc,scrW-128,0,0);
   switch(screen) {
     case 0: drawpatterns(false); break;
     case 1: drawinsedit(); break;
@@ -5175,6 +5195,7 @@ DETUNE_FACTOR_GLOBAL=1;
    pianoroll=al_create_bitmap(700,128);
    pianoroll_temp=al_create_bitmap(700,128);
    mixer=al_create_bitmap(scrW,scrH);
+   osc=al_create_bitmap(128,59);
    al_init_image_addon();
    logo=al_load_bitmap("logo.png");
    if (!logo) {
@@ -5194,6 +5215,8 @@ DETUNE_FACTOR_GLOBAL=1;
    g.setTarget(pianoroll_temp);
    al_clear_to_color(al_map_rgb(0,0,0));
    g.setTarget(piano);
+   al_clear_to_color(al_map_rgb(0,0,0));
+   g.setTarget(osc);
    al_clear_to_color(al_map_rgb(0,0,0));
    // draw a piano
   for (int ii=0;ii<10;ii++) {
