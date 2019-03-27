@@ -5153,8 +5153,6 @@ DETUNE_FACTOR_GLOBAL=1;
    al_clear_to_color(al_map_rgb(0,0,0));
    g.setTarget(piano);
    al_clear_to_color(al_map_rgb(0,0,0));
-   g.setTarget(osc);
-   al_clear_to_color(al_map_rgb(0,0,0));
    // draw a piano
   for (int ii=0;ii<10;ii++) {
     for (int jj=0; jj<7; jj++) {
@@ -5166,6 +5164,8 @@ DETUNE_FACTOR_GLOBAL=1;
       al_draw_filled_rectangle((jj+0.666666667)*10+(ii*70),60-60,((jj+1.36)*10)+(ii*70),60-25,al_map_rgb(0,0,0));
     }
   }
+  g.setTarget(osc);
+   al_clear_to_color(al_map_rgb(0,0,0));
    if (!playermode) {
      g.setTarget(mixer);
      al_clear_to_color(al_map_rgb(0,0,0));
