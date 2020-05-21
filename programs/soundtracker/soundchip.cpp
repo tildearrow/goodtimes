@@ -100,10 +100,8 @@ void soundchip::NextSample(float* l, float* r) {
       nsband[i]=(((ff)*nshigh[i])>>16)+nsband[i];
       fns[i]=(((chan[i].flags.fmode&1)?(nslow[i]):(0))+((chan[i].flags.fmode&2)?(nshigh[i]):(0))+((chan[i].flags.fmode&4)?(nsband[i]):(0)));
     }
-    nsL[i]=fns[i];
-    nsR[i]=fns[i];
-    //nsL[i]=(fns[i]*SCpantabL[(unsigned char)chan[i].pan])>>8;
-    //nsR[i]=(fns[i]*SCpantabR[(unsigned char)chan[i].pan])>>8;
+    nsL[i]=(fns[i]*SCpantabL[(unsigned char)chan[i].pan])>>8;
+    nsR[i]=(fns[i]*SCpantabR[(unsigned char)chan[i].pan])>>8;
     if ((chan[i].freq>>8)!=(oldfreq[i]>>8) || oldflags[i]!=chan[i].flags.flags) {
       bool feed=((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ^ (lfsr[i] >> 5) ) & 1;
       for (int j=0; j<127; j++) {
