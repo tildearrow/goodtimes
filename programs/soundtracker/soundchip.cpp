@@ -1,41 +1,27 @@
 #include "soundchip.h"
 #include <string.h>
 
-char soundchip::Saw(int theduty, float value) {
-  return 1;
-}
-
-char soundchip::Pulse(int theduty, float value) {
-  return 2*round(value+((float)(theduty-63)/128.0f))-1;
-}
-
-char soundchip::Sine(int theduty, float value) {
-  return sin(value*pi*2);
-}
-
-char soundchip::Triangle(int theduty, float value) {
-  return (fabs(0.5-value)*2)-0.5;
-}
-
-char soundchip::Noise(int theduty, float value) {
-  return 1; // should not happen
-}
-
 void soundchip::NextSample(float* l, float* r) {
   for (int i=0; i<8; i++) {
     if (chan[i].vol==0 && !chan[i].flags.swvol) {fns[i]=0; continue;}
     if (chan[i].flags.pcm) {
       ns[i]=pcm[chan[i].pcmpos];
-    } else if ((chan[i].flags.shape)==6) {
-      ns[i]=randmem[i][(cycle[i]>>15)&127]*127;
-    } else if ((chan[i].flags.shape)==5) {
-      ns[i]=(lfsr[i]&1)*127;
-    } else if ((chan[i].flags.shape)==4) {
-      ns[i]=(lfsr[i]&1)*127;
-    } else if ((chan[i].flags.shape)==0) {
-      ns[i]=(((cycle[i]>>15)&127)>chan[i].duty)*127;
-    } else {
-      ns[i]=(short)ShapeFunctions[(chan[i].flags.shape)][(cycle[i]>>14)&255];
+    } else switch (chan[i].flags.shape) {
+      case 0:
+        ns[i]=(((cycle[i]>>15)&127)>chan[i].duty)*127;
+        break;
+      case 1: case 2: case 3:
+        ns[i]=(short)ShapeFunctions[(chan[i].flags.shape)][(cycle[i]>>14)&255];
+        break;
+      case 4: case 5:
+        ns[i]=(lfsr[i]&1)*127;
+        break;
+      case 6:
+        ns[i]=randmem[i][(cycle[i]>>15)&127]*127;
+        break;
+      default:
+        ns[i]=(short)ShapeFunctions[(chan[i].flags.shape)][(cycle[i]>>14)&255];
+        break;
     }
     
     if (chan[i].flags.pcm) {
@@ -106,6 +92,7 @@ void soundchip::NextSample(float* l, float* r) {
     }
     //ns[i]=(char)((short)ns[i]*(short)vol[i]/256);
     fns[i]=(float)ns[i]/128;
+    fns[i]*=(float)chan[i].vol/256;
     if (chan[i].flags.fmode!=0) {
       float f=2*sin(3.141592653589*(((float)chan[i].cutoff)/2.5)/297500);
       nslow[i]=nslow[i]+(f)*nsband[i];
@@ -113,9 +100,8 @@ void soundchip::NextSample(float* l, float* r) {
       nsband[i]=(f)*nshigh[i]+nsband[i];
       fns[i]=(((chan[i].flags.fmode&1)?(nslow[i]):(0))+((chan[i].flags.fmode&2)?(nshigh[i]):(0))+((chan[i].flags.fmode&4)?(nsband[i]):(0)));
     }
-    fns[i]*=(float)chan[i].vol/256;
-    nsL[i]=fns[i]*((127-(fmax(0,(float)chan[i].pan)))/127);
-    nsR[i]=fns[i]*((128+(fmin(0,(float)chan[i].pan)))/128);
+    nsL[i]=(fns[i]*SCpantabL[(unsigned char)chan[i].pan])/128;
+    nsR[i]=(fns[i]*SCpantabR[(unsigned char)chan[i].pan])/128;
     if ((chan[i].freq>>8)!=(oldfreq[i]>>8) || oldflags[i]!=chan[i].flags.flags) {
       bool feed=((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ^ (lfsr[i] >> 5) ) & 1;
       for (int j=0; j<127; j++) {
@@ -242,7 +228,14 @@ void soundchip::Init() {
     SCsaw[i]=i;
     SCsine[i]=sin((float)i/128*pi)*127;
     SCtriangle[i]=(i>127)?(255-i):(i);
+    SCpantabL[i]=127;
+    SCpantabR[i]=127;
   }
+  for (int i=0; i<128; i++) {
+    SCpantabL[i]=127-i;
+    SCpantabR[128+i]=i-1;
+  }
+  SCpantabR[128]=0;
   for (int i=0; i<1024; i++) {
     randmem[i>>7][i&127]=rand()&1;
   }

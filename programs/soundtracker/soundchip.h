@@ -8,6 +8,8 @@ class soundchip {
   char SCsaw[257];
   char SCsine[257];
   char SCtriangle[257];
+  char SCpantabL[257];
+  char SCpantabR[257];
   unsigned int ocycle[8];
   unsigned int cycle[8];
   int rcycle[8];
@@ -22,11 +24,6 @@ class soundchip {
   float nshigh[8];
   float nsband[8];
   float pnsL, pnsR, ppsL, ppsR, tnsL, tnsR;
-  static char Saw(int theduty, float value);
-  static char Pulse(int theduty, float value);
-  static char Sine(int theduty, float value);
-  static char Triangle(int theduty, float value);
-  static char Noise(int theduty, float value);
   //char (*ShapeFunctions[8])(int theduty, float value);
   char* ShapeFunctions[8];
   unsigned short oldfreq[8];
