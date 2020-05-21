@@ -53,6 +53,7 @@ int process(jack_nframes_t nframes, void* arg) {
         str+=wc;
         if (wc=='R') break;
       }
+      if (feof(f)) exit(0);
       writable=0;
       s.next(str.c_str(),writable,str.size());
       printf("ssinter: filename                      % 8ld/%ld  % 8d\n",ftell(f),fsize,frame);
