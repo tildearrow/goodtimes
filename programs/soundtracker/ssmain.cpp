@@ -21,6 +21,8 @@ SDL_AudioSpec* ac;
 SDL_AudioSpec* ar;
 #endif
 
+bool quit, viewMemory;
+
 int sr;
 
 soundchip sc;
@@ -72,16 +74,20 @@ static void process(void* userdata, Uint8* stream, int len) {
         str+=wc;
         if (wc=='R') break;
       }
-      if (feof(f)) exit(0);
+      if (feof(f)) quit=true;
       writable=0;
       s.next(str.c_str(),writable,str.size());
       printf("ssinter: filename                      % 8ld/%ld  % 8d\n",ftell(f),fsize,frame);
-      printf("\x1b[1;33m----\x1b[32m--\x1b[36m--\x1b[m----\x1b[1;34m----\x1b[31m--\x1b[35m--\x1b[30m------------\x1b[33m--------\x1b[32m--------\x1b[34m--------\x1b[m----\x1b[33m----\x1b[m\n");
-      for (int i=0; i<256; i++) {
-        printf("%.2x",((unsigned char*)sc.chan)[i]);
-        if ((i&31)==31) printf("\n");
+      if (viewMemory) {
+        printf("\x1b[1;33m----\x1b[32m--\x1b[36m--\x1b[m----\x1b[1;34m----\x1b[31m--\x1b[35m--\x1b[30m------------\x1b[33m--------\x1b[32m--------\x1b[34m--------\x1b[m----\x1b[33m----\x1b[m\n");
+        for (int i=0; i<256; i++) {
+          printf("%.2x",((unsigned char*)sc.chan)[i]);
+          if ((i&31)==31) printf("\n");
+        }
+        printf("\x1b[10A");
+      } else {
+        printf("\x1b[A");
       }
-      printf("\x1b[10A");
       ticks+=speed;
       frame++;
     }
@@ -122,6 +128,9 @@ int main(int argc, char** argv) {
   ticks=0;
   resa0[0]=0; resa0[1]=0;
   resa1[0]=0; resa1[1]=0;
+
+  quit=false;
+  viewMemory=false;
   
   if (argc<2) {
     printf("usage: %s [-n] file\n",argv[0]);
@@ -147,6 +156,13 @@ int main(int argc, char** argv) {
   fseek(f,0,SEEK_END);
   fsize=ftell(f);
   fseek(f,0,SEEK_SET);
+
+  printf("opening audio\n");
+  
+  for (int i=0; i<8; i++) {
+    sc.chan[i].pan=0;
+    sc.chan[i].duty=0x3f;
+  }
   
 #ifdef JACK
   ac=jack_client_open("ssinter",JackNullOption,&as);
@@ -176,16 +192,23 @@ int main(int argc, char** argv) {
   ac->samples=1024;
   ac->callback=process;
   ac->userdata=NULL;
+  printf("hmm\n");
   ai=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,ac,ar,SDL_AUDIO_ALLOW_ANY_CHANGE);
+  printf("works\n");
   sr=ar->freq;
   noProc=sr/targetSR;
+
+  SDL_PauseAudioDevice(ai,0);
 #endif
   
-  for (int i=0; i<8; i++) {
-    sc.chan[i].pan=0;
-    sc.chan[i].duty=0x3f;
+  while (!quit) {
+    usleep(50000);
   }
-  
-  sleep(-1);
+
+#ifdef JACK
+  jack_deactivate(ac);
+#else
+  SDL_CloseAudioDevice(ai);
+#endif
   return 0;
 }

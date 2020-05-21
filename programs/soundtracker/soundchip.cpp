@@ -91,17 +91,19 @@ void soundchip::NextSample(float* l, float* r) {
       }
     }
     //ns[i]=(char)((short)ns[i]*(short)vol[i]/256);
-    fns[i]=(float)ns[i]/128;
-    fns[i]*=(float)chan[i].vol/256;
+    fns[i]=ns[i]*chan[i].vol*2;
     if (chan[i].flags.fmode!=0) {
       float f=2*sin(3.141592653589*(((float)chan[i].cutoff)/2.5)/297500);
-      nslow[i]=nslow[i]+(f)*nsband[i];
-      nshigh[i]=fns[i]-nslow[i]-(1.0-(float)chan[i].reson/256.0)*nsband[i];
-      nsband[i]=(f)*nshigh[i]+nsband[i];
+      int ff=f*65536;
+      nslow[i]=nslow[i]+(((ff)*nsband[i])>>16);
+      nshigh[i]=fns[i]-nslow[i]-(((65536-(chan[i].reson<<8))*nsband[i])>>16);
+      nsband[i]=(((ff)*nshigh[i])>>16)+nsband[i];
       fns[i]=(((chan[i].flags.fmode&1)?(nslow[i]):(0))+((chan[i].flags.fmode&2)?(nshigh[i]):(0))+((chan[i].flags.fmode&4)?(nsband[i]):(0)));
     }
-    nsL[i]=(fns[i]*SCpantabL[(unsigned char)chan[i].pan])/128;
-    nsR[i]=(fns[i]*SCpantabR[(unsigned char)chan[i].pan])/128;
+    nsL[i]=fns[i];
+    nsR[i]=fns[i];
+    //nsL[i]=(fns[i]*SCpantabL[(unsigned char)chan[i].pan])>>8;
+    //nsR[i]=(fns[i]*SCpantabR[(unsigned char)chan[i].pan])>>8;
     if ((chan[i].freq>>8)!=(oldfreq[i]>>8) || oldflags[i]!=chan[i].flags.flags) {
       bool feed=((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ^ (lfsr[i] >> 5) ) & 1;
       for (int j=0; j<127; j++) {
@@ -203,6 +205,8 @@ void soundchip::NextSample(float* l, float* r) {
   }
   tnsL=((nsL[0]+nsL[1]+nsL[2]+nsL[3]+nsL[4]+nsL[5]+nsL[6]+nsL[7]));///256;
   tnsR=((nsR[0]+nsR[1]+nsR[2]+nsR[3]+nsR[4]+nsR[5]+nsR[6]+nsR[7]));///256;
+  tnsL/=32768;
+  tnsR/=32768;
   *l=0.9997*(pnsL+tnsL-ppsL);
   *r=0.9997*(pnsR+tnsR-ppsR);
   pnsL=*l;

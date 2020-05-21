@@ -17,12 +17,12 @@ class soundchip {
   char ns[8];
   bool randmem[8][128];
   char randpos[8];
-  float fns[8];
-  float nsL[8];
-  float nsR[8];
-  float nslow[8];
-  float nshigh[8];
-  float nsband[8];
+  int fns[8];
+  int nsL[8];
+  int nsR[8];
+  int nslow[8];
+  int nshigh[8];
+  int nsband[8];
   float pnsL, pnsR, ppsL, ppsR, tnsL, tnsR;
   //char (*ShapeFunctions[8])(int theduty, float value);
   char* ShapeFunctions[8];
