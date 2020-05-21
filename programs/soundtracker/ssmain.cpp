@@ -6,11 +6,20 @@
 #include <string.h>
 #include <string>
 #include <unistd.h>
+
+#ifdef JACK
 #include <jack/jack.h>
 
 jack_client_t* ac;
 jack_port_t* ao[2];
 jack_status_t as;
+#else
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
+SDL_AudioDeviceID ai;
+SDL_AudioSpec* ac;
+SDL_AudioSpec* ar;
+#endif
 
 int sr;
 
@@ -36,14 +45,24 @@ float resa0[2], resa1[2];
 
 std::string str;
 
+#ifdef JACK
 int process(jack_nframes_t nframes, void* arg) {
+#else
+static void process(void* userdata, Uint8* stream, int len) {
+#endif
   float* buf[2];
   float temp[2];
   int wc;
   int writable;
+#ifdef JACK
   for (int i=0; i<2; i++) {
     buf[i]=(float*)jack_port_get_buffer(ao[i],nframes);
   }
+#else
+  unsigned int nframes=len/8;
+  buf[0]=(float*)stream;
+  buf[1]=&buf[0][1];
+#endif
   
   for (size_t i=0; i<nframes;) {
     ticks-=20; // 20 CPU cycles per sound output cycle
@@ -77,15 +96,22 @@ int process(jack_nframes_t nframes, void* arg) {
     resa1[1]=resa1[1]+resaf*(resa0[1]-resa1[1]);
     resa1[1]=resa1[1]+resaf*(resa0[1]-resa1[1]);
     
+#ifdef JACK
     buf[0][i]=0.25*resa1[0];
     buf[1][i]=0.25*resa1[1];
+#else
+    buf[0][i<<1]=0.25*resa1[0];
+    buf[1][i<<1]=0.25*resa1[1];
+#endif
     procPos+=noProc;
     if (procPos>=1) {
       procPos-=1;
       i++;
     }
   }
+#ifdef JACK
   return 0;
+#endif
 }
 
 int main(int argc, char** argv) {
@@ -122,6 +148,7 @@ int main(int argc, char** argv) {
   fsize=ftell(f);
   fseek(f,0,SEEK_SET);
   
+#ifdef JACK
   ac=jack_client_open("ssinter",JackNullOption,&as);
   if (ac==NULL) return 1;
   
@@ -138,6 +165,21 @@ int main(int argc, char** argv) {
   
   jack_connect(ac,"ssinter:outL","system:playback_1");
   jack_connect(ac,"ssinter:outR","system:playback_2");
+#else
+  SDL_Init(SDL_INIT_AUDIO);
+
+  ac=new SDL_AudioSpec;
+  ar=new SDL_AudioSpec;
+  ac->freq=44100;
+  ac->format=AUDIO_F32;
+  ac->channels=2;
+  ac->samples=1024;
+  ac->callback=process;
+  ac->userdata=NULL;
+  ai=SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0),0,ac,ar,SDL_AUDIO_ALLOW_ANY_CHANGE);
+  sr=ar->freq;
+  noProc=sr/targetSR;
+#endif
   
   for (int i=0; i<8; i++) {
     sc.chan[i].pan=0;
