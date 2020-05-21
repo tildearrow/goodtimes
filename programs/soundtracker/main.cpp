@@ -1769,6 +1769,7 @@ void NextTick() {
       if (!linearslides) {cfreq[looper]-=nfxvl[looper];}
       else {curnote[looper]+=((float)nfxvl[looper]/16);
           cfreq[looper]=mnoteperiod(curnote[looper]+1,looper);
+          crmfreq[looper]=msnoteperiod(curnote[looper]+1+((instrument[Mins[looper]].LFO<0x40)?(instrument[Mins[looper]].LFO):(64-instrument[Mins[looper]].LFO)),looper);
           if (!EnvelopesRunning[looper][5]) {
             cfreq[looper]=mnoteperiod(curnote[looper]+((unsigned char)instrument[Mins[looper]].noteOffset)-47,looper)+(int)((float)sine[(curvibpos[looper]*curvibspeed[looper]*4)%256]*((float)curvibdepth[looper]/16));
             } else {
@@ -1804,6 +1805,7 @@ void NextTick() {
       cfreq[looper]=ProcessPitch(looper,0);
     } else {curnote[looper]=portastatic[looper]-1;
       cfreq[looper]=ProcessPitch(looper,0);}}
+      crmfreq[looper]=msnoteperiod(curnote[looper]+1+((instrument[Mins[looper]].LFO<0x40)?(instrument[Mins[looper]].LFO):(64-instrument[Mins[looper]].LFO)),looper);
     }
   }
   // Hxx
