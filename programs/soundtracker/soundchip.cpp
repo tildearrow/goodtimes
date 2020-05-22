@@ -236,7 +236,7 @@ void soundchip::Init() {
   ShapeFunctions[7]=SCsaw;
   for (int i=0; i<256; i++) {
     SCsaw[i]=i;
-    SCsine[i]=sin((float)i/128*pi)*127;
+    SCsine[i]=sin((i/128.0f)*M_PI)*127;
     SCtriangle[i]=(i>127)?(255-i):(i);
     SCpantabL[i]=127;
     SCpantabR[i]=127;

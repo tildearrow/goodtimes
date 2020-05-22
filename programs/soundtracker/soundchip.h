@@ -5,16 +5,16 @@
 const float pi=3.1415926535;
 
 class soundchip {
-  char SCsaw[257];
-  char SCsine[257];
-  char SCtriangle[257];
-  char SCpantabL[257];
-  char SCpantabR[257];
+  signed char SCsaw[257];
+  signed char SCsine[257];
+  signed char SCtriangle[257];
+  signed char SCpantabL[257];
+  signed char SCpantabR[257];
   unsigned int ocycle[8];
   unsigned int cycle[8];
   int rcycle[8];
   unsigned int lfsr[8];
-  char ns[8];
+  signed char ns[8];
   bool randmem[8][128];
   char randpos[8];
   int fns[8];
@@ -25,7 +25,7 @@ class soundchip {
   int nsband[8];
   float pnsL, pnsR, ppsL, ppsR, tnsL, tnsR;
   //char (*ShapeFunctions[8])(int theduty, float value);
-  char* ShapeFunctions[8];
+  signed char* ShapeFunctions[8];
   unsigned short oldfreq[8];
   unsigned short oldflags[8];
   public:
@@ -47,8 +47,8 @@ class soundchip {
     //unsigned char pcmmult[8];
     struct channel {
       unsigned short freq;
-      char vol;
-      char pan;
+      signed char vol;
+      signed char pan;
       union {
         unsigned short flags;
         struct {
@@ -95,7 +95,7 @@ class soundchip {
       unsigned short wc;
       unsigned short restimer;
     } chan[8];
-    char pcm[65280];
+    signed char pcm[65280];
     void NextSample(float* l, float* r);
     void Init();
     void Reset();
