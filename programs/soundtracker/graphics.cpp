@@ -159,6 +159,17 @@ bool Graphics::quit() {
   return true;
 }
 
+bool Graphics::preinit() {
+  if (!al_init()) return false;
+  
+  al_init_font_addon();
+  al_init_ttf_addon();
+  al_init_primitives_addon();
+  al_init_image_addon();
+  
+  return true;
+}
+
 bool Graphics::init(int width, int height) {
   tPos(0,0);
   tColor(15);
