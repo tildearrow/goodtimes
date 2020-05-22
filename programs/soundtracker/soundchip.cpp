@@ -103,6 +103,7 @@ void soundchip::NextSample(float* l, float* r) {
     }
     nsL[i]=(fns[i]*SCpantabL[(unsigned char)chan[i].pan])>>8;
     nsR[i]=(fns[i]*SCpantabR[(unsigned char)chan[i].pan])>>8;
+    /*
     if ((chan[i].freq>>8)!=(oldfreq[i]>>8) || oldflags[i]!=chan[i].flags.flags) {
       bool feed=((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ^ (lfsr[i] >> 5) ) & 1;
       for (int j=0; j<127; j++) {
@@ -110,7 +111,7 @@ void soundchip::NextSample(float* l, float* r) {
       }
       randmem[i][127]=lfsr[i]&1;
       lfsr[i]=(lfsr[i]>>1|feed<<31);
-    }
+    }*/
     oldfreq[i]=chan[i].freq;
     oldflags[i]=chan[i].flags.flags;
     if (chan[i].flags.swvol) {
@@ -201,6 +202,12 @@ void soundchip::NextSample(float* l, float* r) {
         }
       }
     }
+    if (chan[i].flags.resosc) {
+      cycle[i]=0;
+      rcycle[i]=chan[i].restimer;
+      ocycle[i]=0;
+      chan[i].flags.resosc=0;
+    }
   }
   tnsL=((nsL[0]+nsL[1]+nsL[2]+nsL[3]+nsL[4]+nsL[5]+nsL[6]+nsL[7]));///256;
   tnsR=((nsR[0]+nsR[1]+nsR[2]+nsR[3]+nsR[4]+nsR[5]+nsR[6]+nsR[7]));///256;
@@ -262,7 +269,7 @@ void soundchip::Reset() {
     swvolt[i]=1;
     swfreqt[i]=1;
     swcutt[i]=1;
-    lfsr[0]=0xaaaa;
+    lfsr[i]=0xaaaa;
   }
   memset(chan,0,sizeof(channel)*8);
 }
