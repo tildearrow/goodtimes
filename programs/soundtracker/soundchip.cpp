@@ -54,7 +54,7 @@ void soundchip::NextSample(float* l, float* r) {
             cycle[i]+=chan[i].freq*4-(chan[i].freq>>3);
             break;
           case 3:
-            cycle[i]+=chan[i].freq*8-(chan[i].freq>>2)-(chan[i].freq>>3);
+            cycle[i]+=chan[i].freq*8-(chan[i].freq>>3);
             break;
         }
       } else {
@@ -75,11 +75,11 @@ void soundchip::NextSample(float* l, float* r) {
               lfsr[i]=(lfsr[i]>>1|(((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ) & 1)<<5);
               break;
             case 3:
-              lfsr[i]=(lfsr[i]>>1|(((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ^ (lfsr[i] >> 5) ) & 1)<<6);
+              lfsr[i]=(lfsr[i]>>1|(((lfsr[i]) ^ (lfsr[i] >> 2) ^ (lfsr[i] >> 3) ^ (lfsr[i] >> 5) ) & 1)<<5);
               break;
           }
           if ((lfsr[i]&63)==0) {
-            lfsr[i]=11111;
+            lfsr[i]=0xaaaa;
           }
         }
       }
@@ -87,6 +87,7 @@ void soundchip::NextSample(float* l, float* r) {
         if (--rcycle[i]<=0) {
           cycle[i]=0;
           rcycle[i]=chan[i].restimer;
+          lfsr[i]=0xaaaa;
         }
       }
     }
@@ -261,14 +262,7 @@ void soundchip::Reset() {
     swvolt[i]=1;
     swfreqt[i]=1;
     swcutt[i]=1;
+    lfsr[0]=0xaaaa;
   }
   memset(chan,0,sizeof(channel)*8);
-  lfsr[0]=11111;
-  lfsr[1]=11111;
-  lfsr[2]=11111;
-  lfsr[3]=11111;
-  lfsr[4]=11111;
-  lfsr[5]=11111;
-  lfsr[6]=11111;
-  lfsr[7]=11111;
 }
