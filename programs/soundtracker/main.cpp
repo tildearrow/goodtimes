@@ -45,8 +45,6 @@ jack_client_t *jclient;
 jack_status_t jstatus;
 jack_nframes_t jacksr;
 #else
-#define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
 SDL_AudioDeviceID audioID;
 SDL_AudioSpec* sout;
 SDL_AudioSpec* spout;
@@ -64,7 +62,7 @@ double FPS=50;
 int tempo;
 
 int doframe;
-ALLEGRO_BITMAP *bpatterns=NULL;
+SDL_Texture *bpatterns=NULL;
 unsigned char colorof[6]={0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff};
 int degrees=0; // global all-purpose sine
 int prevX=0;
@@ -386,7 +384,7 @@ enum envTypes {
 ALLEGRO_FONT *text=NULL;
 ALLEGRO_MOUSE_STATE mstate;
 ALLEGRO_KEYBOARD_STATE kbstate;
-ALLEGRO_BITMAP *logo=NULL;
+SDL_Texture *logo=NULL;
 bool leftclick=false;
 bool leftclickprev=false;
 bool rightclick=false;  
@@ -442,12 +440,12 @@ struct FileInList {
 vector<FileInList> filenames;
 vector<FileInList> filessorted;
 int scrW,scrH;
-ALLEGRO_BITMAP *patternbitmap = NULL;
-ALLEGRO_BITMAP *pianoroll=NULL;
-ALLEGRO_BITMAP *pianoroll_temp=NULL;
-ALLEGRO_BITMAP *piano=NULL;
-ALLEGRO_BITMAP *mixer=NULL;
-ALLEGRO_BITMAP* osc=NULL;
+SDL_Texture* patternbitmap = NULL;
+SDL_Texture* pianoroll=NULL;
+SDL_Texture* pianoroll_temp=NULL;
+SDL_Texture* piano=NULL;
+SDL_Texture* mixer=NULL;
+SDL_Texture* osc=NULL;
 bool firstframe=true;
 float oscbuf[65536]={}; // safe oscilloscope buffer
 float oscbuf2[65536]={}; // safe oscilloscope buffer
@@ -3633,7 +3631,7 @@ int LoadFile(const char* filename) {
     memset(chip[0].pcm,0,65280); // clean PCM memory
     pcmpointer=fgeti(sfile);
     if (pcmpointer!=0) {
-      fseek(sfile,pcmpointer,ALLEGRO_SEEK_SET);
+      fseek(sfile,pcmpointer,SEEK_SET);
       maxpcmread=min(65280,fgeti(sfile));
       fread(chip[0].pcm,1,maxpcmread,sfile);
     }
@@ -3859,7 +3857,7 @@ void LoadRawSample(const char* filename,int position) {
   printf("%x bytes",samplelength);
   if (samplelength<(65280-position)) {
     //for (int ii=0;ii<samplelength;ii++) {
-      fseek(sfile,position,ALLEGRO_SEEK_SET);
+      fseek(sfile,position,SEEK_SET);
       fread(chip[0].pcm+position,1,samplelength,sfile);
     //}
   } else {
@@ -5118,7 +5116,7 @@ DETUNE_FACTOR_GLOBAL=1;
    pianoroll_temp=g._WRAP_create_bitmap(700,128);
    mixer=g._WRAP_create_bitmap(scrW,scrH);
    osc=g._WRAP_create_bitmap(128,59);
-   logo=g._WRAP_load_bitmap("logo.png");
+   logo=NULL;//g._WRAP_load_bitmap("logo.png");
    if (!logo) {
      printf("you don't have the logo.\n");
    }
@@ -5155,17 +5153,8 @@ DETUNE_FACTOR_GLOBAL=1;
      g._WRAP_clear_to_color(g._WRAP_map_rgb(0,0,0));
        drawmixerlayer();
      g.setTarget(NULL);}
-   printf("creating event queue\n");
-   event_queue = g._WRAP_create_event_queue();
-   if (!event_queue) {
-      fprintf(stderr, "failed to create event_queue!\n");
-      return -1;
-   }
    printf("initializing audio channels\n");
    initaudio();
-   // register_event_sources
-  if (!playermode) {g._WRAP_register_event_source(event_queue, g._WRAP_get_display_event_source(g._getDisplay()));
-  g._WRAP_register_event_source(event_queue, g._WRAP_get_keyboard_event_source());}
    // clear to black
    if (!playermode) {g._WRAP_clear_to_color(g._WRAP_map_rgb(0,0,0));
    // flip buffers
@@ -5191,46 +5180,48 @@ DETUNE_FACTOR_GLOBAL=1;
    } else {
    while (1)
    {
-      ALLEGRO_EVENT ev;
-      while (g._WRAP_get_next_event(event_queue, &ev)) {
+     printf("a\n");
+      SDL_Event ev;
+      while (g._WRAP_get_next_event(&ev)) {
 
-      if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+      if (ev.type == SDL_QUIT) {
      printf("close button pressed\n");
                  quit=true;
          break;
-      } else if (ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
-      g.trigResize();
-      g._WRAP_destroy_bitmap(mixer);
-      // recreate pattern bitmap
-      g._WRAP_destroy_bitmap(patternbitmap);
-      patternbitmap=g._WRAP_create_bitmap(g.getWSize().x,g.getWSize().y);
-      scrW=g.getWSize().x;
-      scrH=g.getWSize().y;
-      mixer=g._WRAP_create_bitmap(scrW,scrH);
-      drawmixerlayer();
-      drawpatterns(true);
-    } else if (ev.type == ALLEGRO_EVENT_KEY_CHAR) {
+      } else if (ev.type == SDL_WINDOWEVENT) {
+        if (ev.window.type==SDL_WINDOWEVENT_RESIZED) {
+          g.trigResize();
+          g._WRAP_destroy_bitmap(mixer);
+          //  recreate pattern bitmap
+          g._WRAP_destroy_bitmap(patternbitmap);
+          patternbitmap=g._WRAP_create_bitmap(g.getWSize().x,g.getWSize().y);
+          scrW=g.getWSize().x;
+          scrH=g.getWSize().y;
+          mixer=g._WRAP_create_bitmap(scrW,scrH);
+          drawmixerlayer();
+          drawpatterns(true);
+        }
+      } else if (ev.type == SDL_KEYDOWN) {
       //printf("event, %c\n",ev.keyboard.unichar);
       if (inputvar!=NULL) {
-      if (ev.keyboard.keycode==ALLEGRO_KEY_BACKSPACE) {inputcurpos--; if (inputcurpos<0) {inputcurpos=0;}; inputvar[inputcurpos]=0;}
-      else if (ev.keyboard.keycode==ALLEGRO_KEY_RIGHT) {
+      if (ev.key.keysym.sym==SDLK_BACKSPACE) {inputcurpos--; if (inputcurpos<0) {inputcurpos=0;}; inputvar[inputcurpos]=0;}
+      else if (ev.key.keysym.sym==SDLK_RIGHT) {
         inputcurpos++; if (inputcurpos>(int)strlen(inputvar)) {inputcurpos=strlen(inputvar);}
-      } else if (ev.keyboard.keycode==ALLEGRO_KEY_LEFT) {
+      } else if (ev.key.keysym.sym==SDLK_LEFT) {
         inputcurpos--; if (inputcurpos<0) {inputcurpos=0;}
-      } else if (ev.keyboard.keycode==ALLEGRO_KEY_HOME) {
+      } else if (ev.key.keysym.sym==SDLK_HOME) {
         inputcurpos=0;
-      } else if (ev.keyboard.keycode==ALLEGRO_KEY_END) {
+      } else if (ev.key.keysym.sym==SDLK_END) {
         inputcurpos=strlen(inputvar);
       } else { if (maxinputsize>inputcurpos) {
       memmove(inputvar+1+inputcurpos,inputvar+inputcurpos,maxinputsize-inputcurpos);
-      inputvar[inputcurpos]=ev.keyboard.unichar;
+      //inputvar[inputcurpos]=ev.keyboard.unichar;
       inputcurpos++;} else {sfxpos=0;}
       //printf("new inputvar value: %s\n",inputvar);
       }
       }
-    } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
       if (screen==1) {
-        RunTestNote(ev.keyboard.keycode);
+        RunTestNote(ev.key.keysym.sym);
       }
     }
       }
@@ -5271,7 +5262,6 @@ DETUNE_FACTOR_GLOBAL=1;
      g.tNLPos(0);
      }
      g._WRAP_flip_display();
-     g._WRAP_wait_for_vsync();
      time2=time1;
      time1=g._WRAP_get_time();
   }

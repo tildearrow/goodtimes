@@ -106,6 +106,8 @@ void Graphics::tColor(unsigned char color) {
   alCol=al_map_rgb_f(textCol.r,textCol.g,textCol.b);
 }
 
+// we blittin' baby!
+// later
 int Graphics::printf(const char* format, ...) {
   va_list va;
   int ret;
@@ -116,34 +118,34 @@ int Graphics::printf(const char* format, ...) {
     tPos(textPos.x-(float)ret*align,textPos.y);
   }
   
-  al_hold_bitmap_drawing(true);
   for (int i=0; i<ret; i++) {
-    //fputc(putBuf[i],stderr);
+    fputc(putBuf[i],stderr);
     if (putBuf[i]=='\n' || putBuf[i]=='\r') {
       textPos.x=nlPos;
       textPos.y++;
       if (nlPos!=0) {
-        //fprintf(stderr,"\x1b[%d;%dH",(int)textPos.y+1,(int)textPos.x+1);
+        fprintf(stderr,"\x1b[%d;%dH",(int)textPos.y+1,(int)textPos.x+1);
       }
     } else {
-      al_draw_glyph(allegFont,alCol,8*textPos.x,12*textPos.y,putBuf[i]);
+      //al_draw_glyph(allegFont,alCol,8*textPos.x,12*textPos.y,putBuf[i]);
       textPos.x++;
     }
   }
-  al_hold_bitmap_drawing(false);
   va_end(va);
   return ret;
 }
 
-void Graphics::setTarget(ALLEGRO_BITMAP* where) {
+void Graphics::setTarget(SDL_Texture* where) {
+  /*
   if (where==NULL) {
-    al_set_target_bitmap(al_get_backbuffer(display));
+    SDL_SetRenderTarget(sdlRend,NULL);
   } else {
-    al_set_target_bitmap(where);
-  }
+    SDL_SetRenderTarget(sdlRend,where);
+  }*/
 }
 
 void Graphics::trigResize() {
+  return; // TODO
   al_acknowledge_resize(display);
   scrSize.x=al_get_display_width(display)/dpiScale;
   scrSize.y=al_get_display_height(display)/dpiScale;
@@ -154,18 +156,24 @@ Point Graphics::getWSize() {
 }
 
 bool Graphics::quit() {
+  return true; // TODO
   al_destroy_font(allegFont);
   al_destroy_display(display);
   return true;
 }
 
 bool Graphics::preinit() {
+  /*
   if (!al_init()) return false;
   
   al_init_font_addon();
   al_init_ttf_addon();
   al_init_primitives_addon();
   al_init_image_addon();
+  */
+  
+  if (SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO|SDL_INIT_EVENTS)==-1) return false;
+  if (TTF_Init()==-1) return false;
   
   return true;
 }
@@ -174,17 +182,16 @@ bool Graphics::init(int width, int height) {
   tPos(0,0);
   tColor(15);
   
-  al_set_new_display_flags(ALLEGRO_WINDOWED|ALLEGRO_RESIZABLE);
-  al_set_new_display_option(ALLEGRO_VSYNC,1,ALLEGRO_SUGGEST);
-  al_set_new_window_title("soundtracker");
   dpiScale=getScale();
-  display=al_create_display(width*dpiScale,height*dpiScale);
-  if (!display) {
-    return false;
-  }
   
-  allegFont=al_load_ttf_font("unifont.ttf",16,0);
-  if (allegFont==NULL) {
+  sdlWin=SDL_CreateWindow("soundtracker (SDL)",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,width*dpiScale,height*dpiScale,SDL_WINDOW_RESIZABLE);
+  if (!sdlWin) return false;
+  
+  sdlRend=SDL_CreateRenderer(sdlWin,-1,SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_TARGETTEXTURE);
+  if (!sdlRend) return false;
+  
+  sdlFont=TTF_OpenFont("unifont.ttf",16);
+  if (sdlFont==NULL) {
     printf("unifont.ttf wasn't found...");
     return false;
   }
@@ -196,6 +203,7 @@ bool Graphics::init(int width, int height) {
 }
 
 ALLEGRO_DISPLAY* Graphics::_getDisplay() {
+  abort();
   return display;
 }
 
