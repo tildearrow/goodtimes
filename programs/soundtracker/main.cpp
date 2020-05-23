@@ -651,7 +651,7 @@ void initaudio() {
   */
 #else
       //////////////// SDL CODE HERE ////////////////
-      SDL_Init(SDL_INIT_AUDIO);
+      SDL_InitSubSystem(SDL_INIT_AUDIO);
       sout=new SDL_AudioSpec;
       spout=new SDL_AudioSpec;
       sout->freq=44100;

@@ -168,7 +168,7 @@ bool Graphics::preinit() {
   al_init_image_addon();
   */
   
-  if (SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO|SDL_INIT_EVENTS)==-1) return false;
+  if (SDL_Init(SDL_INIT_EVENTS)==-1) return false;
   if (TTF_Init()==-1) return false;
   
   return true;
@@ -177,6 +177,8 @@ bool Graphics::preinit() {
 bool Graphics::init(int width, int height) {
   tPos(0,0);
   tColor(15);
+
+  if (SDL_InitSubSystem(SDL_INIT_VIDEO)==-1) return false;
   
   dpiScale=getScale();
   
