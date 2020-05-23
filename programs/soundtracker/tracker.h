@@ -77,6 +77,8 @@ class Graphics {
   SDL_Window* sdlWin;
   SDL_Renderer* sdlRend;
   TTF_Font* sdlFont;
+  SDL_Surface* fontCache;
+  SDL_Texture* sdlText;
   public:
     Point getTPos();
     Point getWSize();
@@ -122,7 +124,9 @@ class Graphics {
       SDL_RenderClear(sdlRend);
     }
     SDL_Texture* _WRAP_create_bitmap(int w, int h) {
-      return SDL_CreateTexture(sdlRend,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,w,h);
+      SDL_Texture* ret=SDL_CreateTexture(sdlRend,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,w,h);
+      SDL_SetTextureBlendMode(ret,SDL_BLENDMODE_BLEND);
+      return ret;
     }
     void _WRAP_destroy_bitmap(SDL_Texture* bitmap) {
       SDL_DestroyTexture(bitmap);
@@ -150,7 +154,6 @@ class Graphics {
       SDL_SetRenderDrawBlendMode(sdlRend,op);
     }
     void _WRAP_draw_line(float x1, float y1, float x2, float y2, Color color, float thick) {
-      printf("drawing line\n");
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderDrawLineF(sdlRend,x1,y1,x2,y2);
       //al_draw_line(x1,y1,x2,y2,color,thick);

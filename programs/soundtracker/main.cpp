@@ -4697,11 +4697,12 @@ void SFXControls() {
   if (kbpressed[SDL_SCANCODE_COMMA]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(31);}
 }
 void KeyboardEvents() {
+  const unsigned char* ks=SDL_GetKeyboardState(NULL);
   // check for presses
   for (int cntkb=0;cntkb<255;cntkb++) {
   kblast[cntkb]=kb[cntkb];
   kbpressed[cntkb]=false;
-  kb[cntkb]=g._WRAP_key_down(cntkb);
+  kb[cntkb]=ks[cntkb];
   if (kb[cntkb]!=kblast[cntkb] && kb[cntkb]==true) {
     kbpressed[cntkb]=true;
     //if (verbose) {cout << cntkb;}
@@ -5149,7 +5150,6 @@ DETUNE_FACTOR_GLOBAL=1;
    } else {
    while (1)
    {
-     printf("a\n");
       SDL_Event ev;
       while (g._WRAP_get_next_event(&ev)) {
 
@@ -5157,6 +5157,13 @@ DETUNE_FACTOR_GLOBAL=1;
      printf("close button pressed\n");
                  quit=true;
          break;
+      } else if (ev.type == SDL_MOUSEMOTION) {
+        mstate.x=ev.motion.x/dpiScale;
+        mstate.y=ev.motion.y/dpiScale;
+      } else if (ev.type == SDL_MOUSEBUTTONDOWN) {
+        mstate.buttons=ev.motion.state;
+      } else if (ev.type == SDL_MOUSEBUTTONUP) {
+        mstate.buttons&=~ev.motion.state;
       } else if (ev.type == SDL_WINDOWEVENT) {
         if (ev.window.type==SDL_WINDOWEVENT_RESIZED) {
           g.trigResize();
