@@ -124,7 +124,7 @@ int Graphics::printf(const char* format, ...) {
       textPos.x=nlPos;
       textPos.y++;
       if (nlPos!=0) {
-        fprintf(stderr,"\x1b[%d;%dH",(int)textPos.y+1,(int)textPos.x+1);
+        //fprintf(stderr,"\x1b[%d;%dH",(int)textPos.y+1,(int)textPos.x+1);
       }
     } else {
       //al_draw_glyph(allegFont,alCol,8*textPos.x,12*textPos.y,putBuf[i]);

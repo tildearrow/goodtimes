@@ -6,7 +6,11 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+#ifdef __APPLE__
+#include <SDL2_ttf/SDL_ttf.h>
+#else
 #include <SDL2/SDL_ttf.h>
+#endif
 #ifdef _WIN32
 #include <windows.h>
 #else
