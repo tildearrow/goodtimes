@@ -71,6 +71,7 @@ void Graphics::tAlign(float x) {
 }
 
 void Graphics::tColor(unsigned char color) {
+  textCol.a=1;
   textCol.r=0;
   textCol.g=0;
   textCol.b=0;
@@ -103,7 +104,6 @@ void Graphics::tColor(unsigned char color) {
     }
   }
   //fprintf(stderr,"\x1b[38;5;%dm",color);
-  alCol=al_map_rgb_f(textCol.r,textCol.g,textCol.b);
 }
 
 // we blittin' baby!
@@ -146,9 +146,8 @@ void Graphics::setTarget(SDL_Texture* where) {
 
 void Graphics::trigResize() {
   return; // TODO
-  al_acknowledge_resize(display);
-  scrSize.x=al_get_display_width(display)/dpiScale;
-  scrSize.y=al_get_display_height(display)/dpiScale;
+  //scrSize.x=al_get_display_width(display)/dpiScale;
+  //scrSize.y=al_get_display_height(display)/dpiScale;
 }
 
 Point Graphics::getWSize() {
@@ -157,9 +156,6 @@ Point Graphics::getWSize() {
 
 bool Graphics::quit() {
   return true; // TODO
-  al_destroy_font(allegFont);
-  al_destroy_display(display);
-  return true;
 }
 
 bool Graphics::preinit() {
@@ -202,9 +198,8 @@ bool Graphics::init(int width, int height) {
   return true;
 }
 
-ALLEGRO_DISPLAY* Graphics::_getDisplay() {
-  abort();
-  return display;
+SDL_Renderer* Graphics::_getDisplay() {
+  return sdlRend;
 }
 
 float Graphics::_getScale() {

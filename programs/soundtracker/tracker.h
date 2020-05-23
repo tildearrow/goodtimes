@@ -3,14 +3,6 @@
 #define _TRACKER_H
 #include <stdio.h>
 #include <math.h>
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_image.h>
-#include <allegro5/allegro_ttf.h>
-#include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_native_dialog.h>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -22,6 +14,7 @@
 #include <X11/Xlib.h>
 #endif
 #include <dirent.h>
+#include <unistd.h>
 #endif
 #ifdef __APPLE__
 extern "C" {
@@ -39,7 +32,32 @@ struct Point {
 };
 
 struct Color {
-  float r, g, b;
+  float r, g, b, a;
+  Color():
+    r(0),
+    g(0),
+    b(0),
+    a(1) {}
+  explicit Color(unsigned char re, unsigned char gr, unsigned char bl):
+    r((float)re/255.0f),
+    g((float)gr/255.0f),
+    b((float)bl/255.0f),
+    a(1.0f) {}
+  explicit Color(unsigned char re, unsigned char gr, unsigned char bl, unsigned char al):
+    r((float)re/255.0f),
+    g((float)gr/255.0f),
+    b((float)bl/255.0f),
+    a((float)al/255.0f) {}
+  explicit Color(float re, float gr, float bl):
+    r(re),
+    g(gr),
+    b(bl),
+    a(1.0f) {}
+  explicit Color(float re, float gr, float bl, float al):
+    r(re),
+    g(gr),
+    b(bl),
+    a(al) {}
 };
 
 class Graphics {
@@ -51,9 +69,6 @@ class Graphics {
   float nlPos;
   float align;
   float dpiScale;
-  ALLEGRO_FONT* allegFont;
-  ALLEGRO_DISPLAY* display;
-  ALLEGRO_COLOR alCol;
   
   SDL_Window* sdlWin;
   SDL_Renderer* sdlRend;
@@ -62,22 +77,22 @@ class Graphics {
     Point getTPos();
     Point getWSize();
     // HACK BEGIN //
-    ALLEGRO_DISPLAY* _getDisplay();
+    SDL_Renderer* _getDisplay();
     float _getScale();
     // HACK END //
     
     // HACK: Allegro methods wrapped for eventual SDL transition
-    ALLEGRO_COLOR _WRAP_map_rgb(unsigned char r, unsigned char g, unsigned char b) {
-      return al_map_rgb(r,g,b);
+    Color _WRAP_map_rgb(unsigned char r, unsigned char g, unsigned char b) {
+      return Color(r,g,b);
     }
-    ALLEGRO_COLOR _WRAP_map_rgba(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-      return al_map_rgba(r,g,b,a);
+    Color _WRAP_map_rgba(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+      return Color(r,g,b,a);
     }
-    ALLEGRO_COLOR _WRAP_map_rgb_f(float r, float g, float b) {
-      return al_map_rgb_f(r,g,b);
+    Color _WRAP_map_rgb_f(float r, float g, float b) {
+      return Color(r,g,b);
     }
-    ALLEGRO_COLOR _WRAP_map_rgba_f(float r, float g, float b, float a) {
-      return al_map_rgba_f(r,g,b,a);
+    Color _WRAP_map_rgba_f(float r, float g, float b, float a) {
+      return Color(r,g,b,a);
     }
     bool _WRAP_install_mouse() {
       return true;
@@ -95,10 +110,10 @@ class Graphics {
     void _WRAP_flip_display() {
       SDL_RenderPresent(sdlRend);
     }
-    void _WRAP_draw_filled_rectangle(float x1, float y1, float x2, float y2, ALLEGRO_COLOR color) {
+    void _WRAP_draw_filled_rectangle(float x1, float y1, float x2, float y2, Color color) {
       //al_draw_filled_rectangle(x1,y1,x2,y2,color);
     }
-    void _WRAP_clear_to_color(ALLEGRO_COLOR color) {
+    void _WRAP_clear_to_color(Color color) {
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderClear(sdlRend);
     }
@@ -114,31 +129,10 @@ class Graphics {
     void _WRAP_rest(double t) {
       usleep(t*1000000);
     }
-    void _WRAP_use_transform(const ALLEGRO_TRANSFORM* t) {
-      //al_use_transform(t);
-    }
-    void _WRAP_scale_transform(ALLEGRO_TRANSFORM* t, float x, float y) {
-      //al_scale_transform(t,x,y);
-    }
-    void _WRAP_identity_transform(ALLEGRO_TRANSFORM* t) {
-      //al_identity_transform(t);
-    }
-    void _WRAP_draw_pixel(float x, float y, ALLEGRO_COLOR color) {
+    void _WRAP_draw_pixel(float x, float y, Color color) {
       //al_draw_pixel(x,y,color);
     }
-    void _WRAP_register_event_source(ALLEGRO_EVENT_QUEUE* q, ALLEGRO_EVENT_SOURCE* s) {
-      //al_register_event_source(q,s);
-    }
-    ALLEGRO_EVENT_SOURCE* _WRAP_get_keyboard_event_source() {
-      return NULL;//al_get_keyboard_event_source();
-    }
-    ALLEGRO_EVENT_SOURCE* _WRAP_get_display_event_source(ALLEGRO_DISPLAY* d) {
-      return NULL;//al_get_display_event_source(d);
-    }
-    ALLEGRO_EVENT_QUEUE* _WRAP_create_event_queue() {
-      return NULL;//al_create_event_queue();
-    }
-    ALLEGRO_BITMAP* _WRAP_load_bitmap(const char* fn) {
+    SDL_Texture* _WRAP_load_bitmap(const char* fn) {
       return NULL;//al_load_bitmap(fn);
     }
     void _WRAP_draw_bitmap(SDL_Texture* bitmap, float x, float y, int flags) {
@@ -148,16 +142,16 @@ class Graphics {
       SDL_QueryTexture(bitmap,NULL,NULL,&dr.w,&dr.h);
       SDL_RenderCopy(sdlRend,bitmap,NULL,&dr);
     }
-    void _WRAP_set_blender(int op, int source, int dest) {
-      //al_set_blender(op,source,dest);
+    void _WRAP_set_blender(SDL_BlendMode op) {
+      SDL_SetRenderDrawBlendMode(sdlRend,op);
     }
-    void _WRAP_draw_line(float x1, float y1, float x2, float y2, ALLEGRO_COLOR color, float thick) {
+    void _WRAP_draw_line(float x1, float y1, float x2, float y2, Color color, float thick) {
       printf("drawing line\n");
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderDrawLineF(sdlRend,x1,y1,x2,y2);
       //al_draw_line(x1,y1,x2,y2,color,thick);
     }
-    void _WRAP_draw_rectangle(float x1, float y1, float x2, float y2, ALLEGRO_COLOR color, float thick) {
+    void _WRAP_draw_rectangle(float x1, float y1, float x2, float y2, Color color, float thick) {
       SDL_FRect re;
       re.x=x1;
       re.y=y1;
@@ -190,14 +184,8 @@ class Graphics {
       dr.h=h;
       SDL_RenderCopy(sdlRend,bitmap,&sr,&dr);
     }
-    bool _WRAP_key_down(ALLEGRO_KEYBOARD_STATE* ks, int kc) {
+    bool _WRAP_key_down(int kc) {
       return false;//al_key_down(ks,kc);
-    }
-    void _WRAP_get_keyboard_state(ALLEGRO_KEYBOARD_STATE* ks) {
-      //al_get_keyboard_state(ks);
-    }
-    void _WRAP_get_mouse_state(ALLEGRO_MOUSE_STATE* ms) {
-      //al_get_mouse_state(ms);
     }
     void _WRAP_draw_scaled_bitmap(SDL_Texture* bitmap, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, int flags) {
       // TODO
@@ -207,7 +195,7 @@ class Graphics {
       // TODO
       //al_draw_rotated_bitmap(bitmap,cx,cy,x,y,r,flags);
     }
-    void _WRAP_draw_circle(float x, float y, float r, ALLEGRO_COLOR color, float thick) {
+    void _WRAP_draw_circle(float x, float y, float r, Color color, float thick) {
       //al_draw_circle(x,y,r,color,thick);
     }
     

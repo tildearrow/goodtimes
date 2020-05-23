@@ -381,9 +381,9 @@ enum envTypes {
   envPan
 };
 
-ALLEGRO_FONT *text=NULL;
-ALLEGRO_MOUSE_STATE mstate;
-ALLEGRO_KEYBOARD_STATE kbstate;
+struct {
+  int x, y, z, buttons;
+} mstate;
 SDL_Texture *logo=NULL;
 bool leftclick=false;
 bool leftclickprev=false;
@@ -451,8 +451,6 @@ float oscbuf[65536]={}; // safe oscilloscope buffer
 float oscbuf2[65536]={}; // safe oscilloscope buffer
 unsigned short oscbufRPos=0;
 unsigned short oscbufWPos=0;
-// only way for 7 channels glitch-free - 7 event queues
-ALLEGRO_EVENT_QUEUE *aqueue[33];
 // settings
 namespace settings {
   // audio settings
@@ -533,7 +531,7 @@ static void nothing(void* userdata, Uint8* stream, int len) {
     targetSR=297500;
     noProc=sr/targetSR;
   }
-  if (kb[ALLEGRO_KEY_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {
+  if (kb[SDL_SCANCODE_ESCAPE] || (PIR((scrW/2)+21,37,(scrW/2)+61,48,mstate.x,mstate.y) && leftclick)) {
     ASC::interval=16384;
   }
   for (size_t i=0; i<nframes;) {
@@ -695,7 +693,7 @@ unsigned short bswapu16(unsigned short x) {
   return ((x&0xff)<<8)|((x&0xff00)>>8);
 }
 
-ALLEGRO_COLOR getucol(unsigned char thecol) {
+Color getucol(unsigned char thecol) {
   if (thecol<16) {
     if (thecol==8) {return (g._WRAP_map_rgb(128,128,128));} else {
       if (thecol<8) {g._WRAP_map_rgb((thecol&1)*192,((thecol&2)>>1)*192,((thecol&3)>>2)*192);}
@@ -731,10 +729,10 @@ float interpolate(float p1, float p2, float amt) {
   return p1+((p2-p1)*amt);
 }
 float lengthdir_x(float len,float dir) {
-  return len*cos(dir*(ALLEGRO_PI/180));
+  return len*cos(dir*(M_PI/180));
 }
 float lengthdir_y(float len,float dir) {
-  return len*sin(dir*(ALLEGRO_PI/180));
+  return len*sin(dir*(M_PI/180));
 }
 const char* gethnibble(int nval) {
   switch(nval>>4) {
@@ -1813,7 +1811,7 @@ void NextTick() {
     }
     curvibpos[looper]++;
     switch (curvibshape[looper]) {
-    case 0: cfreq[looper]=ProcessPitch(looper,-(float)(sin(((float)curvibpos[looper]*(float)curvibspeed[looper]*4/256)*2*ALLEGRO_PI))*((float)curvibdepth[looper]/8)); break; // sine
+    case 0: cfreq[looper]=ProcessPitch(looper,-(float)(sin(((float)curvibpos[looper]*(float)curvibspeed[looper]*4/256)*2*M_PI))*((float)curvibdepth[looper]/8)); break; // sine
     case 1: cfreq[looper]=ProcessPitch(looper,0)+
     (int)((float)((((curvibpos[looper]*curvibspeed[looper]*4)%256)/2)-64)*((float)curvibdepth[looper]/16)); break; // saw
     case 2: cfreq[looper]=ProcessPitch(looper,0)+
@@ -1927,7 +1925,7 @@ void CleanupPatterns() {
   }
 }
 
-ALLEGRO_COLOR mapHSV(float hue,float saturation,float value) {
+Color mapHSV(float hue,float saturation,float value) {
   float c=value*saturation;
   float x=c*(1-fabs(fmod(hue/60,2)-1));
   float m=value-c;
@@ -2567,7 +2565,7 @@ void drawabout() {
     g.tPos(0,10);
     g.printf("it seems you don't have the logo file!");
   } else {
-    g._WRAP_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*ALLEGRO_PI)/8)*(playmode!=0),0);
+    g._WRAP_draw_rotated_bitmap(logo,180,86.5,scrW/2,scrH/2,(sin((((float)curstep*(float)speed)+((float)speed-(float)curtick))/(8*(float)speed)*2*M_PI)/8)*(playmode!=0),0);
   }
 }
 
@@ -2644,7 +2642,7 @@ void drawpiano() {
         255));
     }
     g.setTarget(pianoroll);
-                g._WRAP_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_ONE);
+                g._WRAP_set_blender(SDL_BLENDMODE_ADD);
                 if (cshape[ii]==0) {
                  g._WRAP_draw_filled_rectangle(((prefreq-0.5)*6)+1-0.5,127,((prefreq-0.5)*6)+5,128,
       mapHSV(240-(cduty[ii]),1,(float)cvol[ii]/127)); 
@@ -2656,7 +2654,7 @@ void drawpiano() {
       (cshape[ii]!=1 && cshape[ii]!=2)?(cvol[ii]*2):(0)
       ));
                 }
-                g._WRAP_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_INVERSE_ALPHA);
+                g._WRAP_set_blender(SDL_BLENDMODE_BLEND);
     g.setTarget(NULL);
   }
   g._WRAP_draw_scaled_bitmap(pianoroll,0,0,700,128,(scrW/2)-((((scrW)/700)*700)/2),scrH-(((scrH-(60+((((scrW)/700)*60))))/128)*128)-(((scrW)/700)*60),((scrW)/700)*700,((scrH-(60+((((scrW)/700)*60))))/128)*128,0);
@@ -2823,13 +2821,9 @@ int ImportIT() {
   int LastVol[32];
   int LastFX[32];
   int LastFXVal[32];
-  ALLEGRO_FILECHOOSER* filechooser;
-  filechooser=al_create_native_file_dialog(".","load IT module",NULL,0);
-  al_show_native_file_dialog(g._getDisplay(),filechooser);
-  char rfn[256];
-  if (al_get_native_file_dialog_path(filechooser,0)!=NULL) {
-  strcpy(rfn,al_get_native_file_dialog_path(filechooser,0));} else {printf("no file given\n");}
-  al_destroy_native_file_dialog(filechooser);
+  abort();
+  char rfn[4096];
+  strcpy(rfn,".");
   //int insparas[256];
   int patparas[256];
   //gets(rfn);
@@ -3354,17 +3348,13 @@ int SaveFile() {
   bool IS_INS_BLANK[256];
   bool IS_PAT_BLANK[256];
   bool IS_SEQ_BLANK[256];
+  char rfn[4096];
   int oldseek=0;
   
   // temporary, gonna get replaced by a better thing soon
   // just for the sake of linux
-  ALLEGRO_FILECHOOSER* filechooser;
-  filechooser=al_create_native_file_dialog(curdir,"save",NULL,ALLEGRO_FILECHOOSER_SAVE);
-  al_show_native_file_dialog(g._getDisplay(),filechooser);
-  char rfn[256];
-  if (al_get_native_file_dialog_path(filechooser,0)!=NULL) {
-  strcpy(rfn,al_get_native_file_dialog_path(filechooser,0));} else {printf("no file given\n");}
-  al_destroy_native_file_dialog(filechooser);
+  abort();
+  strcpy(rfn,".");
   
   sfile=fopen(rfn,"wb");
   if (sfile!=NULL) { // write the file
@@ -3472,7 +3462,7 @@ int SaveFile() {
       fseek(sfile,sk,SEEK_SET);
       fputc(patlength[ii],sfile);
       sk+=11;
-      fseek(sfile,sk,ALLEGRO_SEEK_SET);
+      fseek(sfile,sk,SEEK_SET);
       for (int jj=0; jj<getpatlen(ii); jj++) {
         // pack row
         for (int cpack=0; cpack<32; cpack++) {
@@ -3869,10 +3859,6 @@ void LoadRawSample(const char* filename,int position) {
 
 void ClickEvents() {
   reversemode=false;
-  // mouse states
-  g._WRAP_get_mouse_state(&mstate);
-  mstate.x/=dpiScale;
-  mstate.y/=dpiScale;
   // click events
   leftclickprev=leftclick;
   leftclick=(mstate.buttons&1);
@@ -4276,7 +4262,7 @@ void ClickEvents() {
     }
     if (leftpress) {
       for (int ii=0;ii<chanstodisplay;ii++) {
-        if (!kb[ALLEGRO_KEY_LSHIFT]) {if (PIR(16+(ii*96)+mixerdrawoffset,60,96+(ii*96)+mixerdrawoffset,72,mstate.x,mstate.y)) {muted[ii+(curedpage*8)]=!muted[ii+(curedpage*8)];}}
+        if (!kb[SDL_SCANCODE_LSHIFT]) {if (PIR(16+(ii*96)+mixerdrawoffset,60,96+(ii*96)+mixerdrawoffset,72,mstate.x,mstate.y)) {muted[ii+(curedpage*8)]=!muted[ii+(curedpage*8)];}}
         else {if (PIR(16+(ii*96)+mixerdrawoffset,60,96+(ii*96)+mixerdrawoffset,72,mstate.x,mstate.y)) {midion[ii+(curedpage*8)]=!midion[ii+(curedpage*8)];}}
       }
     }
@@ -4336,7 +4322,7 @@ void FastTracker() {
   int lastChan, lastMode;
   int selTop, selBottom;
   // scroll code
-  if (kbpressed[ALLEGRO_KEY_UP]) {
+  if (kbpressed[SDL_SCANCODE_UP]) {
     // go back
     if (playmode==0) {
       curtick=1;
@@ -4345,7 +4331,7 @@ void FastTracker() {
         curstep=0;
       }
       selEnd=curstep;
-      if (!kb[ALLEGRO_KEY_LSHIFT]) {
+      if (!kb[SDL_SCANCODE_LSHIFT]) {
         selStart=curstep;
         curselchan=curedchan;
         curselmode=curedmode;
@@ -4353,7 +4339,7 @@ void FastTracker() {
     }
     drawpatterns(true);
   }
-  if (kbpressed[ALLEGRO_KEY_DOWN]) {
+  if (kbpressed[SDL_SCANCODE_DOWN]) {
     // skipping
     if (playmode==0) {
       curtick=1;
@@ -4363,7 +4349,7 @@ void FastTracker() {
         curpat++;
       }
       selEnd=curstep;
-      if (!kb[ALLEGRO_KEY_LSHIFT]) {
+      if (!kb[SDL_SCANCODE_LSHIFT]) {
         selStart=curstep;
         curselchan=curedchan;
         curselmode=curedmode;
@@ -4371,7 +4357,7 @@ void FastTracker() {
     }
     drawpatterns(true);
   }
-  if (kbpressed[ALLEGRO_KEY_RIGHT]) {
+  if (kbpressed[SDL_SCANCODE_RIGHT]) {
     curedmode++;
     if (curedmode>4) {
       curedchan++;
@@ -4381,14 +4367,14 @@ void FastTracker() {
         curedmode=4;
       }
     }
-    if (!kb[ALLEGRO_KEY_LSHIFT]) {
+    if (!kb[SDL_SCANCODE_LSHIFT]) {
       curselchan=curedchan;
       curselmode=curedmode;
       selEnd=selStart;
     }
     drawpatterns(true);
   }
-  if (kbpressed[ALLEGRO_KEY_LEFT]) {
+  if (kbpressed[SDL_SCANCODE_LEFT]) {
     curedmode--;
     if (curedmode<0) {
       curedchan--;
@@ -4398,14 +4384,14 @@ void FastTracker() {
         curedmode=0;
       }
     }
-    if (!kb[ALLEGRO_KEY_LSHIFT]) {
+    if (!kb[SDL_SCANCODE_LSHIFT]) {
       curselchan=curedchan;
       curselmode=curedmode;
       selEnd=selStart;
     }
     drawpatterns(true);
   }
-  if (kbpressed[ALLEGRO_KEY_DELETE]) {
+  if (kbpressed[SDL_SCANCODE_DELETE]) {
     // delete from selection start to end
     firstChan=curedchan; firstMode=curedmode;
     lastChan=curselchan; lastMode=curselmode;
@@ -4449,124 +4435,124 @@ void FastTracker() {
   if (kbpressed[70]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0f;EditSkip();}
   if (kbpressed[28]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0e;EditSkip();}
   // notes, main octave
-  if (kbpressed[ALLEGRO_KEY_Z]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_X]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_V]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_N]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_M]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_S]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_G]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_H]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval(curoctave<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_J]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_Z]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_X]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_V]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_N]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_M]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_S]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_G]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_H]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval(curoctave<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_J]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval(curoctave<<4,0x90);EditSkip();}
   if (kbpressed[72]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
   if (kbpressed[12]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
   if (kbpressed[73]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
   if (kbpressed[60]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
   // notes, 2nd octave
-  if (kbpressed[ALLEGRO_KEY_Q]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_W]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_R]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_T]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_Y]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_U]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval((curoctave+1)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_I]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_O]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+2)<<4,0x90);EditSkip();}
-  if (kbpressed[ALLEGRO_KEY_P]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_Q]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_W]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_R]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_T]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x08+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_Y]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0a+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_U]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0c+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x09+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x0b+minval((curoctave+1)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_I]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x01+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x02+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_O]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x03+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x04+minval((curoctave+2)<<4,0x90);EditSkip();}
+  if (kbpressed[SDL_SCANCODE_P]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x05+minval((curoctave+2)<<4,0x90);EditSkip();}
   if (kbpressed[66]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x06+minval((curoctave+2)<<4,0x90);EditSkip();}
   if (kbpressed[65]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][0]=0x07+minval((curoctave+2)<<4,0x90);EditSkip();}
   }
   if (curedmode==1) {
-  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4);drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+1;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+2;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+3;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+4;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+5;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+6;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+7;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+8;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+9;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+10;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+11;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+12;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+13;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+14;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+15;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4);drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+1;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+2;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+3;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+4;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+5;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+6;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+7;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+8;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+9;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+10;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+11;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+12;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+13;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+14;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][1]<<4)+15;drawpatterns(true);}
   }
   if (curedmode==2) {
-  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4);drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+1;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+2;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+3;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+4;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+5;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+6;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+7;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+8;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+9;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+10;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+11;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+12;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+13;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+14;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+15;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4);drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+1;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+2;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+3;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+4;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+5;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+6;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+7;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+8;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+9;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+10;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+11;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+12;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+13;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+14;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][2]<<4)+15;drawpatterns(true);}
   }
   if (curedmode==3) {
-  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=1;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=2;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=3;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=4;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=5;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=6;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_G]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=7;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_H]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=8;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_I]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=9;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_J]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=10;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_K]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=11;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_L]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=12;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_M]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=13;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_N]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=14;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_O]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=15;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_P]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=16;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_Q]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=17;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_R]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=18;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_S]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=19;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_T]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=20;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_U]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=21;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_V]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=22;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_W]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=23;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_X]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=24;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_Y]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=25;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_Z]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=26;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=1;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=2;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=3;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=4;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=5;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=6;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_G]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=7;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_H]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=8;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_I]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=9;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_J]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=10;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_K]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=11;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_L]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=12;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_M]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=13;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_N]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=14;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_O]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=15;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_P]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=16;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_Q]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=17;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_R]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=18;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_S]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=19;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_T]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=20;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_U]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=21;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_V]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=22;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_W]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=23;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_X]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=24;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_Y]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=25;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_Z]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][3]=26;drawpatterns(true);}
   }
   if (curedmode==4) {
-  if (kbpressed[ALLEGRO_KEY_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4);drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+1;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+2;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+3;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+4;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+5;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+6;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+7;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+8;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+9;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+10;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+11;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+12;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+13;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+14;drawpatterns(true);}
-  if (kbpressed[ALLEGRO_KEY_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+15;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_0]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4);drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_1]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+1;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_2]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+2;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_3]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+3;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_4]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+4;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_5]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+5;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_6]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+6;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_7]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+7;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_8]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+8;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_9]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+9;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_A]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+10;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_B]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+11;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_C]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+12;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_D]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+13;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_E]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+14;drawpatterns(true);}
+  if (kbpressed[SDL_SCANCODE_F]) {pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]=(pat[patid[curpat]][curstep][(8*curedpage)+curedchan][4]<<4)+15;drawpatterns(true);}
   }
 }
 void InstrumentTest(int testnote, int testchan) {
@@ -4581,77 +4567,78 @@ void ModPlug() {
 void RunTestNote(int keycode) {
   // notes, main octave
   switch (keycode) {
-  case ALLEGRO_KEY_Z: InstrumentTest(0x01+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_X: InstrumentTest(0x03+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_C: InstrumentTest(0x05+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_V: InstrumentTest(0x06+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_B: InstrumentTest(0x08+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_N: InstrumentTest(0x0a+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_M: InstrumentTest(0x0c+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_S: InstrumentTest(0x02+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_D: InstrumentTest(0x04+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_G: InstrumentTest(0x07+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_H: InstrumentTest(0x09+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_J: InstrumentTest(0x0b+minval(curoctave<<4,0x90),FreeChannel()); break;
-  case 72: InstrumentTest(0x01+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case 12: InstrumentTest(0x02+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case 73: InstrumentTest(0x03+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case 60: InstrumentTest(0x04+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_Z: InstrumentTest(0x01+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_X: InstrumentTest(0x03+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_C: InstrumentTest(0x05+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_V: InstrumentTest(0x06+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_B: InstrumentTest(0x08+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_N: InstrumentTest(0x0a+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_M: InstrumentTest(0x0c+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_S: InstrumentTest(0x02+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_D: InstrumentTest(0x04+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_G: InstrumentTest(0x07+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_H: InstrumentTest(0x09+minval(curoctave<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_J: InstrumentTest(0x0b+minval(curoctave<<4,0x90),FreeChannel()); break;
+  // TODO why did I not use the enum?!
+  //case 72: InstrumentTest(0x01+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  //case 12: InstrumentTest(0x02+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  //case 73: InstrumentTest(0x03+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  //case 60: InstrumentTest(0x04+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
   // notes, 2nd octave
-  case ALLEGRO_KEY_Q: InstrumentTest(0x01+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_W: InstrumentTest(0x03+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_E: InstrumentTest(0x05+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_R: InstrumentTest(0x06+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_T: InstrumentTest(0x08+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_Y: InstrumentTest(0x0a+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_U: InstrumentTest(0x0c+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_2: InstrumentTest(0x02+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_3: InstrumentTest(0x04+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_5: InstrumentTest(0x07+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_6: InstrumentTest(0x09+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_7: InstrumentTest(0x0b+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_I: InstrumentTest(0x01+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_9: InstrumentTest(0x02+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_O: InstrumentTest(0x03+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_0: InstrumentTest(0x04+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
-  case ALLEGRO_KEY_P: InstrumentTest(0x05+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_Q: InstrumentTest(0x01+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_W: InstrumentTest(0x03+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_E: InstrumentTest(0x05+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_R: InstrumentTest(0x06+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_T: InstrumentTest(0x08+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_Y: InstrumentTest(0x0a+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_U: InstrumentTest(0x0c+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_2: InstrumentTest(0x02+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_3: InstrumentTest(0x04+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_5: InstrumentTest(0x07+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_6: InstrumentTest(0x09+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_7: InstrumentTest(0x0b+minval((curoctave+1)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_I: InstrumentTest(0x01+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_9: InstrumentTest(0x02+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_O: InstrumentTest(0x03+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_0: InstrumentTest(0x04+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
+  case SDL_SCANCODE_P: InstrumentTest(0x05+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
   case 66: InstrumentTest(0x06+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
   case 65: InstrumentTest(0x07+minval((curoctave+2)<<4,0x90),FreeChannel()); break;
   }
 }
 void MuteControls() {
-  if (kbpressed[ALLEGRO_KEY_1]) {muted[0]=!muted[0];}
-  if (kbpressed[ALLEGRO_KEY_2]) {muted[1]=!muted[1];}
-  if (kbpressed[ALLEGRO_KEY_3]) {muted[2]=!muted[2];}
-  if (kbpressed[ALLEGRO_KEY_4]) {muted[3]=!muted[3];}
-  if (kbpressed[ALLEGRO_KEY_5]) {muted[4]=!muted[4];}
-  if (kbpressed[ALLEGRO_KEY_6]) {muted[5]=!muted[5];}
-  if (kbpressed[ALLEGRO_KEY_7]) {muted[6]=!muted[6];}
-  if (kbpressed[ALLEGRO_KEY_8]) {muted[7]=!muted[7];}
-  if (kbpressed[ALLEGRO_KEY_Q]) {muted[8]=!muted[8];}
-  if (kbpressed[ALLEGRO_KEY_W]) {muted[9]=!muted[9];}
-  if (kbpressed[ALLEGRO_KEY_E]) {muted[10]=!muted[10];}
-  if (kbpressed[ALLEGRO_KEY_R]) {muted[11]=!muted[11];}
-  if (kbpressed[ALLEGRO_KEY_T]) {muted[12]=!muted[12];}
-  if (kbpressed[ALLEGRO_KEY_Y]) {muted[13]=!muted[13];}
-  if (kbpressed[ALLEGRO_KEY_U]) {muted[14]=!muted[14];}
-  if (kbpressed[ALLEGRO_KEY_I]) {muted[15]=!muted[15];}
-  if (kbpressed[ALLEGRO_KEY_A]) {muted[16]=!muted[16];}
-  if (kbpressed[ALLEGRO_KEY_S]) {muted[17]=!muted[17];}
-  if (kbpressed[ALLEGRO_KEY_D]) {muted[18]=!muted[18];}
-  if (kbpressed[ALLEGRO_KEY_F]) {muted[19]=!muted[19];}
-  if (kbpressed[ALLEGRO_KEY_G]) {muted[20]=!muted[20];}
-  if (kbpressed[ALLEGRO_KEY_H]) {muted[21]=!muted[21];}
-  if (kbpressed[ALLEGRO_KEY_J]) {muted[22]=!muted[22];}
-  if (kbpressed[ALLEGRO_KEY_K]) {muted[23]=!muted[23];}
-  if (kbpressed[ALLEGRO_KEY_Z]) {muted[24]=!muted[24];}
-  if (kbpressed[ALLEGRO_KEY_X]) {muted[25]=!muted[25];}
-  if (kbpressed[ALLEGRO_KEY_C]) {muted[26]=!muted[26];}
-  if (kbpressed[ALLEGRO_KEY_V]) {muted[27]=!muted[27];}
-  if (kbpressed[ALLEGRO_KEY_B]) {muted[28]=!muted[28];}
-  if (kbpressed[ALLEGRO_KEY_N]) {muted[29]=!muted[29];}
-  if (kbpressed[ALLEGRO_KEY_M]) {muted[30]=!muted[30];}
-  if (kbpressed[ALLEGRO_KEY_COMMA]) {muted[31]=!muted[31];}
+  if (kbpressed[SDL_SCANCODE_1]) {muted[0]=!muted[0];}
+  if (kbpressed[SDL_SCANCODE_2]) {muted[1]=!muted[1];}
+  if (kbpressed[SDL_SCANCODE_3]) {muted[2]=!muted[2];}
+  if (kbpressed[SDL_SCANCODE_4]) {muted[3]=!muted[3];}
+  if (kbpressed[SDL_SCANCODE_5]) {muted[4]=!muted[4];}
+  if (kbpressed[SDL_SCANCODE_6]) {muted[5]=!muted[5];}
+  if (kbpressed[SDL_SCANCODE_7]) {muted[6]=!muted[6];}
+  if (kbpressed[SDL_SCANCODE_8]) {muted[7]=!muted[7];}
+  if (kbpressed[SDL_SCANCODE_Q]) {muted[8]=!muted[8];}
+  if (kbpressed[SDL_SCANCODE_W]) {muted[9]=!muted[9];}
+  if (kbpressed[SDL_SCANCODE_E]) {muted[10]=!muted[10];}
+  if (kbpressed[SDL_SCANCODE_R]) {muted[11]=!muted[11];}
+  if (kbpressed[SDL_SCANCODE_T]) {muted[12]=!muted[12];}
+  if (kbpressed[SDL_SCANCODE_Y]) {muted[13]=!muted[13];}
+  if (kbpressed[SDL_SCANCODE_U]) {muted[14]=!muted[14];}
+  if (kbpressed[SDL_SCANCODE_I]) {muted[15]=!muted[15];}
+  if (kbpressed[SDL_SCANCODE_A]) {muted[16]=!muted[16];}
+  if (kbpressed[SDL_SCANCODE_S]) {muted[17]=!muted[17];}
+  if (kbpressed[SDL_SCANCODE_D]) {muted[18]=!muted[18];}
+  if (kbpressed[SDL_SCANCODE_F]) {muted[19]=!muted[19];}
+  if (kbpressed[SDL_SCANCODE_G]) {muted[20]=!muted[20];}
+  if (kbpressed[SDL_SCANCODE_H]) {muted[21]=!muted[21];}
+  if (kbpressed[SDL_SCANCODE_J]) {muted[22]=!muted[22];}
+  if (kbpressed[SDL_SCANCODE_K]) {muted[23]=!muted[23];}
+  if (kbpressed[SDL_SCANCODE_Z]) {muted[24]=!muted[24];}
+  if (kbpressed[SDL_SCANCODE_X]) {muted[25]=!muted[25];}
+  if (kbpressed[SDL_SCANCODE_C]) {muted[26]=!muted[26];}
+  if (kbpressed[SDL_SCANCODE_V]) {muted[27]=!muted[27];}
+  if (kbpressed[SDL_SCANCODE_B]) {muted[28]=!muted[28];}
+  if (kbpressed[SDL_SCANCODE_N]) {muted[29]=!muted[29];}
+  if (kbpressed[SDL_SCANCODE_M]) {muted[30]=!muted[30];}
+  if (kbpressed[SDL_SCANCODE_COMMA]) {muted[31]=!muted[31];}
 }
 void MuteAllChannels() {
   for (int su=0;su<8*soundchips;su++) {
@@ -4675,48 +4662,46 @@ void triggerfx(int num) {
 }
 
 void SFXControls() {
-  if (kbpressed[ALLEGRO_KEY_1]) {triggerfx(0);}
-  if (kbpressed[ALLEGRO_KEY_2]) {triggerfx(1);}
-  if (kbpressed[ALLEGRO_KEY_3]) {triggerfx(2);}
-  if (kbpressed[ALLEGRO_KEY_4]) {triggerfx(3);}
-  if (kbpressed[ALLEGRO_KEY_5]) {triggerfx(4);}
-  if (kbpressed[ALLEGRO_KEY_6]) {triggerfx(5);}
-  if (kbpressed[ALLEGRO_KEY_7]) {triggerfx(6);}
-  if (kbpressed[ALLEGRO_KEY_8]) {triggerfx(7);}
-  if (kbpressed[ALLEGRO_KEY_Q]) {triggerfx(8);}
-  if (kbpressed[ALLEGRO_KEY_W]) {triggerfx(9);}
-  if (kbpressed[ALLEGRO_KEY_E]) {triggerfx(10);}
-  if (kbpressed[ALLEGRO_KEY_R]) {triggerfx(11);}
-  if (kbpressed[ALLEGRO_KEY_T]) {triggerfx(12);}
-  if (kbpressed[ALLEGRO_KEY_Y]) {triggerfx(13);}
-  if (kbpressed[ALLEGRO_KEY_U]) {triggerfx(14);}
-  if (kbpressed[ALLEGRO_KEY_I]) {triggerfx(15);}
-  if (kbpressed[ALLEGRO_KEY_A]) {triggerfx(16);}
-  if (kbpressed[ALLEGRO_KEY_S]) {triggerfx(17);}
-  if (kbpressed[ALLEGRO_KEY_D]) {triggerfx(18);}
-  if (kbpressed[ALLEGRO_KEY_F]) {triggerfx(19);}
-  if (kbpressed[ALLEGRO_KEY_G]) {triggerfx(20);}
-  if (kbpressed[ALLEGRO_KEY_H]) {triggerfx(21);}
-  if (kbpressed[ALLEGRO_KEY_J]) {triggerfx(22);}
-  if (kbpressed[ALLEGRO_KEY_K]) {triggerfx(23);}
-  if (kbpressed[ALLEGRO_KEY_Z]) {triggerfx(24);}
-  if (kbpressed[ALLEGRO_KEY_X]) {triggerfx(25);}
-  if (kbpressed[ALLEGRO_KEY_C]) {triggerfx(26);}
-  if (kbpressed[ALLEGRO_KEY_V]) {triggerfx(27);}
-  if (kbpressed[ALLEGRO_KEY_B]) {triggerfx(28);}
-  if (kbpressed[ALLEGRO_KEY_N]) {triggerfx(29);}
+  if (kbpressed[SDL_SCANCODE_1]) {triggerfx(0);}
+  if (kbpressed[SDL_SCANCODE_2]) {triggerfx(1);}
+  if (kbpressed[SDL_SCANCODE_3]) {triggerfx(2);}
+  if (kbpressed[SDL_SCANCODE_4]) {triggerfx(3);}
+  if (kbpressed[SDL_SCANCODE_5]) {triggerfx(4);}
+  if (kbpressed[SDL_SCANCODE_6]) {triggerfx(5);}
+  if (kbpressed[SDL_SCANCODE_7]) {triggerfx(6);}
+  if (kbpressed[SDL_SCANCODE_8]) {triggerfx(7);}
+  if (kbpressed[SDL_SCANCODE_Q]) {triggerfx(8);}
+  if (kbpressed[SDL_SCANCODE_W]) {triggerfx(9);}
+  if (kbpressed[SDL_SCANCODE_E]) {triggerfx(10);}
+  if (kbpressed[SDL_SCANCODE_R]) {triggerfx(11);}
+  if (kbpressed[SDL_SCANCODE_T]) {triggerfx(12);}
+  if (kbpressed[SDL_SCANCODE_Y]) {triggerfx(13);}
+  if (kbpressed[SDL_SCANCODE_U]) {triggerfx(14);}
+  if (kbpressed[SDL_SCANCODE_I]) {triggerfx(15);}
+  if (kbpressed[SDL_SCANCODE_A]) {triggerfx(16);}
+  if (kbpressed[SDL_SCANCODE_S]) {triggerfx(17);}
+  if (kbpressed[SDL_SCANCODE_D]) {triggerfx(18);}
+  if (kbpressed[SDL_SCANCODE_F]) {triggerfx(19);}
+  if (kbpressed[SDL_SCANCODE_G]) {triggerfx(20);}
+  if (kbpressed[SDL_SCANCODE_H]) {triggerfx(21);}
+  if (kbpressed[SDL_SCANCODE_J]) {triggerfx(22);}
+  if (kbpressed[SDL_SCANCODE_K]) {triggerfx(23);}
+  if (kbpressed[SDL_SCANCODE_Z]) {triggerfx(24);}
+  if (kbpressed[SDL_SCANCODE_X]) {triggerfx(25);}
+  if (kbpressed[SDL_SCANCODE_C]) {triggerfx(26);}
+  if (kbpressed[SDL_SCANCODE_V]) {triggerfx(27);}
+  if (kbpressed[SDL_SCANCODE_B]) {triggerfx(28);}
+  if (kbpressed[SDL_SCANCODE_N]) {triggerfx(29);}
   // pausers
-  if (kbpressed[ALLEGRO_KEY_M]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(30);}
-  if (kbpressed[ALLEGRO_KEY_COMMA]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(31);}
+  if (kbpressed[SDL_SCANCODE_M]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(30);}
+  if (kbpressed[SDL_SCANCODE_COMMA]) {if (playmode==0) {playmode=1;} else {playmode=0;};triggerfx(31);}
 }
 void KeyboardEvents() {
-  // keyboard states
-  g._WRAP_get_keyboard_state(&kbstate);
   // check for presses
   for (int cntkb=0;cntkb<255;cntkb++) {
   kblast[cntkb]=kb[cntkb];
   kbpressed[cntkb]=false;
-  kb[cntkb]=g._WRAP_key_down(&kbstate,cntkb);
+  kb[cntkb]=g._WRAP_key_down(cntkb);
   if (kb[cntkb]!=kblast[cntkb] && kb[cntkb]==true) {
     kbpressed[cntkb]=true;
     //if (verbose) {cout << cntkb;}
@@ -4724,32 +4709,32 @@ void KeyboardEvents() {
   // main code here
   if (edittype && screen==0) {FastTracker();} else {ModPlug();}
   if (screen==4) {MuteControls();}
-  if (kbpressed[ALLEGRO_KEY_PGDN]) {curedpage++; if (curedpage>3) {curedpage=3;
+  if (kbpressed[SDL_SCANCODE_PAGEDOWN]) {curedpage++; if (curedpage>3) {curedpage=3;
     #ifdef SOUNDS
     triggerfx(1);
     #endif
   };drawpatterns(true);drawmixerlayer();}
-  if (kbpressed[ALLEGRO_KEY_PGUP]) {curedpage--; if (curedpage<0) {
+  if (kbpressed[SDL_SCANCODE_PAGEUP]) {curedpage--; if (curedpage<0) {
     #ifdef SOUNDS
     triggerfx(1);
     #endif
     curedpage=0;
   };drawpatterns(true);drawmixerlayer();}
   maxCTD=(scrW-24)/96;
-  if (kbpressed[ALLEGRO_KEY_END]) {chanstodisplay++;if (chanstodisplay>maxCTD) {
+  if (kbpressed[SDL_SCANCODE_END]) {chanstodisplay++;if (chanstodisplay>maxCTD) {
     chanstodisplay=maxCTD;
     #ifdef SOUNDS
     triggerfx(1);
     #endif
   };drawpatterns(true);drawmixerlayer();}
-  if (kbpressed[ALLEGRO_KEY_HOME]) {chanstodisplay--;if (chanstodisplay<1) {
+  if (kbpressed[SDL_SCANCODE_HOME]) {chanstodisplay--;if (chanstodisplay<1) {
     chanstodisplay=1;
     #ifdef SOUNDS
     triggerfx(1);
     #endif
   };drawpatterns(true);drawmixerlayer();}
-  if (kbpressed[ALLEGRO_KEY_TAB]) {MuteAllChannels();}
-  if (kbpressed[ALLEGRO_KEY_MENU] || kbpressed[ALLEGRO_KEY_BACKQUOTE]) {ntsc=!ntsc; if (ntsc) {
+  if (kbpressed[SDL_SCANCODE_TAB]) {MuteAllChannels();}
+  if (kbpressed[SDL_SCANCODE_MENU] || kbpressed[SDL_SCANCODE_GRAVE]) {ntsc=!ntsc; if (ntsc) {
     if (tempo==125) {
       tempo=150;
       FPS=60;
@@ -4765,15 +4750,15 @@ void KeyboardEvents() {
     SFXControls();
   }
   if (screen==1) {
-    if (kbpressed[ALLEGRO_KEY_MINUS]) {valuewidth--; if (valuewidth<1) {valuewidth=1;}}
-    if (kbpressed[ALLEGRO_KEY_EQUALS]) {valuewidth++;}
+    if (kbpressed[SDL_SCANCODE_MINUS]) {valuewidth--; if (valuewidth<1) {valuewidth=1;}}
+    if (kbpressed[SDL_SCANCODE_EQUALS]) {valuewidth++;}
   }
   if (screen==11) {
-    if (kb[ALLEGRO_KEY_LEFT]) {pcmeditoffset-=4*maxval(1,(int)pow(2.0f,-pcmeditscale));}
-    if (kb[ALLEGRO_KEY_RIGHT]) {pcmeditoffset+=4*maxval(1,(int)pow(2.0f,-pcmeditscale));}
-    if (kbpressed[ALLEGRO_KEY_MINUS]) {pcmeditscale--;}
-    if (kbpressed[ALLEGRO_KEY_EQUALS]) {pcmeditscale++;}
-    if (kbpressed[ALLEGRO_KEY_SPACE]) {pcmeditenable=!pcmeditenable;}
+    if (kb[SDL_SCANCODE_LEFT]) {pcmeditoffset-=4*maxval(1,(int)pow(2.0f,-pcmeditscale));}
+    if (kb[SDL_SCANCODE_RIGHT]) {pcmeditoffset+=4*maxval(1,(int)pow(2.0f,-pcmeditscale));}
+    if (kbpressed[SDL_SCANCODE_MINUS]) {pcmeditscale--;}
+    if (kbpressed[SDL_SCANCODE_EQUALS]) {pcmeditscale++;}
+    if (kbpressed[SDL_SCANCODE_SPACE]) {pcmeditenable=!pcmeditenable;}
   }
 }
 void drawdisp() {
@@ -4800,11 +4785,6 @@ void drawdisp() {
                           maxval(60,252-(curpatrow*12)),
                           0);
     #endif
-    g._WRAP_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_SRC_COLOR);
-    for (int j=0;j<8;j++) {
-  //g._WRAP_draw_filled_rectangle(24+(j*96),255,112+(j*96),266,mapHSV(((float)cduty[j+(curedpage*8)]/128)*360,(cshape[j+(curedpage*8)]==4)?(0):(1),(float)cvol[j+(curedpage*8)]/128));
-  }
-  g._WRAP_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
   firstChan=curedchan; firstMode=curedmode;
   lastChan=curselchan; lastMode=curselmode;
   selTop=selStart; selBottom=selEnd;
@@ -4953,7 +4933,7 @@ void drawdisp() {
   // oscilloscope
   g._WRAP_draw_line(scrW-128,0,scrW-128,59,g._WRAP_map_rgb(255,255,255),1);
   g.setTarget(osc);
-  g._WRAP_set_blender(ALLEGRO_ADD,ALLEGRO_ONE,ALLEGRO_ONE);
+  g._WRAP_set_blender(SDL_BLENDMODE_ADD);
   pointsToDraw=735;//(pointsToDraw*255+(signed short)(oscbufWPos-oscbufRPos))/256;
   oscbufRPos=oscbufWPos-735;
   //printf("ptd: %d\n",pointsToDraw);
@@ -4970,7 +4950,7 @@ void drawdisp() {
       oscbufRPos++;
     }
   }
-  g._WRAP_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
+  g._WRAP_set_blender(SDL_BLENDMODE_BLEND);
   g.setTarget(NULL);
   g._WRAP_draw_bitmap(osc,scrW-128,0,0);
   switch(screen) {
@@ -5001,7 +4981,6 @@ int playfx(const char* fxdata,int fxpos,int achan) {
 }
 
 int main(int argc, char **argv) {
-  ALLEGRO_TRANSFORM tra;
   detunefactor=1;
   chip[0].Init();
   chip[1].Init();
@@ -5054,8 +5033,6 @@ FPS = 50;
 tempo=125;
 DETUNE_FACTOR_GLOBAL=1;
   }
-   ALLEGRO_EVENT_QUEUE *event_queue = NULL;
-   ALLEGRO_FILE *texthand;
    filessorted.resize(1024);
    filenames.resize(1024);
    //int success=0;
@@ -5065,19 +5042,14 @@ DETUNE_FACTOR_GLOBAL=1;
    scrH=450;
    // create memory blocks
    patlength=new unsigned char[256];
-   //texthand=fopen("help.txt","rb");
-  texthand=NULL;
-  if (texthand!=NULL) { // read the file
-  } else {
     helptext=new char[18];
-    //helptext="help.txt not found";
-  }
+    strcpy(helptext,"help.txt not found");
   // allocate memory for files
   /*for (int ii=0;ii<1024;ii++) {
   filenames[ii].name=new char[257];
   }*/
 
-   printf("initializing allegro\n");
+   printf("initializing SDL\n");
    if (!g.preinit()) {
       fprintf(stderr, "failed to initialize allegro!\n");
       return -1;
@@ -5123,7 +5095,7 @@ DETUNE_FACTOR_GLOBAL=1;
 
    CleanupPatterns();
    // init colors
-   ALLEGRO_COLOR colors[256]={};
+   Color colors[256]={};
    for (int lc=0;lc<256;lc++) {
      colors[lc]=getucol(lc);
    }
@@ -5172,9 +5144,6 @@ DETUNE_FACTOR_GLOBAL=1;
 #endif
    printf("done\n");
    // MAIN LOOP
-   g._WRAP_identity_transform(&tra);
-   g._WRAP_scale_transform(&tra,dpiScale,dpiScale);
-   g._WRAP_use_transform(&tra);
    if (playermode) {
      g._WRAP_rest(3600);
    } else {
@@ -5237,7 +5206,7 @@ DETUNE_FACTOR_GLOBAL=1;
      maxrasterdelta=(maxval(0,raster2-raster1)>maxrasterdelta)?(maxval(0,raster2-raster1)):(maxrasterdelta);
          if (!playermode) {g._WRAP_clear_to_color(g._WRAP_map_rgb(0,0,0));
      drawdisp();
-     if (kb[ALLEGRO_KEY_LSHIFT]) {
+     if (kb[SDL_SCANCODE_LSHIFT]) {
      g._WRAP_draw_filled_rectangle(0,raster1,scrW,(raster1>raster2)?(525):(raster2),g._WRAP_map_rgba(64,64,128,64));
      if (raster1>raster2) {
        g._WRAP_draw_filled_rectangle(0,0,scrW,raster2,g._WRAP_map_rgba(64,64,128,64));
