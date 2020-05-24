@@ -166,7 +166,6 @@ class Graphics {
     void _WRAP_draw_line(float x1, float y1, float x2, float y2, Color color, float thick) {
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderDrawLineF(sdlRend,x1,y1,x2,y2);
-      //al_draw_line(x1,y1,x2,y2,color,thick);
     }
     void _WRAP_draw_rectangle(float x1, float y1, float x2, float y2, Color color, float thick) {
       SDL_FRect re;
@@ -199,7 +198,7 @@ class Graphics {
       return retval;
     }
     void _WRAP_draw_bitmap_region(SDL_Texture* bitmap, float x, float y, float w, float h, float dx, float dy, int flags) {
-      SDL_Rect sr, dr;
+      SDL_Rect sr, dr, tr;
       sr.x=x;
       sr.y=y;
       sr.w=w;
@@ -208,6 +207,14 @@ class Graphics {
       dr.y=dy;
       dr.w=w;
       dr.h=h;
+      tr.x=0;
+      tr.y=0;
+      SDL_QueryTexture(bitmap,NULL,NULL,&tr.w,&tr.h);
+      if ((sr.h+sr.y)>tr.h) {
+        ::printf("longer\n");
+        sr.h-=(sr.h+sr.y)-tr.h;
+        dr.h=sr.h;
+      }
       SDL_RenderCopy(sdlRend,bitmap,&sr,&dr);
     }
     bool _WRAP_key_down(int kc) {

@@ -106,8 +106,6 @@ void Graphics::tColor(unsigned char color) {
   //fprintf(stderr,"\x1b[38;5;%dm",color);
 }
 
-// we blittin' baby!
-// later
 int Graphics::printf(const char* format, ...) {
   va_list va;
   SDL_Rect sr, dr;

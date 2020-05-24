@@ -42,7 +42,7 @@ xxxx│ pointers to patterns, 4 bytes per pointer                     │
     ├───────────────────────────────────────────────────┬───┬───┬───┤
   20│Ins│PCm│Env│Unu|   FuncSize!   │  Unused!  |Off│FPt│FPR│DFM│LFO│
     ├───────────────────────────────────────────────────┴───┴───┴───┤
-  30│Vol│Pan│PCMSlen|FilterH|Res|PCMSptr│PCMloop│FTm│Version│flg│RMF│
+  30│Vol│Pit│PCMSlen|FilterH|Res|PCMSptr│PCMloop│FTm│Version│flg│RMF│
     ├───────────────────────────────────────────────────────┴───┴───┤
   40│ Function data; see ssformat.md for details... FuncSize bytes  │
     └───────────────────────────────────────────────────────────────┘
@@ -58,7 +58,7 @@ NOTE: Version must have MSB set. otherwise treated as legacy instrument.
     ├───────────────────────────────────────────────────┬───┬───┬───┤
   20│Ins│PCm│Env│vol cut res dty shp pit hpi pan│Off│FPt│FPR│DFM│LFO│
     ├───────────────────────────────────────────────────┴───┴───┴───┤
-  30│Vol│Pan│PCMSlen|FilterH|Res|PCMSptr│PCMloop│FTm│Version│flg│RMF│
+  30│Vol│Pit│PCMSlen|FilterH|Res|PCMSptr│PCMloop│FTm│Version│flg│RMF│
     └───────────────────────────────────────────────────────┴───┴───┘
     
 NOTE: Instrument files start with a header which is 8 bytes long and reads "TRACKINS".

@@ -152,7 +152,7 @@ struct Instrument {
   unsigned char env[8];
   unsigned char noteOffset;
   unsigned char FPt, FPR, DFM, LFO;
-  unsigned char vol, pan;
+  unsigned char vol, pitch;
   unsigned short pcmLen, filterH;
   unsigned char res;
   unsigned char pcmPos[2]; // alignment
@@ -2023,9 +2023,9 @@ void drawinsedit() {
   g.printf("ResetOsc|ResetFilter|\n");
   g.printf("ResetRMOsc|\n\n");
   
-  g.printf("AutoCut  ^v\n\n");
-  
-  g.printf("DefVol   ^v");
+  g.printf("AutoCut  ^v\n");
+  g.printf("DefVol   ^v\n");
+  g.printf("Pitch    ^v\n");
 
   g.tNLPos(0);
   g.tPos(0,(float)(scrH-18)/12);
