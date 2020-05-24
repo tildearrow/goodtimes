@@ -149,10 +149,9 @@ void Graphics::setTarget(SDL_Texture* where) {
   SDL_SetRenderTarget(sdlRend,where);
 }
 
-void Graphics::trigResize() {
-  return; // TODO
-  //scrSize.x=al_get_display_width(display)/dpiScale;
-  //scrSize.y=al_get_display_height(display)/dpiScale;
+void Graphics::trigResize(int tx, int ty) {
+  scrSize.x=tx/dpiScale;
+  scrSize.y=ty/dpiScale;
 }
 
 Point Graphics::getWSize() {

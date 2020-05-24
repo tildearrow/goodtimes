@@ -5157,8 +5157,8 @@ DETUNE_FACTOR_GLOBAL=1;
       } else if (ev.type == SDL_MOUSEWHEEL) {
         mstate.z+=ev.wheel.y;
       } else if (ev.type == SDL_WINDOWEVENT) {
-        if (ev.window.type==SDL_WINDOWEVENT_RESIZED) {
-          g.trigResize();
+        if (ev.window.event==SDL_WINDOWEVENT_RESIZED) {
+          g.trigResize(ev.window.data1,ev.window.data2);
           g._WRAP_destroy_bitmap(mixer);
           //  recreate pattern bitmap
           g._WRAP_destroy_bitmap(patternbitmap);

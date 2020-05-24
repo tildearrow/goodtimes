@@ -211,7 +211,6 @@ class Graphics {
       tr.y=0;
       SDL_QueryTexture(bitmap,NULL,NULL,&tr.w,&tr.h);
       if ((sr.h+sr.y)>tr.h) {
-        ::printf("longer\n");
         sr.h-=(sr.h+sr.y)-tr.h;
         dr.h=sr.h;
       }
@@ -238,7 +237,7 @@ class Graphics {
     void tAlign(float x);
     void tColor(unsigned char color);
     void setTarget(SDL_Texture* where);
-    void trigResize();
+    void trigResize(int tx, int ty);
     int printf(const char* format, ...);
     bool preinit();
     bool init(int width, int height);
