@@ -11,9 +11,9 @@ varies on program.
 
 - 4channelbypass, peakmeter, tiasynth, vicsynth, lightshow and synth1: jack
 
-- counter, videotests, peakmeter, metronome, stdinaudio, tiasynth, vicsynth, pads, credits, synth1, thegame, timertest and soundtracker: everything allegro
+- counter, videotests, peakmeter, metronome, stdinaudio, tiasynth, vicsynth, pads, credits, synth1, thegame, timertest: everything allegro
 
-- pads and soundtracker: SDL2 and/or jack
+- pads: SDL2 and/or jack
 
 ## Operating system support
 
@@ -33,7 +33,6 @@ varies on program.
  synth1         |  yes  |  yes  |   no
  thegame        |  yes  |  yes  |   yes
  timertest      |  yes  |  yes  |   yes
- soundtracker   |  yes  |  yes  |   yes!
 
 ## Compiling
 
