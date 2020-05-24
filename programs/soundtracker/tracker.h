@@ -103,10 +103,6 @@ class Graphics {
     double _WRAP_get_time() {
       return 0;//al_get_time();
     }
-    bool _WRAP_wait_for_vsync() {
-      return true;
-      //return al_wait_for_vsync();
-    }
     void _WRAP_flip_display() {
       SDL_RenderPresent(sdlRend);
     }
@@ -126,7 +122,6 @@ class Graphics {
       }
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderFillRectF(sdlRend,&re);
-      //al_draw_filled_rectangle(x1,y1,x2,y2,color);
     }
     void _WRAP_clear_to_color(Color color) {
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
@@ -181,7 +176,6 @@ class Graphics {
       }
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderDrawRectF(sdlRend,&re);
-      //al_draw_rectangle(x1,y1,x2,y2,color,thick);
     }
     void _WRAP_reset_clipping_rectangle() {
       SDL_RenderSetClipRect(sdlRend,NULL);
@@ -190,7 +184,6 @@ class Graphics {
       SDL_Rect r;
       r.x=x; r.y=y; r.w=w; r.h=h;
       SDL_RenderSetClipRect(sdlRend,&r);
-      //al_set_clipping_rectangle(x,y,w,h);
     }
     int _WRAP_get_bitmap_width(SDL_Texture* bitmap) {
       int retval;
@@ -216,18 +209,25 @@ class Graphics {
       }
       SDL_RenderCopy(sdlRend,bitmap,&sr,&dr);
     }
-    bool _WRAP_key_down(int kc) {
-      return false;//al_key_down(ks,kc);
-    }
     void _WRAP_draw_scaled_bitmap(SDL_Texture* bitmap, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, int flags) {
-      // TODO
-      //al_draw_scaled_bitmap(bitmap,sx,sy,sw,sh,dx,dy,dw,dh,flags);
+      SDL_Rect sr, dr;
+      sr.x=sx;
+      sr.y=sy;
+      sr.w=sw;
+      sr.h=sh;
+      dr.x=dx;
+      dr.y=dy;
+      dr.w=dw;
+      dr.h=dh;
+      SDL_RenderCopy(sdlRend,bitmap,&sr,&dr);
     }
     void _WRAP_draw_rotated_bitmap(SDL_Texture* bitmap, float cx, float cy, float x, float y, float r, int flags) {
       // TODO
+      ::printf("Draw Rotated Bitmap\n");
       //al_draw_rotated_bitmap(bitmap,cx,cy,x,y,r,flags);
     }
     void _WRAP_draw_circle(float x, float y, float r, Color color, float thick) {
+      ::printf("Draw Circle\n");
       //al_draw_circle(x,y,r,color,thick);
     }
     
