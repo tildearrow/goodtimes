@@ -100,12 +100,6 @@ class Graphics {
     Color _WRAP_map_rgba_f(float r, float g, float b, float a) {
       return Color(r,g,b,a);
     }
-    bool _WRAP_install_mouse() {
-      return true;
-    }
-    bool _WRAP_install_keyboard() {
-      return true;
-    }
     double _WRAP_get_time() {
       return 0;//al_get_time();
     }
@@ -117,6 +111,21 @@ class Graphics {
       SDL_RenderPresent(sdlRend);
     }
     void _WRAP_draw_filled_rectangle(float x1, float y1, float x2, float y2, Color color) {
+      SDL_FRect re;
+      re.x=x1;
+      re.y=y1;
+      re.w=x2-x1;
+      re.h=y2-y1;
+      if (re.w<0) {
+        re.x+=re.w;
+        re.w=-re.w;
+      }
+      if (re.h<0) {
+        re.y+=re.h;
+        re.h=-re.h;
+      }
+      SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
+      SDL_RenderFillRectF(sdlRend,&re);
       //al_draw_filled_rectangle(x1,y1,x2,y2,color);
     }
     void _WRAP_clear_to_color(Color color) {
@@ -138,7 +147,8 @@ class Graphics {
       usleep(t*1000000);
     }
     void _WRAP_draw_pixel(float x, float y, Color color) {
-      //al_draw_pixel(x,y,color);
+      SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
+      SDL_RenderDrawPointF(sdlRend,x,y);
     }
     SDL_Texture* _WRAP_load_bitmap(const char* fn) {
       return NULL;//al_load_bitmap(fn);
@@ -164,14 +174,23 @@ class Graphics {
       re.y=y1;
       re.w=x2-x1;
       re.h=y2-y1;
+      if (re.w<0) {
+        ::printf("w\n");
+      }
+      if (re.h<0) {
+        ::printf("h\n");
+      }
       SDL_SetRenderDrawColor(sdlRend,color.r*255,color.g*255,color.b*255,color.a*255);
       SDL_RenderDrawRectF(sdlRend,&re);
       //al_draw_rectangle(x1,y1,x2,y2,color,thick);
     }
     void _WRAP_reset_clipping_rectangle() {
-      //al_reset_clipping_rectangle();
+      SDL_RenderSetClipRect(sdlRend,NULL);
     }
     void _WRAP_set_clipping_rectangle(int x, int y, int w, int h) {
+      SDL_Rect r;
+      r.x=x; r.y=y; r.w=w; r.h=h;
+      SDL_RenderSetClipRect(sdlRend,&r);
       //al_set_clipping_rectangle(x,y,w,h);
     }
     int _WRAP_get_bitmap_width(SDL_Texture* bitmap) {

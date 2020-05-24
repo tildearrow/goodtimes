@@ -4735,7 +4735,7 @@ void KeyboardEvents() {
     #endif
   };drawpatterns(true);drawmixerlayer();}
   if (kbpressed[SDL_SCANCODE_TAB]) {MuteAllChannels();}
-  if (kbpressed[SDL_SCANCODE_MENU] || kbpressed[SDL_SCANCODE_GRAVE]) {ntsc=!ntsc; if (ntsc) {
+  if (kbpressed[SDL_SCANCODE_APPLICATION] || kbpressed[SDL_SCANCODE_GRAVE]) {ntsc=!ntsc; if (ntsc) {
     if (tempo==125) {
       tempo=150;
       FPS=60;
@@ -4898,7 +4898,7 @@ void drawdisp() {
   g.printf(" %.2x:%.2x",patid[curpat],curpat,songlength);
   // draw orders
   // -128, 192, 255, +191, 128
-  g._WRAP_set_clipping_rectangle(184*dpiScale,16*dpiScale,16*dpiScale,36*dpiScale);
+  g._WRAP_set_clipping_rectangle(184,16,16,36);
   delta=(6*fmod(patseek,1));
   g.tNLPos(23);
   g.tPos(-fmod(patseek,1));
@@ -5073,16 +5073,6 @@ DETUNE_FACTOR_GLOBAL=1;
    }
    dpiScale=g._getScale();
    }
-   printf("initializing mouse input\n");
-   bool ismouse=g._WRAP_install_mouse();
-   if (!ismouse) {
-     fprintf(stderr,"there will be no mouse!");
-   }
-   printf("initializing keyboard input\n");
-   bool iskb=g._WRAP_install_keyboard();
-   if (!iskb) {
-     fprintf(stderr,"there will be no keyboard! :(");
-   }
    patternbitmap=g._WRAP_create_bitmap(scrW,scrH);
    piano=g._WRAP_create_bitmap(700,60);
    pianoroll=g._WRAP_create_bitmap(700,128);
@@ -5164,6 +5154,8 @@ DETUNE_FACTOR_GLOBAL=1;
         mstate.buttons=ev.motion.state;
       } else if (ev.type == SDL_MOUSEBUTTONUP) {
         mstate.buttons&=~ev.motion.state;
+      } else if (ev.type == SDL_MOUSEWHEEL) {
+        mstate.z+=ev.wheel.y;
       } else if (ev.type == SDL_WINDOWEVENT) {
         if (ev.window.type==SDL_WINDOWEVENT_RESIZED) {
           g.trigResize();
