@@ -97,7 +97,7 @@ void soundchip::NextSample(float* l, float* r) {
       float f=2*sin(3.141592653589*(((float)chan[i].cutoff)/2.5)/297500);
       int ff=f*65536;
       nslow[i]=nslow[i]+(((ff)*nsband[i])>>16);
-      nshigh[i]=fns[i]-nslow[i]-(((65536-(chan[i].reson<<8))*nsband[i])>>16);
+      nshigh[i]=fns[i]-nslow[i]-(((256-chan[i].reson)*nsband[i])>>8);
       nsband[i]=(((ff)*nshigh[i])>>16)+nsband[i];
       fns[i]=(((chan[i].flags.fmode&1)?(nslow[i]):(0))+((chan[i].flags.fmode&2)?(nshigh[i]):(0))+((chan[i].flags.fmode&4)?(nsband[i]):(0)));
     }
